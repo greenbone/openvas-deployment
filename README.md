@@ -2,6 +2,8 @@
 
 Deployment utility for the Greenbone OpenVAS Enterprise Container.
 
+This script is for demo purposes until our deployment tool supports this product!
+
 The repository packages `enterprise-container.sh` as both:
 
 - a standalone shell script
