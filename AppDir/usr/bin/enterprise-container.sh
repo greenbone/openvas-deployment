@@ -535,6 +535,7 @@ create_openvasd_tar() {
         cp -r "${openvasd_cert_folder}" "${tmp_cert_dir_enterprise_container}/"
         cp "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key" "${tmp_cert_dir_enterprise_container}/"
         echo 'openvasd' > "${STORE_DIR_NAME}/DEPLOYMENT_MODE"
+        echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${STORE_DIR_NAME}/GREENBONE_FEED_SYNC_JOB_HOUR"
         echo "${CN_OPENVASD}" > "${STORE_DIR_NAME}/OPENVASD_CN"
         echo "${FEED_MODE}" > "${STORE_DIR_NAME}/FEED_MODE"
         echo "${CCERT_MODE}" > "${STORE_DIR_NAME}/CCERT_MODE"
