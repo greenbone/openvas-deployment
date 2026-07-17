@@ -1203,12 +1203,10 @@ deploy_load_certs_scan() {
 # and waits for the services to become ready. Terminates the script when
 # required credentials are missing or the deployment fails.
 deploy() {
-    # Set compose ENV
     load_env
 
     echo "🚀 Starting OpenVAS Enterprise-Container ${DEPLOYMENT_MODE}..."
 
-    # Get latest downloaded product version
     get_latest_version
 
     echo "Info: Using OpenVAS Enterprise-Container mode ${DEPLOYMENT_MODE} in version ${VERSION}."
@@ -1288,11 +1286,10 @@ compose_down() {
 }
 
 # =============================================================================
-# main()
+# run()
 # =============================================================================
-# The main function orchestrates the execution of the script.
-main() {
-    # Check requirements
+# The run function orchestrates the execution of the script.
+run() {
     check_requirements
 
     if [ "${MODE}" == 'init' ]; then
@@ -1345,158 +1342,217 @@ main() {
     fi
 }
 
-if [ $# -eq 0 ]; then
-    show_help
-fi
+# =============================================================================
+# parse_args()
+# =============================================================================
+# Parses the command-line arguments and initializes the corresponding global
+# variables that control the script's behavior.
+#
+# Supported options include:
+#   - Selecting the execution mode (MODE)
+#   - Configuring deployment settings
+#   - Providing certificate, key, and license file paths
+#   - Configuring feed synchronization options
+#   - Managing OpenVASD instances and certificates
+#   - Controlling Docker OCI initialization
+#
+# If no arguments are provided, or if --help is specified, the help message is
+# displayed via show_help().
+#
+# Globals modified:
+#   MODE
+#   DEPLOYMENT_MODE
+#   LICENSE_FILE
+#   OCI_TLS_CLIENT_CERT
+#   OCI_TLS_CLIENT_KEY
+#   INIT_DOCKER_OCI
+#   GREENBONE_FEED_SYNC_JOB_HOUR
+#   GVMD_ADMIN_PASSWORD
+#   INGRESS_TLS_SERVER_CERT
+#   INGRESS_TLS_SERVER_KEY
+#   FEED_KEY
+#   FEED_MODE
+#   CCERT_MODE
+#   FEED_PATH
+#   CCERT_PATH
+#   OPENVASD_TAR_WITH_IMAGES
+#   OPENVASD_LOAD_IMAGES_FROM_TAR
+#   CN_OPENVASD
+#   OPENVASD_UUID
+#   OPENVASD_PORT
+#
+# Arguments:
+#   All command-line arguments passed to the script ("$@").
+#
+# Returns:
+#   None.
+parse_args() {
+    if [ $# -eq 0 ]; then
+        show_help
+    fi
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --init)
-            MODE='init'
-            shift 1
-            ;;
-        --init-openvasd)
-            MODE='init-openvasd'
-            shift 1
-            ;;
-        --deployment-mode)
-            DEPLOYMENT_MODE="$2"
-            shift 2
-            ;;
-        --license-file)
-            LICENSE_FILE="$2"
-            shift 2
-            ;;
-        --oci-client-cert)
-            OCI_TLS_CLIENT_CERT="$2"
-            shift 2
-            ;;
-        --oci-client-key)
-            OCI_TLS_CLIENT_KEY="$2"
-            shift 2
-            ;;
-        --init-docker-oci)
-            INIT_DOCKER_OCI='y'
-            shift 1
-            ;;
-        --skip-docker-oci)
-            INIT_DOCKER_OCI='n'
-            shift 1
-            ;;
-        --force-feed-sync)
-            MODE='force-feed-sync'
-            shift 1
-            ;;
-        --change-feed-sync-hour)
-            MODE='change-feed-sync-hour'
-            shift 1
-            ;;
-        --feed-sync-hour)
-            GREENBONE_FEED_SYNC_JOB_HOUR="$2"
-            shift 2
-            ;;
-        --change-admin-password)
-            MODE='change-admin-password'
-            shift 1
-            ;;
-        --admin-password)
-            GVMD_ADMIN_PASSWORD="$2"
-            shift 2
-            ;;
-        --update-ingress-certs)
-            MODE='update-ingress-certs'
-            shift 1
-            ;;
-        --ingress-server-cert)
-            INGRESS_TLS_SERVER_CERT="$2"
-            shift 2
-            ;;
-        --ingress-server-key)
-            INGRESS_TLS_SERVER_KEY="$2"
-            shift 2
-            ;;
-        --feed-key)
-            FEED_KEY="$2"
-            shift 2
-            ;;
-        --feed-mode)
-            FEED_MODE="$2"
-            shift 2
-            ;;
-        --ccert-mode)
-            CCERT_MODE="$2"
-            shift 2
-            ;;
-        --feed-path)
-            FEED_PATH="$2"
-            shift 2
-            ;;
-        --ccert-path)
-            CCERT_PATH="$2"
-            shift 2
-            ;;
-        --create-openvasd-tar)
-            MODE='create-openvasd-tar'
-            shift 1
-            ;;
-        --openvasd-tar-with-images)
-            OPENVASD_TAR_WITH_IMAGES='y'
-            shift 1
-            ;;
-        --openvasd-load-images-from-tar)
-            OPENVASD_LOAD_IMAGES_FROM_TAR='y'
-            shift 1
-            ;;
-        --create-openvasd-certs)
-            MODE='create-openvasd-cert'
-            shift 1
-            ;;
-        --get-openvasds)
-            MODE='get-openvasds'
-            shift 1
-            ;;
-        --add-openvasd)
-            MODE='add-openvasd'
-            shift 1
-            ;;
-        --del-openvasd)
-            MODE='del-openvasd'
-            shift 1
-            ;;
-        --cn-openvasd)
-            CN_OPENVASD="$2"
-            shift 2
-            ;;
-        --openvasd-uuid)
-            OPENVASD_UUID="$2"
-            shift 2
-            ;;
-        --openvasd-port)
-            OPENVASD_PORT="$2"
-            shift 2
-            ;;
-        --run)
-            MODE='run'
-            shift 1
-            ;;
-        --down)
-            MODE='down'
-            shift 1
-            ;;
-        --down-volumes)
-            MODE='down-volumes'
-            shift 1
-            ;;
-        --update)
-            MODE='update'
-            shift 1
-            ;;
-        -h|--help)
-            show_help
-            ;;
-        *)
-            shift
-            ;;
-    esac
-done
-main
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --init)
+                MODE='init'
+                shift 1
+                ;;
+            --init-openvasd)
+                MODE='init-openvasd'
+                shift 1
+                ;;
+            --deployment-mode)
+                DEPLOYMENT_MODE="$2"
+                shift 2
+                ;;
+            --license-file)
+                LICENSE_FILE="$2"
+                shift 2
+                ;;
+            --oci-client-cert)
+                OCI_TLS_CLIENT_CERT="$2"
+                shift 2
+                ;;
+            --oci-client-key)
+                OCI_TLS_CLIENT_KEY="$2"
+                shift 2
+                ;;
+            --init-docker-oci)
+                INIT_DOCKER_OCI='y'
+                shift 1
+                ;;
+            --skip-docker-oci)
+                INIT_DOCKER_OCI='n'
+                shift 1
+                ;;
+            --force-feed-sync)
+                MODE='force-feed-sync'
+                shift 1
+                ;;
+            --change-feed-sync-hour)
+                MODE='change-feed-sync-hour'
+                shift 1
+                ;;
+            --feed-sync-hour)
+                GREENBONE_FEED_SYNC_JOB_HOUR="$2"
+                shift 2
+                ;;
+            --change-admin-password)
+                MODE='change-admin-password'
+                shift 1
+                ;;
+            --admin-password)
+                GVMD_ADMIN_PASSWORD="$2"
+                shift 2
+                ;;
+            --update-ingress-certs)
+                MODE='update-ingress-certs'
+                shift 1
+                ;;
+            --ingress-server-cert)
+                INGRESS_TLS_SERVER_CERT="$2"
+                shift 2
+                ;;
+            --ingress-server-key)
+                INGRESS_TLS_SERVER_KEY="$2"
+                shift 2
+                ;;
+            --feed-key)
+                FEED_KEY="$2"
+                shift 2
+                ;;
+            --feed-mode)
+                FEED_MODE="$2"
+                shift 2
+                ;;
+            --ccert-mode)
+                CCERT_MODE="$2"
+                shift 2
+                ;;
+            --feed-path)
+                FEED_PATH="$2"
+                shift 2
+                ;;
+            --ccert-path)
+                CCERT_PATH="$2"
+                shift 2
+                ;;
+            --create-openvasd-tar)
+                MODE='create-openvasd-tar'
+                shift 1
+                ;;
+            --openvasd-tar-with-images)
+                OPENVASD_TAR_WITH_IMAGES='y'
+                shift 1
+                ;;
+            --openvasd-load-images-from-tar)
+                OPENVASD_LOAD_IMAGES_FROM_TAR='y'
+                shift 1
+                ;;
+            --create-openvasd-certs)
+                MODE='create-openvasd-cert'
+                shift 1
+                ;;
+            --get-openvasds)
+                MODE='get-openvasds'
+                shift 1
+                ;;
+            --add-openvasd)
+                MODE='add-openvasd'
+                shift 1
+                ;;
+            --del-openvasd)
+                MODE='del-openvasd'
+                shift 1
+                ;;
+            --cn-openvasd)
+                CN_OPENVASD="$2"
+                shift 2
+                ;;
+            --openvasd-uuid)
+                OPENVASD_UUID="$2"
+                shift 2
+                ;;
+            --openvasd-port)
+                OPENVASD_PORT="$2"
+                shift 2
+                ;;
+            --run)
+                MODE='run'
+                shift 1
+                ;;
+            --down)
+                MODE='down'
+                shift 1
+                ;;
+            --down-volumes)
+                MODE='down-volumes'
+                shift 1
+                ;;
+            --update)
+                MODE='update'
+                shift 1
+                ;;
+            -h|--help)
+                show_help
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+}
+
+# =============================================================================
+# main()
+# =============================================================================
+# Entry point of the script.
+#
+# Parses the command-line arguments and then invokes the main execution
+# routine based on the selected mode and configuration.
+main() {
+    parse_args "$@"
+    run
+}
+
+main "$@"
