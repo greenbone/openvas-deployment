@@ -51,6 +51,8 @@ OPENVASD_TAR_WITH_IMAGES='n'
 OPENVASD_LOAD_IMAGES_FROM_TAR='n'
 GVMD_ADMIN_PASSWORD=''
 GREENBONE_FEED_SYNC_JOB_HOUR='3'
+declare -A LICENSE_DATA
+LICENSE_FILE=''
 
 # =============================================================================
 # show_help()
@@ -103,6 +105,7 @@ Administrator options:
                                  --change-admin-password
 
 OCI client certificate options:
+  --license-file FILE            Includes OCI registry client cert and key
   --oci-client-cert FILE         OCI registry client certificate
   --oci-client-key FILE          OCI registry client private key
   --init-docker-oci              Install OCI credentials into dockerd using sudo
@@ -229,6 +232,55 @@ check_requirements() {
         echo "Docker not running"
         exit 1
     fi
+}
+
+# =============================================================================
+# read_license_file()
+# =============================================================================
+# Reads license data from a section-based configuration file.
+#
+# The first argument specifies the input file and defaults to LICENSE_FILE. The
+# second argument names the output array and defaults to LICENSE. Parsed values
+# are stored using "section.key" as the array key. The function supports
+# comments, blank lines, quoted values, and triple-quoted multiline values.
+#
+# Returns a non-zero status if a multiline value reaches the end of the file
+# before its closing triple quotes are found.
+read_license_file() {
+    local file="${1:-$LICENSE_FILE}"
+    local -n out="${2:-LICENSE_DATA}"
+    local section key value line
+
+    while IFS= read -r line; do
+        [[ $line =~ ^[[:space:]]*(#|$) ]] && continue
+
+        if [[ $line =~ ^\[([^]]+)\]$ ]]; then
+            section="${BASH_REMATCH[1]}"
+
+        elif [[ $line =~ ^[[:space:]]*([^=]+)[[:space:]]*=[[:space:]]*\"\"\"(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            key="${key//[[:space:]]/}"
+            value="${BASH_REMATCH[2]}"
+
+            while [[ $value != *'"""' ]]; do
+                IFS= read -r line || return 1
+                value+="${value:+$'\n'}${line}"
+            done
+
+            value=${value%\"\"\"}
+            out["${section}.${key}"]="${value}"
+
+        elif [[ $line =~ ^[[:space:]]*([^=]+)[[:space:]]*=[[:space:]]*(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+            key="${key//[[:space:]]/}"
+
+            [[ $value == \'*\' || $value == \"*\" ]] &&
+                value="${value:1:-1}"
+
+            out["${section}.${key}"]="${value}"
+        fi
+    done < "$file"
 }
 
 # =============================================================================
@@ -546,7 +598,6 @@ create_openvasd_tar() {
     popd > /dev/null
 
     if [ "${OPENVASD_TAR_WITH_IMAGES}" == 'y' ]; then
-        # Get latest downloaded product version
         get_latest_version
         mkdir -p "${tmp_images}"
         pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
@@ -565,7 +616,6 @@ create_openvasd_tar() {
         popd > /dev/null
     fi
     tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .
-    #rm -rf "${tmp_dir}"
 }
 
 # =============================================================================
@@ -744,83 +794,55 @@ load_env() {
 }
 
 # =============================================================================
-# init()
+# init_base_folders()
 # =============================================================================
-# Initializes the certificate and key material required for Enterprise Container
-# operation.
+# Creates the directories used to store TLS certificates.
 #
-# Validates the required OCI client certificate and private key, then prompts
-# before continuing when the working directory already exists or optional
-# ingress TLS credentials or a feed key are unavailable. It also determines
-# whether OCI certificates should be installed for dockerd with elevated
-# privileges.
-#
-# Creates the certificate directory structure and environment configuration,
-# installs the OCI client credentials, generates an Enterprise Container CA and
-# client certificate, and installs the supplied ingress server credentials or
-# generates a self-signed replacement. It also creates the ECDSA P-256 key pair
-# used for JWT signing and installs the feed key when one is provided.
-#
-# Finally, delegates dockerd OCI certificate setup to init_docker_oci. When
-# installation is declined, that function prints the required commands instead
-# of executing them.
-init() {
-    echo "🚀 Init Enterprise Container Mode Scan..."
-
-    if [ -d "${WORKING_DIR}" ]; then
-        echo "Warning: ${WORKING_DIR} exist! CA setup will be overwritten if continue!"
-        read -r -p "Continue? (y/n)" response
-        if [ "$response" != "y" ]; then
-            exit 1
-        fi
-    fi
-
-    # Check arguments
-    if ! [ -f "${OCI_TLS_CLIENT_CERT}" ]; then
-        echo "Error: --oci-client-cert argument missing or file ${OCI_TLS_CLIENT_CERT} not found!"
-        exit 1
-    fi
-    if ! [ -f "${OCI_TLS_CLIENT_KEY}" ]; then
-        echo "Error: --oci-client-key argument missing or file ${OCI_TLS_CLIENT_KEY} not found!"
-        exit 1
-    fi
-
-    if ! [ -f "${INGRESS_TLS_SERVER_CERT}" ] || ! [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
-        echo "Warning: --ingress-server-cert and/or --ingress-server-key argument missing and/or the files don't exist!"
-        echo "Info: Can be changed later with --update-ingress-certs !"
-        read -r -p "Continue? (y/n)" response
-        if [ "$response" != "y" ]; then
-            exit 1
-        fi
-    fi
-
-    if ! [ -f "${FEED_KEY}" ]; then
-        echo "Warning: --feed-key argument missing!"
-        echo "Info: With out a Feed Key you have to bind mount a folder a Feed into the openvasd container."
-        read -r -p "Continue? (y/n)" response
-        if [ "$response" != "y" ]; then
-           exit 1
-        fi
-    fi
-    if ! [ "${INIT_DOCKER_OCI}" ]; then
-        echo "Info: Do you want to install dockerd OCI certs with sudo? Otherwise the commands are printed here."
-        read -r -p "Install? (y/n)" INIT_DOCKER_OCI
-    fi
-
-    # Create base folders
+# The function creates the standard certificate directory and the certificate
+# directories used by the OCI and enterprise container deployments. Existing
+# directories are left unchanged.
+init_base_folders() {
     echo "Info: Create TLS certificate folder..."
     mkdir -p "${CERT_DIR}"
     mkdir -p "${CERT_DIR_OCI}"
     mkdir -p "${CERT_DIR_ENTERPRISE_CONTAINER}"
+}
 
-    # Set ENV
-    init_env
+# =============================================================================
+# init_jwt()
+# =============================================================================
+# Generates the ECDSA key pair used for Enterprise Container JWT signing.
+#
+# The function creates a P-256 private key in PEM format and derives the
+# corresponding public key. Both keys are stored in the Enterprise Container
+# certificate directory, replacing any existing files with the same names.
+init_jwt() {
+    echo "Info: Install Enterprise-Container JWT..."
+    openssl genpkey \
+        -algorithm EC \
+        -outform PEM \
+        -quiet \
+        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
+        -pkeyopt ec_paramgen_curve:"P-256" \
+        -pkeyopt ec_param_enc:named_curve
+    openssl ec \
+        -in "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
+        -pubout \
+        -outform PEM \
+        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem"
+}
 
-    # Install oci certs
-    echo "Info: Install OCI TLS certificates..."
-    install -m 0600 "${OCI_TLS_CLIENT_CERT}" "${CERT_DIR_OCI}/client.crt"
-    install -m 0600 "${OCI_TLS_CLIENT_KEY}" "${CERT_DIR_OCI}/client.key"
-
+# =============================================================================
+# init_certs()
+# =============================================================================
+# Creates the TLS certificates used by the Enterprise Container deployment.
+#
+# The function generates a 2048-bit RSA certificate authority and a client
+# certificate signed by that authority, each valid for 365 days. For the
+# ingress server, it installs the configured certificate and private key when
+# both files are available; otherwise, it generates a self-signed server
+# certificate valid for 365 days. Existing output files may be replaced.
+init_certs() {
     # Create Enterprise-Container CA certificate
     echo "Info: Install Enterprise-Container TLS certificates..."
     openssl genrsa -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.key" 2048 2>/dev/null
@@ -849,32 +871,140 @@ init() {
            -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
            -subj "/CN=openvas-enterprise-container" 2>/dev/null
     fi
+}
 
-    # Create JWT
-    echo "Info: Install Enterprise-Container JWT..."
-    openssl genpkey \
-        -algorithm EC \
-        -outform PEM \
-        -quiet \
-        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
-        -pkeyopt ec_paramgen_curve:"P-256" \
-        -pkeyopt ec_param_enc:named_curve
-    openssl ec \
-        -in "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
-        -pubout \
-        -outform PEM \
-        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem"
+# =============================================================================
+# install_oci_certs()
+# =============================================================================
+# Installs the TLS client certificate and private key for OCI deployments.
+#
+# The function copies the configured OCI client certificate and private key
+# into the OCI certificate directory with permissions restricted to the file
+# owner. Existing files with the same names are replaced.
+install_oci_certs(){
+    if ! [ -f "${OCI_TLS_CLIENT_CERT}" ]; then
+        echo "Error: --oci-client-cert argument missing or file ${OCI_TLS_CLIENT_CERT} not found!"
+        exit 1
+    fi
+    if ! [ -f "${OCI_TLS_CLIENT_KEY}" ]; then
+        echo "Error: --oci-client-key argument missing or file ${OCI_TLS_CLIENT_KEY} not found!"
+        exit 1
+    fi
 
-    # Install feed key
+    echo "Info: Install OCI TLS certificates..."
+    install -m 0600 "${OCI_TLS_CLIENT_CERT}" "${CERT_DIR_OCI}/client.crt"
+    install -m 0600 "${OCI_TLS_CLIENT_KEY}" "${CERT_DIR_OCI}/client.key"
+}
+
+# =============================================================================
+# install_license_file()
+# =============================================================================
+# Installs the license file and extracts its embedded OCI client credentials.
+#
+# The first argument names the associative array containing the parsed license
+# data and defaults to LICENSE_DATA. The second and third arguments name the
+# variables that receive the generated OCI client certificate and key paths.
+#
+# The function verifies that LICENSE_FILE exists, installs it in the OCI
+# certificate directory with owner-only permissions, writes the embedded
+# certificate and private key to separate files, and updates the referenced
+# path variables. It exits with a non-zero status when the license file is
+# missing.
+install_license_file() {
+    local -n license_data="${1:-LICENSE_DATA}"
+    local -n oci_tls_client_cert="${2:-OCI_TLS_CLIENT_CERT}"
+    local -n oci_tls_client_key="${3:-OCI_TLS_CLIENT_KEY}"
+
+    if ! [ -f "${LICENSE_FILE}" ]; then
+        echo "Error: --license-file argument missing or file ${LICENSE_FILE} not found!"
+        exit 1
+    fi
+
+    install -m 0600 "${LICENSE_FILE}" "${CERT_DIR_OCI}/license.toml"
+
+    echo "${license_data[license.certificate.cert]}" > "${CERT_DIR_OCI}/client.crt"
+    oci_tls_client_cert="${CERT_DIR_OCI}/client.crt"
+    echo "${license_data[license.certificate.key]}" > "${CERT_DIR_OCI}/client.key"
+    oci_tls_client_key="${CERT_DIR_OCI}/client.key"
+}
+
+# =============================================================================
+# install_feed_key()
+# =============================================================================
+# Installs the Enterprise Container feed key when the configured file exists.
+#
+# The function copies FEED_KEY into the Enterprise Container certificate
+# directory as feed.key with permissions restricted to the file owner. If the
+# source file does not exist, the function performs no action.
+install_feed_key(){
     if [ -f "${FEED_KEY}" ]; then
         echo "Info: Install Enterprise-Container Feed Key..."
         install -m 0600 "${FEED_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
     fi
+}
 
-    # Install oci certs dockerd
+# =============================================================================
+# init()
+# =============================================================================
+# Initializes the Enterprise Container scan deployment.
+#
+# The function validates the required OCI client certificate and key, warns
+# before overwriting an existing working directory, and prompts for confirmation
+# when ingress certificates or a feed key are unavailable. It also determines
+# whether Docker OCI certificates should be installed with elevated privileges.
+#
+# After validation, the function creates the required directories, initializes
+# the environment, installs or generates certificates and keys, configures
+# Docker OCI access, and initializes the administrator password. It exits with
+# a non-zero status when required files are missing or the user cancels.
+init() {
+    echo "🚀 Init Enterprise Container Mode Scan..."
+
+    if [ -d "${WORKING_DIR}" ]; then
+        echo "Warning: ${WORKING_DIR} exist! CA setup will be overwritten if continue!"
+        read -r -p "Continue? (y/n)" response
+        if [ "$response" != "y" ]; then
+            exit 1
+        fi
+    fi
+
+    if ! [ -f "${INGRESS_TLS_SERVER_CERT}" ] || ! [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
+        echo "Warning: --ingress-server-cert and/or --ingress-server-key argument missing and/or the files don't exist!"
+        echo "Info: Can be changed later with --update-ingress-certs !"
+        read -r -p "Continue? (y/n)" response
+        if [ "$response" != "y" ]; then
+            exit 1
+        fi
+    fi
+
+    if ! [ -f "${FEED_KEY}" ]; then
+        echo "Warning: --feed-key argument missing!"
+        echo "Info: With out a Feed Key you have to bind mount a folder a Feed into the openvasd container."
+        read -r -p "Continue? (y/n)" response
+        if [ "$response" != "y" ]; then
+           exit 1
+        fi
+    fi
+    if ! [ "${INIT_DOCKER_OCI}" ]; then
+        echo "Info: Do you want to install dockerd OCI certs with sudo? Otherwise the commands are printed here."
+        read -r -p "Install? (y/n)" INIT_DOCKER_OCI
+    fi
+
+    init_base_folders
+    init_env
+
+    if [ "${LICENSE_FILE}" ]; then
+        read_license_file
+        install_license_file
+    else
+        echo "Info: No --license-file set, try to use --oci-client-cert and --oci-client-key."
+        install_oci_certs
+    fi
+
+    init_certs
+    init_jwt
+    install_feed_key
     init_docker_oci
-
-    # Init admin password
     init_admin_password
 
     echo "Init done!"
@@ -1073,12 +1203,10 @@ deploy_load_certs_scan() {
 # and waits for the services to become ready. Terminates the script when
 # required credentials are missing or the deployment fails.
 deploy() {
-    # Set compose ENV
     load_env
 
     echo "🚀 Starting OpenVAS Enterprise-Container ${DEPLOYMENT_MODE}..."
 
-    # Get latest downloaded product version
     get_latest_version
 
     echo "Info: Using OpenVAS Enterprise-Container mode ${DEPLOYMENT_MODE} in version ${VERSION}."
@@ -1158,11 +1286,10 @@ compose_down() {
 }
 
 # =============================================================================
-# main()
+# run()
 # =============================================================================
-# The main function orchestrates the execution of the script.
-main() {
-    # Check requirements
+# The run function orchestrates the execution of the script.
+run() {
     check_requirements
 
     if [ "${MODE}" == 'init' ]; then
@@ -1215,154 +1342,217 @@ main() {
     fi
 }
 
-if [ $# -eq 0 ]; then
-    show_help
-fi
+# =============================================================================
+# parse_args()
+# =============================================================================
+# Parses the command-line arguments and initializes the corresponding global
+# variables that control the script's behavior.
+#
+# Supported options include:
+#   - Selecting the execution mode (MODE)
+#   - Configuring deployment settings
+#   - Providing certificate, key, and license file paths
+#   - Configuring feed synchronization options
+#   - Managing OpenVASD instances and certificates
+#   - Controlling Docker OCI initialization
+#
+# If no arguments are provided, or if --help is specified, the help message is
+# displayed via show_help().
+#
+# Globals modified:
+#   MODE
+#   DEPLOYMENT_MODE
+#   LICENSE_FILE
+#   OCI_TLS_CLIENT_CERT
+#   OCI_TLS_CLIENT_KEY
+#   INIT_DOCKER_OCI
+#   GREENBONE_FEED_SYNC_JOB_HOUR
+#   GVMD_ADMIN_PASSWORD
+#   INGRESS_TLS_SERVER_CERT
+#   INGRESS_TLS_SERVER_KEY
+#   FEED_KEY
+#   FEED_MODE
+#   CCERT_MODE
+#   FEED_PATH
+#   CCERT_PATH
+#   OPENVASD_TAR_WITH_IMAGES
+#   OPENVASD_LOAD_IMAGES_FROM_TAR
+#   CN_OPENVASD
+#   OPENVASD_UUID
+#   OPENVASD_PORT
+#
+# Arguments:
+#   All command-line arguments passed to the script ("$@").
+#
+# Returns:
+#   None.
+parse_args() {
+    if [ $# -eq 0 ]; then
+        show_help
+    fi
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --init)
-            MODE='init'
-            shift 1
-            ;;
-        --init-openvasd)
-            MODE='init-openvasd'
-            shift 1
-            ;;
-        --deployment-mode)
-            DEPLOYMENT_MODE="$2"
-            shift 2
-            ;;
-        --oci-client-cert)
-            OCI_TLS_CLIENT_CERT="$2"
-            shift 2
-            ;;
-        --oci-client-key)
-            OCI_TLS_CLIENT_KEY="$2"
-            shift 2
-            ;;
-        --init-docker-oci)
-            INIT_DOCKER_OCI='y'
-            shift 1
-            ;;
-        --skip-docker-oci)
-            INIT_DOCKER_OCI='n'
-            shift 1
-            ;;
-        --force-feed-sync)
-            MODE='force-feed-sync'
-            shift 1
-            ;;
-        --change-feed-sync-hour)
-            MODE='change-feed-sync-hour'
-            shift 1
-            ;;
-        --feed-sync-hour)
-            GREENBONE_FEED_SYNC_JOB_HOUR="$2"
-            shift 2
-            ;;
-        --change-admin-password)
-            MODE='change-admin-password'
-            shift 1
-            ;;
-        --admin-password)
-            GVMD_ADMIN_PASSWORD="$2"
-            shift 2
-            ;;
-        --update-ingress-certs)
-            MODE='update-ingress-certs'
-            shift 1
-            ;;
-        --ingress-server-cert)
-            INGRESS_TLS_SERVER_CERT="$2"
-            shift 2
-            ;;
-        --ingress-server-key)
-            INGRESS_TLS_SERVER_KEY="$2"
-            shift 2
-            ;;
-        --feed-key)
-            FEED_KEY="$2"
-            shift 2
-            ;;
-        --feed-mode)
-            FEED_MODE="$2"
-            shift 2
-            ;;
-        --ccert-mode)
-            CCERT_MODE="$2"
-            shift 2
-            ;;
-        --feed-path)
-            FEED_PATH="$2"
-            shift 2
-            ;;
-        --ccert-path)
-            CCERT_PATH="$2"
-            shift 2
-            ;;
-        --create-openvasd-tar)
-            MODE='create-openvasd-tar'
-            shift 1
-            ;;
-        --openvasd-tar-with-images)
-            OPENVASD_TAR_WITH_IMAGES='y'
-            shift 1
-            ;;
-        --openvasd-load-images-from-tar)
-            OPENVASD_LOAD_IMAGES_FROM_TAR='y'
-            shift 1
-            ;;
-        --create-openvasd-certs)
-            MODE='create-openvasd-cert'
-            shift 1
-            ;;
-        --get-openvasds)
-            MODE='get-openvasds'
-            shift 1
-            ;;
-        --add-openvasd)
-            MODE='add-openvasd'
-            shift 1
-            ;;
-        --del-openvasd)
-            MODE='del-openvasd'
-            shift 1
-            ;;
-        --cn-openvasd)
-            CN_OPENVASD="$2"
-            shift 2
-            ;;
-        --openvasd-uuid)
-            OPENVASD_UUID="$2"
-            shift 2
-            ;;
-        --openvasd-port)
-            OPENVASD_PORT="$2"
-            shift 2
-            ;;
-        --run)
-            MODE='run'
-            shift 1
-            ;;
-        --down)
-            MODE='down'
-            shift 1
-            ;;
-        --down-volumes)
-            MODE='down-volumes'
-            shift 1
-            ;;
-        --update)
-            MODE='update'
-            shift 1
-            ;;
-        -h|--help)
-            show_help
-            ;;
-        *)
-            shift
-            ;;
-    esac
-done
-main
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --init)
+                MODE='init'
+                shift 1
+                ;;
+            --init-openvasd)
+                MODE='init-openvasd'
+                shift 1
+                ;;
+            --deployment-mode)
+                DEPLOYMENT_MODE="$2"
+                shift 2
+                ;;
+            --license-file)
+                LICENSE_FILE="$2"
+                shift 2
+                ;;
+            --oci-client-cert)
+                OCI_TLS_CLIENT_CERT="$2"
+                shift 2
+                ;;
+            --oci-client-key)
+                OCI_TLS_CLIENT_KEY="$2"
+                shift 2
+                ;;
+            --init-docker-oci)
+                INIT_DOCKER_OCI='y'
+                shift 1
+                ;;
+            --skip-docker-oci)
+                INIT_DOCKER_OCI='n'
+                shift 1
+                ;;
+            --force-feed-sync)
+                MODE='force-feed-sync'
+                shift 1
+                ;;
+            --change-feed-sync-hour)
+                MODE='change-feed-sync-hour'
+                shift 1
+                ;;
+            --feed-sync-hour)
+                GREENBONE_FEED_SYNC_JOB_HOUR="$2"
+                shift 2
+                ;;
+            --change-admin-password)
+                MODE='change-admin-password'
+                shift 1
+                ;;
+            --admin-password)
+                GVMD_ADMIN_PASSWORD="$2"
+                shift 2
+                ;;
+            --update-ingress-certs)
+                MODE='update-ingress-certs'
+                shift 1
+                ;;
+            --ingress-server-cert)
+                INGRESS_TLS_SERVER_CERT="$2"
+                shift 2
+                ;;
+            --ingress-server-key)
+                INGRESS_TLS_SERVER_KEY="$2"
+                shift 2
+                ;;
+            --feed-key)
+                FEED_KEY="$2"
+                shift 2
+                ;;
+            --feed-mode)
+                FEED_MODE="$2"
+                shift 2
+                ;;
+            --ccert-mode)
+                CCERT_MODE="$2"
+                shift 2
+                ;;
+            --feed-path)
+                FEED_PATH="$2"
+                shift 2
+                ;;
+            --ccert-path)
+                CCERT_PATH="$2"
+                shift 2
+                ;;
+            --create-openvasd-tar)
+                MODE='create-openvasd-tar'
+                shift 1
+                ;;
+            --openvasd-tar-with-images)
+                OPENVASD_TAR_WITH_IMAGES='y'
+                shift 1
+                ;;
+            --openvasd-load-images-from-tar)
+                OPENVASD_LOAD_IMAGES_FROM_TAR='y'
+                shift 1
+                ;;
+            --create-openvasd-certs)
+                MODE='create-openvasd-cert'
+                shift 1
+                ;;
+            --get-openvasds)
+                MODE='get-openvasds'
+                shift 1
+                ;;
+            --add-openvasd)
+                MODE='add-openvasd'
+                shift 1
+                ;;
+            --del-openvasd)
+                MODE='del-openvasd'
+                shift 1
+                ;;
+            --cn-openvasd)
+                CN_OPENVASD="$2"
+                shift 2
+                ;;
+            --openvasd-uuid)
+                OPENVASD_UUID="$2"
+                shift 2
+                ;;
+            --openvasd-port)
+                OPENVASD_PORT="$2"
+                shift 2
+                ;;
+            --run)
+                MODE='run'
+                shift 1
+                ;;
+            --down)
+                MODE='down'
+                shift 1
+                ;;
+            --down-volumes)
+                MODE='down-volumes'
+                shift 1
+                ;;
+            --update)
+                MODE='update'
+                shift 1
+                ;;
+            -h|--help)
+                show_help
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+}
+
+# =============================================================================
+# main()
+# =============================================================================
+# Entry point of the script.
+#
+# Parses the command-line arguments and then invokes the main execution
+# routine based on the selected mode and configuration.
+main() {
+    parse_args "$@"
+    run
+}
+
+main "$@"
