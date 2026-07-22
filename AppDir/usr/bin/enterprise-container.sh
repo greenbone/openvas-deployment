@@ -22,6 +22,11 @@ CCERT_MODE_OPTIONS=('ca' 'cert' 'mount')
 PACKAGE_URL="packages.greenbone.net/openvas-enterprise-container-dev/testing/${PACKAGE}"
 GVMD_CONTAINER='enterprise-container-scan-gvmd-1'
 GVMD_CONTAINER_UID='1001'
+NOTUS_CONTAINER_PATH='/var/lib/notus'
+SCAP_CONTAINER_PATH='/var/lib/gvm/scap-data'
+CERT_CONTAINER_PATH='/var/lib/gvm/cert-data'
+OBJECTS_CONTAINER_PATH='/var/lib/gvm/data-objects/gvmd'
+VT_CONTAINER_PATH='/var/lib/openvas/plugins'
 
 # Working dir's
 WORKING_DIR="$(pwd)/${STORE_DIR_NAME}"
@@ -295,6 +300,13 @@ read_license_file() {
             out["${section}.${key}"]="${value}"
         fi
     done < "$file"
+}
+
+ssh_agent_check() {
+    if [ ! -S "$SSH_AUTH_SOCK" ] || ! ssh-add -l >/dev/null 2>&1; then
+        echo "ssh-agent is not running"
+        return 1
+    fi
 }
 
 # =============================================================================
@@ -612,24 +624,191 @@ create_openvasd_tar() {
     popd > /dev/null
 
     if [ "${OPENVASD_TAR_WITH_IMAGES}" == 'y' ]; then
-        get_latest_version
         mkdir -p "${tmp_images}"
-        pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-            docker save -o "${tmp_images}/openvas-openvasd.tar" \
-                "$(docker compose images | awk '$2 ~ /openvas-scanner$/ { print $5; exit }')"
-            docker save -o "${tmp_images}/openvas-gpg-data.tar" \
-                "$(docker compose images | awk '$2 ~ /gpg-data$/ { print $5; exit }')"
-            docker save -o "${tmp_images}/openvas-feed-sync.tar" \
-                "$(docker compose images | awk '$2 ~ /greenbone-feed-sync$/ { print $5; exit }')"
-            docker save -o "${tmp_images}/openvas-redis.tar" \
-                "$(docker compose images | awk '$2 ~ /redis-server$/ { print $5; exit }')"
-        if [ "${FEED_MODE}" == 'service' ]; then
-                docker save -o "${tmp_images}/openvas-feed-key-service.tar" \
-                    "$(docker compose images | awk '$2 ~ /feed-key-service$/ { print $5; exit }')"
-        fi
-        popd > /dev/null
+        get_openvasd_images "${tmp_images}"
     fi
+
     tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .
+}
+
+# =============================================================================
+# get_openvasd_images()
+# =============================================================================
+# Exports the Docker images required for the OpenVAS deployment.
+#
+# The function verifies that the destination directory exists, resolves the
+# active deployment version, and uses Docker Compose to determine the image IDs
+# of the running OpenVAS-related services. The images are saved as tar archives
+# in the destination directory for backup, transfer, or offline deployment.
+#
+# Arguments:
+#   $1  dest            Path to the directory where Docker image archives are
+#                       stored.
+#
+# The generated image archives are written as:
+#   ${dest}/openvas-openvasd.tar
+#   ${dest}/openvas-gpg-data.tar
+#   ${dest}/openvas-feed-sync.tar
+#   ${dest}/openvas-redis.tar
+#
+# If FEED_MODE is set to "service", the feed key service image is exported as
+# well:
+#   ${dest}/openvas-feed-key-service.tar
+#
+# Existing files with the same names are overwritten.
+get_openvasd_images() {
+    local dest="${1:?dest argument required}"
+
+    if ! [ -d "${dest}" ]; then
+        echo "Image destination folder ${dest} does not exist!"
+        exit 1
+    fi
+
+    get_latest_version
+
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        docker save -o "${dest}/openvas-openvasd.tar" \
+            "$(docker compose images | awk '$2 ~ /openvas-scanner$/ { print $5; exit }')"
+        docker save -o "${dest}/openvas-gpg-data.tar" \
+            "$(docker compose images | awk '$2 ~ /gpg-data$/ { print $5; exit }')"
+        docker save -o "${dest}/openvas-feed-sync.tar" \
+            "$(docker compose images | awk '$2 ~ /greenbone-feed-sync$/ { print $5; exit }')"
+        docker save -o "${dest}/openvas-redis.tar" \
+            "$(docker compose images | awk '$2 ~ /redis-server$/ { print $5; exit }')"
+        if [ "${FEED_MODE}" == 'service' ]; then
+            docker save -o "${dest}/openvas-feed-key-service.tar" \
+                "$(docker compose images | awk '$2 ~ /feed-key-service$/ { print $5; exit }')"
+        fi
+    popd > /dev/null
+}
+
+# =============================================================================
+# get_feed_from_feed_sync_container()
+# =============================================================================
+# Exports feed data from the currently running feed-sync container into local
+# archive files.
+#
+# The function verifies that the destination directory exists, resolves the
+# active deployment version, and determines the feed-sync container ID. The
+# contents of the configured feed directories (Notus, SCAP, CERT, objects, and
+# VT) are archived inside the container and streamed to corresponding tar files
+# in the destination directory.
+#
+# Arguments:
+#   $1  dest            Path to the directory where feed archive files are
+#                       stored.
+#   $2  notus_path      Container path containing the Notus feed data.
+#                       Defaults to NOTUS_CONTAINER_PATH.
+#   $3  scap_path       Container path containing the SCAP feed data.
+#                       Defaults to SCAP_CONTAINER_PATH.
+#   $4  cert_path       Container path containing the CERT feed data.
+#                       Defaults to CERT_CONTAINER_PATH.
+#   $5  objects_path    Container path containing the objects feed data.
+#                       Defaults to OBJECTS_CONTAINER_PATH.
+#   $6  vt_path         Container path containing the VT feed data.
+#                       Defaults to VT_CONTAINER_PATH.
+#
+# The generated archives are written as:
+#   ${dest}/notus.tar
+#   ${dest}/scap.tar
+#   ${dest}/cert.tar
+#   ${dest}/objects.tar
+#   ${dest}/vt.tar
+#
+# Existing files with the same names are overwritten.
+get_feed_from_feed_sync_container() {
+    local dest="${1:?dest argument required}"
+    local notus_path="${2:-$NOTUS_CONTAINER_PATH}"
+    local scap_path="${3:-$SCAP_CONTAINER_PATH}"
+    local cert_path="${4:-$CERT_CONTAINER_PATH}"
+    local objects_path="${5:-$OBJECTS_CONTAINER_PATH}"
+    local vt_path="${5:-$VT_CONTAINER_PATH}"
+
+    local container_id=''
+
+    if ! [ -d "${dest}" ]; then
+        echo "Feed destination folder ${dest} does not exist!"
+        exit 1
+    fi
+
+    get_latest_version
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        container_id="$(docker compose images | awk '$2 ~ /greenbone-feed-sync$/ { print $5; exit }')"
+    popd > /dev/null
+
+    docker exec -i "${container_id}" "tar -cf - -C ${notus_path} ." > "${dest}/notus.tar"
+    docker exec -i "${container_id}" "tar -cf - -C ${scap_path} ." > "${dest}/scap.tar"
+    docker exec -i "${container_id}" "tar -cf - -C ${cert_path} ." > "${dest}/cert.tar"
+    docker exec -i "${container_id}" "tar -cf - -C ${objects_path} ." > "${dest}/objects.tar"
+    docker exec -i "${container_id}" "tar -cf - -C ${vt_path} ." > "${dest}/vt.tar"
+}
+
+# =============================================================================
+# load_feed_into_feed_sync_container()
+# =============================================================================
+# Loads feed data archives into the currently running feed-sync container.
+#
+# The function verifies that the provided feed source directory exists, resolves
+# the active deployment version, and determines the feed-sync container ID.
+# Available feed archives (Notus, SCAP, CERT, objects, and VT) are extracted
+# directly into their corresponding container paths. Missing archive files are
+# skipped with an informational message.
+#
+# Arguments:
+#   $1  src             Path to the directory containing feed archive files.
+#   $2  notus_path      Target container path for the Notus feed archive.
+#                       Defaults to NOTUS_CONTAINER_PATH.
+#   $3  scap_path       Target container path for the SCAP feed archive.
+#                       Defaults to SCAP_CONTAINER_PATH.
+#   $4  cert_path       Target container path for the CERT feed archive.
+#                       Defaults to CERT_CONTAINER_PATH.
+#   $5  objects_path    Target container path for the objects feed archive.
+#                       Defaults to OBJECTS_CONTAINER_PATH.
+#   $6  vt_path         Target container path for the VT feed archive.
+#                       Defaults to VT_CONTAINER_PATH.
+load_feed_into_feed_sync_container() {
+    local src="${1:?src argument required}"
+    local notus_path="${2:-$NOTUS_CONTAINER_PATH}"
+    local scap_path="${3:-$SCAP_CONTAINER_PATH}"
+    local cert_path="${4:-$CERT_CONTAINER_PATH}"
+    local objects_path="${5:-$OBJECTS_CONTAINER_PATH}"
+    local vt_path="${5:-$VT_CONTAINER_PATH}"
+
+    if ! [ -d "${src}" ]; then
+        echo "Feed source folder ${src} does not exist!"
+        exit 1
+    fi
+
+    get_latest_version
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        container_id="$(docker compose images | awk '$2 ~ /greenbone-feed-sync$/ { print $5; exit }')"
+    popd > /dev/null
+
+    if [ -f "${src}/notus.tar" ]; then
+        cat "${src}/notus.tar" | docker exec -i "${container_id}" tar -xf - -C "${notus_path}"
+    else
+        echo "Info: ${src}/notus.tar not found. Skip!"
+    fi
+    if [ -f "${src}/scap.tar" ]; then
+        cat "${src}/scap.tar" | docker exec -i "${container_id}" tar -xf - -C "${scap_path}"
+    else
+        echo "Info: ${src}/scap.tar not found. Skip!"
+    fi
+    if [ -f "${src}/cert.tar" ]; then
+       cat "${src}/cert.tar" | docker exec -i "${container_id}" tar -xf - -C "${cert_path}"
+    else
+        echo "Info: ${src}/cert.tar not found. Skip!"
+    fi
+    if [ -f "${src}/objects.tar" ]; then
+        cat "${src}/objects.tar" | docker exec -i "${container_id}" tar -xf - -C "${objects_path}"
+    else
+        echo "Info: ${src}/objects.tar not found. Skip!"
+    fi
+    if [ -f "${src}/vt.tar" ]; then
+        cat "${src}/vt.tar" | docker exec -i "${container_id}" tar -xf - -C "${vt_path}"
+    else
+        echo "Info: ${src}/vt.tar not found. Skip!"
+    fi
 }
 
 # =============================================================================
@@ -1296,6 +1475,8 @@ compose_down() {
 
     echo "OpenVAS Enterprise-Container stopped."
 }
+
+
 
 # =============================================================================
 # compose_logs()
