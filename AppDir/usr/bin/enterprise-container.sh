@@ -967,14 +967,10 @@ init() {
             exit 1
         fi
     fi
-
     if ! [ -f "${FEED_KEY}" ]; then
-        echo "Warning: --feed-key argument missing!"
-        echo "Info: With out a Feed Key you have to bind mount a folder a Feed into the openvasd container."
-        read -r -p "Continue? (y/n)" response
-        if [ "$response" != "y" ]; then
-           exit 1
-        fi
+        echo "Error: --feed-key argument missing!"
+        echo "Info: Feed Mount options are not implemented."
+        exit 1
     fi
     if ! [ "${INIT_DOCKER_OCI}" ]; then
         echo "Info: Do you want to install dockerd OCI certs with sudo? Otherwise the commands are printed here."
