@@ -53,7 +53,7 @@ GVMD_ADMIN_PASSWORD=''
 GREENBONE_FEED_SYNC_JOB_HOUR='3'
 declare -A LICENSE_DATA
 LICENSE_FILE=''
-CONTAINER_NAME=''
+SERVICE_NAME=''
 
 # =============================================================================
 # show_help()
@@ -78,7 +78,7 @@ Actions:
   --update                       Download the latest product version
   --run                          Start or redeploy the configured deployment
   --logs                         Print OpenVAS Enterprise-Container logs
-                                 (optional with --container-name)
+                                 (optional with --service-name)
   --ps                           Show OpenVAS Enterprise-Container status
   --down                         Stop the deployment
   --down-volumes                 Stop the deployment and remove its volumes
@@ -178,7 +178,7 @@ Examples:
     $0 --run
 
   Show deployment logs and status:
-    $0 --logs (optional with --container-name)
+    $0 --logs (optional with --service-name)
     $0 --ps
 
   Stop the deployment:
@@ -1304,7 +1304,7 @@ compose_down() {
 #
 # Loads the persisted environment and selects the latest downloaded product
 # version. Executes Docker Compose log retrieval from the corresponding
-# deployment directory. If CONTAINER_NAME is configured, only logs for the
+# deployment directory. If SERVICE_NAME is configured, only logs for the
 # specified container are displayed; otherwise, logs for all services are shown.
 compose_logs() {
     echo "🚀 Print Enterprise-Container Logs..."
@@ -1316,8 +1316,8 @@ compose_logs() {
     echo "Info: Using version ${VERSION}."
 
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        if [ "${CONTAINER_NAME}" ]; then
-            docker compose logs "${CONTAINER_NAME}"
+        if [ "${SERVICE_NAME}" ]; then
+            docker compose logs "${SERVICE_NAME}"
         else
             docker compose logs
         fi
@@ -1604,8 +1604,8 @@ parse_args() {
                 MODE='logs'
                 shift 1
                 ;;
-            --container-name)
-                CONTAINER_NAME="$2"
+            --service-name)
+                SERVICE_NAME="$2"
                 shift 2
                 ;;
             --ps)
