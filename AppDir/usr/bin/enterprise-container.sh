@@ -53,6 +53,7 @@ GVMD_ADMIN_PASSWORD=''
 GREENBONE_FEED_SYNC_JOB_HOUR='3'
 declare -A LICENSE_DATA
 LICENSE_FILE=''
+CONTAINER_NAME=''
 
 # =============================================================================
 # show_help()
@@ -76,6 +77,9 @@ Actions:
   --force-feed-sync              Restart the feed-sync service immediately
   --update                       Download the latest product version
   --run                          Start or redeploy the configured deployment
+  --logs                         Print OpenVAS Enterprise-Container logs
+                                 (optional with --container-name)
+  --ps                           Show OpenVAS Enterprise-Container status
   --down                         Stop the deployment
   --down-volumes                 Stop the deployment and remove its volumes
   --update-ingress-certs         Replace the ingress TLS certificate and key
@@ -172,6 +176,16 @@ Examples:
   Download and start the deployment:
     $0 --update
     $0 --run
+
+  Show deployment logs and status:
+    $0 --logs (optional with --container-name)
+    $0 --ps
+
+  Stop the deployment:
+    $0 --down
+
+  Stop the deployment and remove all Docker volumes:
+    $0 --down-volumes
 
   Update ingress certificates:
     $0 --update-ingress-certs \\
@@ -1209,9 +1223,9 @@ deploy() {
 
     if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         deploy_load_certs_openvasd
-    if [ "${OPENVASD_LOAD_IMAGES_FROM_TAR}" == 'y' ]; then
+        if [ "${OPENVASD_LOAD_IMAGES_FROM_TAR}" == 'y' ]; then
             load_openvasd_images
-    fi
+        fi
     elif [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
         deploy_load_certs_scan
     fi
@@ -1221,11 +1235,11 @@ deploy() {
         docker compose --env-file settings.env down --remove-orphans 2>/dev/null || true
         if docker compose --env-file settings.env up -d --wait --wait-timeout 7200 --quiet-pull --remove-orphans ; then
             echo "OpenVAS Enterprise-Container deployment successful!"
-            echo "Service status: docker compose ps"
+            echo "Service status: $0 --ps"
             echo "For support, visit: https://www.greenbone.net/support/"
         else
             echo "Deployment failed!"
-            echo "Troubleshooting: docker compose logs"
+            echo "Troubleshooting: $0 --logs"
             echo "For support, visit: https://www.greenbone.net/support/"
             exit 1
         fi
@@ -1235,7 +1249,13 @@ deploy() {
 # =============================================================================
 # compose_down_volumes()
 # =============================================================================
-# Stops OpenVAS Enterprise-Container and removes related Docker Compose volumes.
+# Stops the configured OpenVAS Enterprise Container deployment and removes
+# associated Docker volumes.
+#
+# Loads the persisted environment and selects the latest downloaded product
+# version. Executes Docker Compose shutdown from the corresponding deployment
+# directory, removing orphaned containers and all associated volumes. This
+# operation permanently deletes container volumes and their stored data.
 compose_down_volumes() {
     echo "🚀 Stopping OpenVAS Enterprise-Container and removing Docker volumes..."
 
@@ -1253,9 +1273,14 @@ compose_down_volumes() {
 }
 
 # =============================================================================
-# compose_down_volumes()
+# compose_down()
 # =============================================================================
-# Stops OpenVAS Enterprise-Container.
+# Stops the configured OpenVAS Enterprise Container deployment.
+#
+# Loads the persisted environment and selects the latest downloaded product
+# version. Executes Docker Compose shutdown from the corresponding deployment
+# directory, stopping and removing the deployment containers while preserving
+# associated Docker volumes and stored data.
 compose_down() {
     echo "🚀 Stopping OpenVAS Enterprise-Container..."
 
@@ -1270,6 +1295,55 @@ compose_down() {
     popd > /dev/null
 
     echo "OpenVAS Enterprise-Container stopped."
+}
+
+# =============================================================================
+# compose_logs()
+# =============================================================================
+# Prints logs from the configured OpenVAS Enterprise Container deployment.
+#
+# Loads the persisted environment and selects the latest downloaded product
+# version. Executes Docker Compose log retrieval from the corresponding
+# deployment directory. If CONTAINER_NAME is configured, only logs for the
+# specified container are displayed; otherwise, logs for all services are shown.
+compose_logs() {
+    echo "🚀 Print Enterprise-Container Logs..."
+
+    load_env
+
+    get_latest_version
+
+    echo "Info: Using version ${VERSION}."
+
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        if [ "${CONTAINER_NAME}" ]; then
+            docker compose logs "${CONTAINER_NAME}"
+        else
+            docker compose logs
+        fi
+    popd > /dev/null
+}
+
+# =============================================================================
+# compose_ps()
+# =============================================================================
+# Prints the status of the configured OpenVAS Enterprise Container deployment.
+#
+# Loads the persisted environment and selects the latest downloaded product
+# version. Executes Docker Compose status retrieval from the corresponding
+# deployment directory and displays the state of all configured services.
+compose_ps() {
+    echo "🚀 Print Enterprise-Container Container..."
+
+    load_env
+
+    get_latest_version
+
+    echo "Info: Using version ${VERSION}."
+
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        docker compose ps
+    popd > /dev/null
 }
 
 # =============================================================================
@@ -1323,6 +1397,12 @@ run() {
     fi
     if [ "${MODE}" == 'change-feed-sync-hour' ]; then
         change_feed_sync_hour
+    fi
+    if [ "${MODE}" == 'logs' ]; then
+        compose_logs
+    fi
+    if [ "${MODE}" == 'ps' ]; then
+        compose_ps
     fi
     if [ "${MODE}" == '' ]; then
         show_help
@@ -1518,6 +1598,18 @@ parse_args() {
                 ;;
             --update)
                 MODE='update'
+                shift 1
+                ;;
+            --logs)
+                MODE='logs'
+                shift 1
+                ;;
+            --container-name)
+                CONTAINER_NAME="$2"
+                shift 2
+                ;;
+            --ps)
+                MODE='ps'
                 shift 1
                 ;;
             -h|--help)
