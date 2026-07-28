@@ -16,12 +16,14 @@ STORE_DIR_NAME='product'
 CERT_DIR_NAME='certs'
 CERT_DIR_OCI_NAME='oci'
 IMAGE_DIR_NAME='images'
+FEED_DIR_NAME='images'
 DEPLOYMENT_MODE_OPTIONS=('scan' 'openvas')
 FEED_MODE_OPTIONS=('volume' 'service' 'mount')
 CCERT_MODE_OPTIONS=('ca' 'cert' 'mount')
 PACKAGE_URL="packages.greenbone.net/openvas-enterprise-container-dev/testing/${PACKAGE}"
-GVMD_CONTAINER='enterprise-container-scan-gvmd-1'
-GVMD_CONTAINER_UID='1001'
+GVMD_SERVICE='enterprise-container-scan-gvmd-1'
+FEED_SYNC_SERVICE_NAME='feed-sync'
+GVMD_SERVICE_UID='1001'
 NOTUS_CONTAINER_PATH='/var/lib/notus'
 SCAP_CONTAINER_PATH='/var/lib/gvm/scap-data'
 CERT_CONTAINER_PATH='/var/lib/gvm/cert-data'
@@ -35,6 +37,7 @@ CERT_DIR_OCI="${CERT_DIR}/${CERT_DIR_OCI_NAME}"
 CERT_DIR_ENTERPRISE_CONTAINER="${CERT_DIR}/${PACKAGE}"
 ARTIFACT_DIR="${WORKING_DIR}/${PACKAGE}"
 IMAGE_DIR="${WORKING_DIR}/${IMAGE_DIR_NAME}"
+FEED_DIR="${WORKING_DIR}/${FEED_DIR_NAME}"
 
 # Runtime globals and defaults
 MODE=''
@@ -53,7 +56,9 @@ OCI_TLS_CLIENT_KEY=''
 INIT_DOCKER_OCI=''
 DEPLOYMENT_MODE='scan'
 OPENVASD_TAR_WITH_IMAGES='n'
+OPENVASD_TAR_WITH_FEED='n'
 OPENVASD_LOAD_IMAGES_FROM_TAR='n'
+OPENVASD_LOAD_FEED_FROM_TAR='n'
 GVMD_ADMIN_PASSWORD=''
 GREENBONE_FEED_SYNC_JOB_HOUR='3'
 declare -A LICENSE_DATA
@@ -235,7 +240,7 @@ EOF
 check_requirements() {
     echo "🚀 Checking system requirements..."
     
-    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk; do
+    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr; do
         if ! command -v $tool > /dev/null 2>&1; then
             echo "Missing: $tool"
             exit 1
@@ -317,7 +322,6 @@ ssh_agent_check() {
 # files in a certificate directory derived from the common name and prints the
 # target paths where the files should be copied on the remote OpenVASD machine.
 create_openvasd_cert() {
-
     if ! [ "${CN_OPENVASD}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
         exit 1
@@ -387,7 +391,9 @@ del_openvasd() {
         exit 1
     fi
 
-    docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd --delete-scanner="${OPENVASD_UUID}"
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        docker compose exec -u "${GVMD_SERVICE_UID}" "${GVMD_SERVICE}" gvmd --delete-scanner="${OPENVASD_UUID}"
+    popd > /dev/null
 }
 
 # =============================================================================
@@ -396,7 +402,9 @@ del_openvasd() {
 # Lists the scanners currently registered in gvmd. Runs gvmd inside the configured
 # gvmd container and prints the scanner entries returned by --get-scanners.
 get_openvasds() {
-    docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd --get-scanners
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        docker compose exec -u "${GVMD_SERVICE_UID}" "${GVMD_SERVICE}" gvmd --get-scanners
+    popd > /dev/null
 }
 
 # =============================================================================
@@ -412,27 +420,33 @@ get_openvasds() {
 # the GVMD container, sets read-only permissions, and creates the scanner entry
 # with `gvmd --create-scanner`.
 add_openvasd() {
-    if ! [ "${CN_OPENVASD}" ]; then
+    local cn_openvasd="${1:-$CN_OPENVASD}"
+    local openvasd_port="${2:-$OPENVASD_PORT}"
+    local cert_dir_enterprise_container="${3:-$CERT_DIR_ENTERPRISE_CONTAINER}"
+    local gvmd_service="${4:-$GVMD_SERVICE}"
+    local gvmd_service_uid="${5:-$GVMD_SERVICE_UID}"
+
+    if ! [ "${cn_openvasd}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --add-openvasd !"
         exit 1
     fi
-    if ! [ "${OPENVASD_PORT}" ]; then
+    if ! [ "${openvasd_port}" ]; then
         echo "Error: --openvasd-port argument missing, normaly 443 Detect. Required for --add-openvasd !"
         exit 1
     fi
 
-    local OPENVASD_FOLDER="${CN_OPENVASD//./_}"
-    local OPENVASD_NAME="${CN_OPENVASD//./-}"
-    OPENVASD_FOLDER="${CERT_DIR_ENTERPRISE_CONTAINER}/${OPENVASD_FOLDER}"
+    local openvasd_folder="${cn_openvasd//./_}"
+    local openvasd_name="${cn_openvasd//./-}"
+    openvasd_folder="${cert_dir_enterprise_container}/${openvasd_folder}"
 
     set +e
 
     status_code=$(curl -sS -o /dev/null \
-        --cacert "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" \
-        --cert "${CERT_DIR_ENTERPRISE_CONTAINER}/client.crt" \
-        --key "${CERT_DIR_ENTERPRISE_CONTAINER}/client.key" \
+        --cacert "${cert_dir_enterprise_container}/ca.crt" \
+        --cert "${cert_dir_enterprise_container}/client.crt" \
+        --key "${cert_dir_enterprise_container}/client.key" \
         -w "%{http_code}" \
-        "https://${CN_OPENVASD}:${OPENVASD_PORT}/health/ready"
+        "https://${cn_openvasd}:${openvasd_port}/health/ready"
     )
 
     set -e
@@ -444,22 +458,24 @@ add_openvasd() {
         exit 1
     fi
 
-    docker cp "${CERT_DIR_ENTERPRISE_CONTAINER}/client.key" "${GVMD_CONTAINER}:/tmp/client.key"
-    docker cp "${CERT_DIR_ENTERPRISE_CONTAINER}/client.crt" "${GVMD_CONTAINER}:/tmp/client.crt"
-    docker cp "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" "${GVMD_CONTAINER}:/tmp/ca.crt"
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        docker compose cp "${cert_dir_enterprise_container}/client.key" "${gvmd_service}:/tmp/client.key"
+        docker compose cp "${cert_dir_enterprise_container}/client.crt" "${gvmd_service}:/tmp/client.crt"
+        docker compose cp "${cert_dir_enterprise_container}/ca.crt" "${gvmd_service}:/tmp/ca.crt"
 
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.key"
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.crt"
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/ca.crt"
+        docker compose exec -u '0' "${gvmd_service}" chmod 0644 '/tmp/client.key'
+        docker compose exec -u '0' "${gvmd_service}" chmod 0644 '/tmp/client.crt'
+        docker compose exec -u '0' "${gvmd_service}" chmod 0644 '/tmp/ca.crt'
 
-    docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd \
-        --create-scanner="${OPENVASD_NAME}" \
-        --scanner-host="${CN_OPENVASD}" \
-        --scanner-port="${OPENVASD_PORT}" \
-        --scanner-type="OPENVASD" \
-        --scanner-ca-pub="/tmp/ca.crt" \
-        --scanner-key-pub="/tmp/client.crt" \
-        --scanner-key-priv="/tmp/client.key"
+        docker compose exec -u "${gvmd_service_uid}" "${gvmd_service}" gvmd \
+            --create-scanner="${openvasd_name}" \
+            --scanner-host="${cn_openvasd}" \
+            --scanner-port="${openvasd_port}" \
+            --scanner-type='OPENVASD' \
+            --scanner-ca-pub='/tmp/ca.crt' \
+            --scanner-key-pub='/tmp/client.crt' \
+            --scanner-key-priv='/tmp/client.key'
+    popd > /dev/null
 }
 
 # =============================================================================
@@ -473,15 +489,24 @@ add_openvasd() {
 # the container. If no password is provided, the function prints an error
 # message and exits with a non-zero status.
 change_admin_password() {
-    if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/ADMIN_PASSWORD"
+    local gvmd_admin_password="${1:-$GVMD_ADMIN_PASSWORD}"
+    local gvmd_service="${2:-$GVMD_SERVICE}"
+    local gvmd_service_uid="${3:-$GVMD_SERVICE_UID}"
+    local working_dir="${4:-$WORKING_DIR}"
+    local artifact_dir="${5:-$ARTIFACT_DIR}"
+    local version="${6:-$VERSION}"
+
+    if [ "${gvmd_admin_password}" ]; then
+        echo "${gvmd_admin_password}" > "${working_dir}/GVMD_ADMIN_PASSWORD"
     else
         echo 'Error: No admin password set. Please use --change-admin-password with --admin-password'
         exit 1
     fi
 
-    docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd \
-        --user=admin --new-password="${GVMD_ADMIN_PASSWORD}"
+    pushd "${artifact_dir}/${version}" > /dev/null || exit
+        docker compose exec -u "${gvmd_service_uid}" "${gvmd_service}" gvmd \
+            --user=admin --new-password="${gvmd_admin_password}"
+    popd > /dev/null
 }
 
 # =============================================================================
@@ -495,13 +520,16 @@ change_admin_password() {
 # GVMD_ADMIN_PASSWORD file, assigns it to GVMD_ADMIN_PASSWORD, and prints the
 # generated password.
 init_admin_password() {
-    if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/ADMIN_PASSWORD"
+    local gvmd_admin_password="${1:-$GVMD_ADMIN_PASSWORD}"
+    local working_dir="${2:-$WORKING_DIR}"
+
+    if [ "${gvmd_admin_password}" ]; then
+        echo "${gvmd_admin_password}" > "${working_dir}/GVMD_ADMIN_PASSWORD"
     else
         echo "Info: No admin password set. Create random."
-        echo "$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
-        GVMD_ADMIN_PASSWORD="$(< "${WORKING_DIR}/GVMD_ADMIN_PASSWORD")"
-        echo "Your admin password is: ${GVMD_ADMIN_PASSWORD}"
+        echo "$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)" > "${working_dir}/GVMD_ADMIN_PASSWORD"
+        gvmd_admin_password="$(< "${working_dir}/GVMD_ADMIN_PASSWORD")"
+        echo "Your admin password is: ${gvmd_admin_password}"
     fi
 }
 
@@ -516,16 +544,21 @@ init_admin_password() {
 # 0600. Otherwise, it prints the equivalent commands for manual execution in
 # a root shell.
 init_docker_oci() {
-    if [ "${INIT_DOCKER_OCI}" == 'y' ]; then
+    local init_docker_oci="${1:-$INIT_DOCKER_OCI}"
+    local docker_certs="${2:-$DOCKER_CERTS}"
+    local oci_tls_client_cert="${3:-$OCI_TLS_CLIENT_CERT}"
+    local oci_tls_client_key="${4:-$OCI_TLS_CLIENT_KEY}"
+
+    if [ "${init_docker_oci}" == 'y' ]; then
         echo "Info: Install OCI TLS certificates into dockerd..."
-        sudo mkdir -p "${DOCKER_CERTS}"
-        sudo install -m 0600 "${OCI_TLS_CLIENT_CERT}" "${DOCKER_CERTS}/client.cert"
-        sudo install -m 0600 "${OCI_TLS_CLIENT_KEY}" "${DOCKER_CERTS}/client.key"
+        sudo mkdir -p "${docker_certs}"
+        sudo install -m 0600 "${oci_tls_client_cert}" "${docker_certs}/client.cert"
+        sudo install -m 0600 "${oci_tls_client_key}" "${docker_certs}/client.key"
     else
         echo "Info: Please Install the dockerd OCI TLS certificates with a root shell:"
         echo "mkdir -p ${DOCKER_CERTS}"
-        echo "install -m 0600 ${OCI_TLS_CLIENT_CERT} ${DOCKER_CERTS}/client.cert"
-        echo "install -m 0600 ${OCI_TLS_CLIENT_KEY} ${DOCKER_CERTS}/client.key"
+        echo "install -m 0600 ${oci_tls_client_cert} ${docker_certs}/client.cert"
+        echo "install -m 0600 ${oci_tls_client_key} ${docker_certs}/client.key"
     fi
 }
 
@@ -605,6 +638,7 @@ create_openvasd_tar() {
     local sh_file="$(pwd)/${0}"
     local tmp_dir="$(mktemp -d)"
     local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}"
+    local tmp_feed="${tmp_dir}/${STORE_DIR_NAME}/${FEED_DIR_NAME}"
     pushd "${tmp_dir}" > /dev/null || exit
         local tmp_cert_dir_enterprise_container="${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PACKAGE}"
         mkdir -p "${tmp_cert_dir_enterprise_container}"
@@ -626,6 +660,10 @@ create_openvasd_tar() {
     if [ "${OPENVASD_TAR_WITH_IMAGES}" == 'y' ]; then
         mkdir -p "${tmp_images}"
         get_openvasd_images "${tmp_images}"
+    fi
+    if [ "${OPENVASD_TAR_WITH_FEED}" == 'y' ]; then
+        mkdir -p "${tmp_feed}"
+        get_feed_from_feed_sync_container "${tmp_feed}"
     fi
 
     tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .
@@ -723,6 +761,9 @@ get_feed_from_feed_sync_container() {
     local cert_path="${4:-$CERT_CONTAINER_PATH}"
     local objects_path="${5:-$OBJECTS_CONTAINER_PATH}"
     local vt_path="${5:-$VT_CONTAINER_PATH}"
+    local feed_sync_service="${$6:-$FEED_SYNC_SERVICE_NAME}"
+    local artifact_dir="${7:-$ARTIFACT_DIR}"
+    local version="${8:-$VERSION}"
 
     local container_id=''
 
@@ -732,15 +773,14 @@ get_feed_from_feed_sync_container() {
     fi
 
     get_latest_version
-    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        container_id="$(docker compose images | awk '$2 ~ /greenbone-feed-sync$/ { print $5; exit }')"
-    popd > /dev/null
 
-    docker exec -i "${container_id}" "tar -cf - -C ${notus_path} ." > "${dest}/notus.tar"
-    docker exec -i "${container_id}" "tar -cf - -C ${scap_path} ." > "${dest}/scap.tar"
-    docker exec -i "${container_id}" "tar -cf - -C ${cert_path} ." > "${dest}/cert.tar"
-    docker exec -i "${container_id}" "tar -cf - -C ${objects_path} ." > "${dest}/objects.tar"
-    docker exec -i "${container_id}" "tar -cf - -C ${vt_path} ." > "${dest}/vt.tar"
+    pushd "${artifact_dir}/${version}" > /dev/null || exit
+        docker exec -i "${feed_sync_service}" "tar -cf - -C ${notus_path} ." > "${dest}/notus.tar"
+        docker exec -i "${feed_sync_service}" "tar -cf - -C ${scap_path} ." > "${dest}/scap.tar"
+        docker exec -i "${feed_sync_service}" "tar -cf - -C ${cert_path} ." > "${dest}/cert.tar"
+        docker exec -i "${feed_sync_service}" "tar -cf - -C ${objects_path} ." > "${dest}/objects.tar"
+        docker exec -i "${feed_sync_service}" "tar -cf - -C ${vt_path} ." > "${dest}/vt.tar"
+    popd > /dev/null
 }
 
 # =============================================================================
@@ -768,47 +808,72 @@ get_feed_from_feed_sync_container() {
 #                       Defaults to VT_CONTAINER_PATH.
 load_feed_into_feed_sync_container() {
     local src="${1:?src argument required}"
-    local notus_path="${2:-$NOTUS_CONTAINER_PATH}"
-    local scap_path="${3:-$SCAP_CONTAINER_PATH}"
-    local cert_path="${4:-$CERT_CONTAINER_PATH}"
-    local objects_path="${5:-$OBJECTS_CONTAINER_PATH}"
-    local vt_path="${5:-$VT_CONTAINER_PATH}"
+    local feed_sync_service="${$2:-FEED_SYNC_SERVICE_NAME}"
+    local feed_sync_service_uid="${$3:-FEED_SYNC_SERVICE_NAME}"
+    local notus_path="${4:-$NOTUS_CONTAINER_PATH}"
+    local scap_path="${5:-$SCAP_CONTAINER_PATH}"
+    local cert_path="${6:-$CERT_CONTAINER_PATH}"
+    local objects_path="${7:-$OBJECTS_CONTAINER_PATH}"
+    local vt_path="${8:-$VT_CONTAINER_PATH}"
+    local artifact_dir="${9:-$ARTIFACT_DIR}"
+    local version="${10:-$VERSION}"
 
     if ! [ -d "${src}" ]; then
         echo "Feed source folder ${src} does not exist!"
         exit 1
     fi
 
-    get_latest_version
-    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        container_id="$(docker compose images | awk '$2 ~ /greenbone-feed-sync$/ { print $5; exit }')"
-    popd > /dev/null
+    compose_down
 
-    if [ -f "${src}/notus.tar" ]; then
-        cat "${src}/notus.tar" | docker exec -i "${container_id}" tar -xf - -C "${notus_path}"
-    else
-        echo "Info: ${src}/notus.tar not found. Skip!"
-    fi
-    if [ -f "${src}/scap.tar" ]; then
-        cat "${src}/scap.tar" | docker exec -i "${container_id}" tar -xf - -C "${scap_path}"
-    else
-        echo "Info: ${src}/scap.tar not found. Skip!"
-    fi
-    if [ -f "${src}/cert.tar" ]; then
-       cat "${src}/cert.tar" | docker exec -i "${container_id}" tar -xf - -C "${cert_path}"
-    else
-        echo "Info: ${src}/cert.tar not found. Skip!"
-    fi
-    if [ -f "${src}/objects.tar" ]; then
-        cat "${src}/objects.tar" | docker exec -i "${container_id}" tar -xf - -C "${objects_path}"
-    else
-        echo "Info: ${src}/objects.tar not found. Skip!"
-    fi
-    if [ -f "${src}/vt.tar" ]; then
-        cat "${src}/vt.tar" | docker exec -i "${container_id}" tar -xf - -C "${vt_path}"
-    else
-        echo "Info: ${src}/vt.tar not found. Skip!"
-    fi
+    get_latest_version
+
+    pushd "${artifact_dir}/${version}" > /dev/null || exit
+        docker compose run --entrypoint "/bin/sleep 3000" "${feed_sync_service}"
+
+        if [ -f "${src}/notus.tar" ]; then
+	    docker compose exec -u '0' "${feed_sync_service}" "mkdir -p ${notus_path}"
+	    docker compose exec -u '0' "${feed_sync_service}" \
+                "chown -R ${feed_sync_service_uid}:${feed_sync_service_uid} ${notus_path}"
+            cat "${src}/notus.tar" | docker compose exec -i "${feed_sync_service}" "tar -xf - -C ${notus_path}"
+        else
+            echo "Info: ${src}/notus.tar not found. Skip!"
+        fi
+        if [ -f "${src}/scap.tar" ]; then
+	    docker compose exec -u '0' "${feed_sync_service}" "mkdir -p ${scap_path}"
+	    docker compose exec -u '0' "${feed_sync_service}" \
+                "chown -R ${feed_sync_service_uid}:${feed_sync_service_uid} ${scap_path}"
+            cat "${src}/scap.tar" | docker compose exec -i "${feed_sync_service}" "tar -xf - -C ${scap_path}"
+        else
+            echo "Info: ${src}/scap.tar not found. Skip!"
+        fi
+        if [ -f "${src}/cert.tar" ]; then
+	    docker compose exec -u '0' "${feed_sync_service}" "mkdir -p ${cert_path}"
+	    docker compose exec -u '0' "${feed_sync_service}" \
+                "chown -R ${feed_sync_service_uid}:${feed_sync_service_uid} ${cert_path}"
+            cat "${src}/cert.tar" | docker compose exec -i "${feed_sync_service}" "tar -xf - -C ${cert_path}"
+        else
+            echo "Info: ${src}/cert.tar not found. Skip!"
+        fi
+        if [ -f "${src}/objects.tar" ]; then
+	    docker compose exec -u '0' "${feed_sync_service}" "mkdir -p ${objects_path}"
+	    docker compose exec -u '0' "${feed_sync_service}" \
+                "chown -R ${feed_sync_service_uid}:${feed_sync_service_uid} ${objects_path}"
+            cat "${src}/objects.tar" | docker compose exec -i "${feed_sync_service}" "tar -xf - -C ${objects_path}"
+        else
+            echo "Info: ${src}/objects.tar not found. Skip!"
+       fi
+       if [ -f "${src}/vt.tar" ]; then
+	    docker compose exec -u '0' "${feed_sync_service}" "mkdir -p ${cert_path}"
+	    docker compose exec -u '0' "${feed_sync_service}" \
+                "chown -R ${feed_sync_service_uid}:${feed_sync_service_uid} ${vt_path}"
+            cat "${src}/objects.tar" | docker compose exec -i "${feed_sync_service}" "tar -xf - -C ${vt_path}"
+            cat "${src}/vt.tar" | docker compose exec -i "${feed_sync_service}" tar -xf - -C "${vt_path}"
+       else
+            echo "Info: ${src}/vt.tar not found. Skip!"
+       fi
+
+        docker compose stop --entrypoint "/bin/sleep 3000" "${feed_sync_service}"
+    popd > /dev/null
 }
 
 # =============================================================================
@@ -1734,6 +1799,14 @@ parse_args() {
                 shift 1
                 ;;
             --openvasd-load-images-from-tar)
+                OPENVASD_LOAD_IMAGES_FROM_TAR='y'
+                shift 1
+                ;;
+            --openvasd-tar-with-feed)
+                OPENVASD_TAR_WITH_IMAGES='y'
+                shift 1
+                ;;
+            --openvasd-load-feed-from-tar)
                 OPENVASD_LOAD_IMAGES_FROM_TAR='y'
                 shift 1
                 ;;
