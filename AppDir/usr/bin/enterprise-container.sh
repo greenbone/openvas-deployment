@@ -204,6 +204,8 @@ Examples:
     $0 --run \\
       --openvasd-load-images-from-tar
 
+    Optional change listen port with --openvasd-port <PORT>
+
   Register an OpenVASD scanner:
     $0 --add-openvasd \\
       --cn-openvasd detect.example.com \\
@@ -1223,6 +1225,10 @@ deploy() {
 
     if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         deploy_load_certs_openvasd
+        # Todo: put me into file
+        if [ "${OPENVASD_PORT}" ]; then
+            export OPENVAS_SCANNER_HOST_LISTEN_PORT="${OPENVASD_PORT}"
+        fi
         if [ "${OPENVASD_LOAD_IMAGES_FROM_TAR}" == 'y' ]; then
             load_openvasd_images
         fi
