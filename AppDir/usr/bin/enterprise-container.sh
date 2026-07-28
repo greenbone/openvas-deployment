@@ -462,7 +462,7 @@ add_openvasd() {
 # message and exits with a non-zero status.
 change_admin_password() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/ADMIN_PASSWORD"
+        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
     else
         echo 'Error: No admin password set. Please use --change-admin-password with --admin-password'
         exit 1
@@ -484,7 +484,7 @@ change_admin_password() {
 # generated password.
 init_admin_password() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/ADMIN_PASSWORD"
+        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
     else
         echo "Info: No admin password set. Create random."
         echo "$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
