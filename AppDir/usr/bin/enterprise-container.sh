@@ -407,7 +407,7 @@ add_openvasd() {
         exit 1
     fi
     if ! [ "${OPENVASD_PORT}" ]; then
-        echo "Error: --openvasd-port argument missing, normaly 8443 Detect. Required for --add-openvasd !"
+        echo "Error: --openvasd-port argument missing, normaly 443. Required for --add-openvasd !"
         exit 1
     fi
 
