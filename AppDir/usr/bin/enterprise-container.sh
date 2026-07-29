@@ -418,8 +418,7 @@ Create an OpenVASD deployment archive for an external sensor:
 
 Include Docker images in the archive (no --init-openvasd required):
 
-  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD} \\
-      --openvasd-tar-with-images
+  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD} --openvasd-tar-with-images
 
 Copy the archive to the OpenVASD sensor host, extract it, and start
 the sensor deployment:
