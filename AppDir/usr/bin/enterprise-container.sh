@@ -391,42 +391,56 @@ create_openvasd_cert() {
        -extfile <(printf '%s\n' "basicConstraints=CA:FALSE" "extendedKeyUsage=serverAuth" "keyUsage=digitalSignature,keyEncipherment") 2>/dev/null
     cp "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" "${OPENVASD_FOLDER}/ca.crt"
 
-    echo "To configure the remote OpenVASD instance, copy the following files:"
-    echo
-    echo "  ${OPENVASD_FOLDER}/server.crt -> <openvasd-certs>/server.crt"
-    echo "  ${OPENVASD_FOLDER}/server.key -> <openvasd-certs>/server.key"
-    echo "  ${OPENVASD_FOLDER}/ca.crt     -> <openvasd-certs>/clients/ca.crt"
-    echo
-    echo "Verify that your OpenVASD configuration references these certificate files,"
-    echo "then restart the OpenVASD service."
-    echo
-    echo "Openvasd Docker Compose TLS configuration:"
-    echo '  export DEPLOYMENT_MODE=openvasd'
-    echo '  export FEED_KEY=$(< "gsf.key")'
-    echo '  export OPENVAS_SCANNER_TLS_CERT=$(< "server.crt")'
-    echo '  export OPENVAS_SCANNER_TLS_KEY=$(< "server.key")'
-    echo '  export OPENVAS_TLS_CLIENT_CA=$(< "clients/ca.crt")'
-    echo '  docker compose up'
-    echo
-    echo "Alternatively, create a deployment archive containing the required"
-    echo "certificates, configuration, and this script:"
-    echo
-    echo "  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD}"
-    echo
-    echo "To include the required Docker images:"
-    echo
-    echo "  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD} \\"
-    echo "      --openvasd-tar-with-images"
-    echo
-    echo "The archive is written to the current directory."
-    echo "Copy it to the target host, extract it, and run:"
-    echo
-    echo "  bash ${0} --run"
-    echo
-    echo "If the OCI client certificates should also be installed for dockerd, run:"
-    echo
-    echo "  bash ${0} --init-openvasd"
+    cat << EOF
+Remote OpenVASD sensor setup:
 
+Copy the generated certificate files to the OpenVASD sensor host:
+
+  ${OPENVASD_FOLDER}/server.crt -> <config-folder>/server.crt
+  ${OPENVASD_FOLDER}/server.key -> <config-folder>/server.key
+  ${OPENVASD_FOLDER}/ca.crt     -> <config-folder>/clients/ca.crt
+
+Configure OpenVASD to use these TLS certificates and restart the
+OpenVASD service.
+
+OpenVASD Docker Compose TLS configuration:
+
+  export DEPLOYMENT_MODE=openvasd
+  export FEED_KEY=\$(< "gsf.key")
+  export OPENVAS_SCANNER_TLS_CERT=\$(< "server.crt")
+  export OPENVAS_SCANNER_TLS_KEY=\$(< "server.key")
+  export OPENVAS_TLS_CLIENT_CA=\$(< "clients/ca.crt")
+  docker compose up
+
+Create an OpenVASD deployment archive for an external sensor:
+
+  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD}
+
+Include Docker images in the archive (no --init-openvasd required):
+
+  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD} \\
+      --openvasd-tar-with-images
+
+Copy the archive to the OpenVASD sensor host, extract it, and start
+the sensor deployment:
+
+  bash ${0} --init-openvasd
+  bash ${0} --run
+
+To load packaged Docker images before starting the sensor
+(no --init-openvasd required):
+
+  bash ${0} --run --openvasd-load-images-from-tar
+
+Optionally, use a different OpenVASD listen port:
+
+  bash ${0} --run --openvasd-load-images-from-tar --openvasd-port <PORT>
+
+Register an OpenVASD scanner on enterprise-container(SCAN deployment mode) node/host:
+
+  ${0} --add-openvasd --cn-openvasd sensor.example.com --openvasd-port 443
+
+EOF
 }
 
 # =============================================================================
