@@ -403,7 +403,7 @@ Copy the generated certificate files to the OpenVASD sensor host:
 Configure OpenVASD to use these TLS certificates and restart the
 OpenVASD service.
 
-or
+Or
 
 OpenVASD Docker Compose TLS configuration:
 
@@ -414,7 +414,7 @@ OpenVASD Docker Compose TLS configuration:
   export OPENVAS_TLS_CLIENT_CA=\$(< "clients/ca.crt")
   docker compose up
 
-or
+Or
 
 Create an OpenVASD deployment archive for an external sensor:
 
