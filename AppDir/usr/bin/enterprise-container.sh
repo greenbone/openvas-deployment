@@ -241,6 +241,10 @@ Stop the deployment:
   $0 --down
 
 
+Restart the deployment:
+  $0 --run
+
+
 Stop deployment and remove Docker volumes:
   $0 --down-volumes
 
