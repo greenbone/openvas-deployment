@@ -165,7 +165,7 @@ OpenVASD options:
   --cn-openvasd NAME             OpenVASD common name and scanner hostname
 
   --openvasd-port PORT           OpenVASD scanner port
-                                 Default ports: 8443 or 443
+                                 Default port: 443
 
   --openvasd-uuid UUID           Scanner UUID returned by --get-openvasds
 
