@@ -65,7 +65,7 @@ OpenVAS Enterprise-Container Deployment
 
 
 Info:
-  You can move up and down with arrow keys.
+  You can move up and down with arrow keys. Press q to quit.
 
 
 Usage:
@@ -151,7 +151,7 @@ OCI client certificate options:
 
   --init-docker-oci              Install OCI credentials into dockerd using sudo
 
-  --skip-docker-oci              Do not install OCI credentials automatically;
+  --skip-docker-oci              Do not install OCI credentials automatically,
                                  print required commands instead
 
 
@@ -221,13 +221,11 @@ Update and start the deployment:
 
 
 Change the gvmd administrator password:
-  $0 --change-admin-password \\
-    --admin-password 'new-secure-password'
+  $0 --change-admin-password --admin-password 'new-secure-password'
 
 
 Change the scheduled feed synchronization hour:
-  $0 --change-feed-sync-hour \\
-    --feed-sync-hour 4
+  $0 --change-feed-sync-hour --feed-sync-hour 4
 
 
 Restart feed synchronization immediately:
@@ -248,45 +246,34 @@ Stop deployment and remove Docker volumes:
 
 
 Update ingress certificates:
-  $0 --update-ingress-certs \\
-    --ingress-server-cert /path/to/ingress.crt \\
-    --ingress-server-key /path/to/ingress.key
+  $0 --update-ingress-certs --ingress-server-cert ./ingress.crt --ingress-server-key ./ingress.key
 
 
 External OpenVASD sensor setup:
 
 Create OpenVASD certificates:
-  $0 --create-openvasd-certs \\
-    --cn-openvasd sensor.example.com
+  $0 --create-openvasd-certs --cn-openvasd sensor.example.com
 
 
 Create an OpenVASD deployment archive:
-  $0 --create-openvasd-tar \\
-    --cn-openvasd sensor.example.com \\
-    --openvasd-tar-with-images
+  $0 --create-openvasd-tar --cn-openvasd sensor.example.com --openvasd-tar-with-images
 
 
-Run an extracted OpenVASD archive:
-  $0 --run \\
-    --openvasd-load-images-from-tar
+Run an extracted OpenVASD archive on your openvasd(sensor):
+  $0 --run --openvasd-load-images-from-tar
 
 Run an extracted OpenVASD archive with other host port:
-  $0 --run \\
-    --openvasd-load-images-from-tar \\
-    --openvasd-port PORT
+  $0 --run --openvasd-load-images-from-tar --openvasd-port PORT
 
 
 Register an OpenVASD scanner:
-  $0 --add-openvasd \\
-    --cn-openvasd sensor.example.com \\
-    --openvasd-port 443
+  $0 --add-openvasd --cn-openvasd sensor.example.com --openvasd-port 443
 
 
 List or remove registered OpenVASD scanners:
   $0 --get-openvasds
 
-  $0 --del-openvasd \\
-    --openvasd-uuid UUID
+  $0 --del-openvasd --openvasd-uuid UUID
 
 
 Support:
