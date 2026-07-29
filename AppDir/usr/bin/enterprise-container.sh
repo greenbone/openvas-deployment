@@ -259,7 +259,7 @@ Create an OpenVASD deployment archive:
   $0 --create-openvasd-tar --cn-openvasd sensor.example.com --openvasd-tar-with-images
 
 
-Run an extracted OpenVASD archive on your openvasd(sensor):
+Run an extracted OpenVASD archive on your openvasd(sensor) node/host:
   $0 --run --openvasd-load-images-from-tar
 
 Run an extracted OpenVASD archive with other host port:
