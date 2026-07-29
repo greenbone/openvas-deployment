@@ -296,7 +296,7 @@ EOF
 check_requirements() {
     echo "🚀 Checking system requirements..."
     
-    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr; do
+    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat; do
         if ! command -v $tool > /dev/null 2>&1; then
             echo "Missing: $tool"
             exit 1
