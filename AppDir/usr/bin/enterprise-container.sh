@@ -82,7 +82,7 @@ Actions:
 
   --change-admin-password        Change the gvmd administrator password
 
-  --change-feed-sync-hour        Change the scheduled feed synchronization hour
+  --change-feed-sync-hour        Set the daily hour for scheduled feed synchronization (1–24)
 
   --force-feed-sync              Restart feed synchronization immediately
 
