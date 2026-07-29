@@ -424,17 +424,17 @@ Include Docker images in the archive (no --init-openvasd required):
 Copy the archive to the OpenVASD sensor host, extract it, and start
 the sensor deployment:
 
-  bash ${0} --init-openvasd
-  bash ${0} --run
+  ${0} --init-openvasd
+  ${0} --run
 
 To load packaged Docker images before starting the sensor
 (no --init-openvasd required):
 
-  bash ${0} --run --openvasd-load-images-from-tar
+  ${0} --run --openvasd-load-images-from-tar
 
 Optionally, use a different OpenVASD listen port:
 
-  bash ${0} --run --openvasd-load-images-from-tar --openvasd-port <PORT>
+  ${0} --run --openvasd-load-images-from-tar --openvasd-port <PORT>
 
 Register an OpenVASD scanner on enterprise-container(SCAN deployment mode) node/host:
 
