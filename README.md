@@ -28,6 +28,8 @@ chmod +x AppDir/usr/bin/enterprise-container.sh
 When installed as `openvas-deployment`, use:
 
 ```bash
+unzstd openvas-deployment.zst
+chmod +x openvas-deployment
 openvas-deployment --help
 ```
 
