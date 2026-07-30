@@ -64,6 +64,7 @@ show_help() {
     less << EOF
 OpenVAS Enterprise-Container Deployment
 
+Requires compose version 5.3.1 and higher!
 
 Info:
   You can move up and down with arrow keys. Press q to quit.

@@ -11,6 +11,9 @@ The repository packages `enterprise-container.sh` as:
 
 The utility initializes, updates, starts, stops, and manages an OpenVAS Enterprise Container deployment. It also supports feed synchronization, TLS certificate management, administrator password changes, deployment logs and status, and OpenVASD scanner registration.
 
+> [!IMPORTANT]
+> Requires compose version 5.3.1 and higher!
+
 ## Installation
 
 ### Shell script
