@@ -25,11 +25,11 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         
       - name: Build Assets
-        run: zstd AppDir/usr/bin/enterprise-container.sh -o openvas-deploy.zst
+        run: zstd AppDir/usr/bin/enterprise-container.sh -o openvas-deployment.zst
 
       - name: Push release assets
         uses: greenbone/actions/release-assets@v3
         with:
-          files: openvas-deploy.zst
+          files: openvas-deployment.zst
           tag: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
