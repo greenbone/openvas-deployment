@@ -135,7 +135,7 @@ Deployment options:
 
   --feed-path PATH               Host feed directory used with mount mode
 
-  --feed-sync-hour HOUR          Scheduled feed synchronization hour (1-24)
+  --feed-sync-hour HOUR          Scheduled feed synchronization hour (0-23)
                                  Default: ${GREENBONE_FEED_SYNC_JOB_HOUR}
 
   --ccert-mode MODE              Client certificate mode:
@@ -995,14 +995,14 @@ force_feed_sync() {
 # Missing or invalid values are reported and terminate the function.
 init_feed_sync_hour() {
     if [ "${GREENBONE_FEED_SYNC_JOB_HOUR}" ]; then
-        if (( GREENBONE_FEED_SYNC_JOB_HOUR >= 1 && GREENBONE_FEED_SYNC_JOB_HOUR <= 24 )); then
+        if (( GREENBONE_FEED_SYNC_JOB_HOUR >= 0 && GREENBONE_FEED_SYNC_JOB_HOUR <= 23 )); then
             echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR"
         else
-            echo "Error: No feed sync hour ${GREENBONE_FEED_SYNC_JOB_HOUR} needs to be between 1 and 24. Please run --change-feed-sync-hour or --init with --feed-sync-hour."
+            echo "Error: No feed sync hour ${GREENBONE_FEED_SYNC_JOB_HOUR} needs to be between 0 and 23. Please run --change-feed-sync-hour or --init with --feed-sync-hour."
             exit 1
         fi
     else
-        echo "Error: No feed sync hour set. Please run --change-feed-sync-hour and --init with --feed-sync-hour."
+        echo "Error: No feed sync hour set. Please run --change-feed-sync-hour or --init with --feed-sync-hour."
         exit 1
     fi
 }
