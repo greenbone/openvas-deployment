@@ -1,0 +1,35 @@
+name: Build and Push Release Assets
+
+on:
+  push:
+    tags: ["v*"]
+
+# Needed to push assets to releases
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  push:
+    if: startsWith(github.ref, 'refs/tags/v')
+    name: Build and Push Release Assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        
+      - name: Build Assets
+        run: zstd AppDir/usr/bin/enterprise-container.sh -o openvas-deploy.zst
+
+      - name: Push release assets
+        uses: greenbone/actions/release-assets@v3
+        with:
+          files: openvas-deploy.zst
+          tag: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}

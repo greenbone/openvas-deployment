@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      release-type:
+        type: choice
+        description: What kind of release do you want to do (pontos --release-type argument)?
+        options:
+          - alpha
+          - minor
+          - major
+          - release-candidate
+          - hotfix
+      release-version:
+        type: string
+        description: Set an explicit version, that will overwrite release-type. Fails if version is not compliant.
+
+jobs:
+  release:
+    name: Create a new release
+    uses: greenbone/workflows/.github/workflows/release-3rd-gen.yml@main
+    with:
+      release-type: ${{ inputs.release-type }}
+      release-version: ${{ inputs.release-version }}
+      update-project: false
+    secrets: inherit
