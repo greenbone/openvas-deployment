@@ -16,16 +16,9 @@ The utility initializes, updates, starts, stops, and manages an OpenVAS Enterpri
 
 ## Installation
 
-### Shell script
+## Download
 
-Make the script executable and display its command-line help:
-
-```bash
-chmod +x AppDir/usr/bin/enterprise-container.sh
-./AppDir/usr/bin/enterprise-container.sh --help
-```
-
-When installed as `openvas-deployment`, use:
+**[Releases](https://github.com/greenbone/openvas-deployment/releases)** 
 
 ```bash
 unzstd openvas-deployment.zst
