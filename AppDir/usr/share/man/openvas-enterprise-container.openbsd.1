@@ -1,0 +1,301 @@
+.Dd July 29, 2026
+.Dt OPENVAS-ENTERPRISE-CONTAINER 1
+.Os
+.Sh NAME
+.Nm openvas-enterprise-container
+.Nd manage an OpenVAS Enterprise-Container deployment
+.Sh SYNOPSIS
+.Nm
+.Ar ACTION
+.Op Ar OPTIONS
+.Nm
+.Fl h
+.Nm
+.Fl -help
+.Sh DESCRIPTION
+The
+.Nm
+utility initializes, configures, updates, starts, stops, and inspects an
+OpenVAS Enterprise-Container deployment.
+It also manages ingress certificates, feed synchronization, OCI client
+credentials, and external OpenVASD scanners.
+.Sh ACTIONS
+.Bl -tag -width Ds
+.It Fl -init
+Initialize the deployment, certificates, and deployment settings.
+.It Fl -init-openvasd
+Initialize OCI client certificates for an OpenVASD deployment.
+.It Fl -change-admin-password
+Change the gvmd administrator password.
+.It Fl -change-feed-sync-hour
+Change the scheduled feed synchronization hour.
+.It Fl -force-feed-sync
+Restart feed synchronization immediately.
+.It Fl -update
+Download the latest product version.
+.It Fl -run
+Start or redeploy the configured deployment.
+.It Fl -logs Op Fl -service-name Ar NAME
+Show deployment logs.
+When
+.Fl -service-name
+is supplied, show logs for the named service.
+.It Fl -ps
+Show deployment status.
+.It Fl -down
+Stop the deployment.
+.It Fl -down-volumes
+Stop the deployment and remove volumes.
+.It Fl -update-ingress-certs
+Replace the ingress TLS certificate and key.
+.It Fl -create-openvasd-certs
+Create TLS certificates for an OpenVASD scanner.
+.It Fl -create-openvasd-tar
+Create an OpenVASD deployment archive.
+.It Fl -get-openvasds
+List OpenVASD scanners registered in gvmd.
+.It Fl -add-openvasd
+Register an OpenVASD scanner in gvmd.
+.It Fl -del-openvasd
+Remove an OpenVASD scanner from gvmd.
+.El
+.Sh DEPLOYMENT OPTIONS
+.Bl -tag -width Ds
+.It Fl -deployment-mode Ar MODE
+Set the deployment mode.
+Valid values are
+.Cm scan
+and
+.Cm openvas .
+The default is
+.Li ${DEPLOYMENT_MODE} .
+.It Fl -feed-mode Ar MODE
+Set the feed mode.
+Valid values are
+.Cm volume ,
+.Cm service ,
+and
+.Cm mount .
+The default is
+.Li ${FEED_MODE} .
+.It Fl -feed-key Ar FILE
+Use
+.Ar FILE
+as the feed key with
+.Cm volume
+or
+.Cm service
+feed mode.
+.It Fl -feed-path Ar PATH
+Use
+.Ar PATH
+as the host feed directory with
+.Cm mount
+feed mode.
+.It Fl -feed-sync-hour Ar HOUR
+Set the scheduled feed synchronization hour.
+The valid range is 1 through 24.
+The default is
+.Li ${GREENBONE_FEED_SYNC_JOB_HOUR} .
+.It Fl -ccert-mode Ar MODE
+Set the client certificate mode.
+Valid values are
+.Cm ca ,
+.Cm cert ,
+and
+.Cm mount .
+The default is
+.Li ${CCERT_MODE} .
+.It Fl -ccert-path Ar PATH
+Use
+.Ar PATH
+as the host client certificate directory with
+.Cm mount
+client certificate mode.
+.El
+.Sh ADMINISTRATOR OPTIONS
+.Bl -tag -width Ds
+.It Fl -admin-password Ar PASSWORD
+Use
+.Ar PASSWORD
+as the administrator password during initialization or a password change.
+.El
+.Sh OCI CLIENT CERTIFICATE OPTIONS
+.Bl -tag -width Ds
+.It Fl -license-file Ar FILE
+Read the OCI registry client certificate and private key from the license file
+.Ar FILE .
+.It Fl -oci-client-cert Ar FILE
+Use
+.Ar FILE
+as the OCI registry client certificate.
+.It Fl -oci-client-key Ar FILE
+Use
+.Ar FILE
+as the OCI registry client private key.
+.It Fl -init-docker-oci
+Install OCI credentials into dockerd using
+.Xr sudo 8 .
+.It Fl -skip-docker-oci
+Do not install OCI credentials automatically.
+Print the required commands instead.
+.El
+.Sh INGRESS CERTIFICATE OPTIONS
+.Bl -tag -width Ds
+.It Fl -ingress-server-cert Ar FILE
+Use
+.Ar FILE
+as the ingress server certificate.
+.It Fl -ingress-server-key Ar FILE
+Use
+.Ar FILE
+as the ingress server private key.
+.El
+.Sh OPENVASD OPTIONS
+.Bl -tag -width Ds
+.It Fl -cn-openvasd Ar NAME
+Set the OpenVASD common name and scanner hostname to
+.Ar NAME .
+.It Fl -openvasd-port Ar PORT
+Set the OpenVASD scanner port.
+The default port is 443.
+.It Fl -openvasd-uuid Ar UUID
+Use the scanner UUID returned by
+.Fl -get-openvasds .
+.It Fl -openvasd-tar-with-images
+Include Docker images in the OpenVASD archive.
+Disabled by default.
+.It Fl -openvasd-load-images-from-tar
+Load packaged Docker images before deployment.
+Disabled by default.
+.El
+.Sh HELP OPTIONS
+.Bl -tag -width Ds
+.It Fl h , Fl -help
+Show the help message and exit.
+.El
+.Sh EXAMPLES
+Initialize a scan deployment using a Docker volume for feeds:
+.Bd -literal -offset indent
+openvas-enterprise-container --init \\
+  --oci-client-cert /path/to/product.crt \\
+  --oci-client-key /path/to/product.key \\
+  --feed-key /path/to/prod-feed.key
+.Ed
+.Pp
+Initialize with a predefined administrator password:
+.Bd -literal -offset indent
+openvas-enterprise-container --init \\
+  --admin-password 'secure-password' \\
+  --oci-client-cert /path/to/product.crt \\
+  --oci-client-key /path/to/product.key \\
+  --feed-key /path/to/prod-feed.key
+.Ed
+.Pp
+Initialize with scheduled feed synchronization:
+.Bd -literal -offset indent
+openvas-enterprise-container --init \\
+  --feed-sync-hour 3 \\
+  --oci-client-cert /path/to/product.crt \\
+  --oci-client-key /path/to/product.key \\
+  --feed-key /path/to/prod-feed.key
+.Ed
+.Pp
+Initialize with custom ingress certificates:
+.Bd -literal -offset indent
+openvas-enterprise-container --init \\
+  --oci-client-cert /path/to/product.crt \\
+  --oci-client-key /path/to/product.key \\
+  --feed-key /path/to/prod-feed.key \\
+  --ingress-server-cert /path/to/ingress.crt \\
+  --ingress-server-key /path/to/ingress.key
+.Ed
+.Pp
+Update and start the deployment:
+.Bd -literal -offset indent
+openvas-enterprise-container --update
+openvas-enterprise-container --run
+.Ed
+.Pp
+Change the gvmd administrator password:
+.Bd -literal -offset indent
+openvas-enterprise-container --change-admin-password \\
+  --admin-password 'new-secure-password'
+.Ed
+.Pp
+Change the scheduled feed synchronization hour:
+.Bd -literal -offset indent
+openvas-enterprise-container --change-feed-sync-hour --feed-sync-hour 4
+.Ed
+.Pp
+Restart feed synchronization immediately:
+.Bd -literal -offset indent
+openvas-enterprise-container --force-feed-sync
+.Ed
+.Pp
+Show logs and status:
+.Bd -literal -offset indent
+openvas-enterprise-container --logs
+openvas-enterprise-container --ps
+.Ed
+.Pp
+Stop or restart the deployment:
+.Bd -literal -offset indent
+openvas-enterprise-container --down
+openvas-enterprise-container --run
+.Ed
+.Pp
+Stop the deployment and remove Docker volumes:
+.Bd -literal -offset indent
+openvas-enterprise-container --down-volumes
+.Ed
+.Pp
+Update ingress certificates:
+.Bd -literal -offset indent
+openvas-enterprise-container --update-ingress-certs \\
+  --ingress-server-cert ./ingress.crt \\
+  --ingress-server-key ./ingress.key
+.Ed
+.Pp
+Create OpenVASD certificates:
+.Bd -literal -offset indent
+openvas-enterprise-container --create-openvasd-certs \\
+  --cn-openvasd sensor.example.com
+.Ed
+.Pp
+Create an OpenVASD deployment archive:
+.Bd -literal -offset indent
+openvas-enterprise-container --create-openvasd-tar \\
+  --cn-openvasd sensor.example.com \\
+  --openvasd-tar-with-images
+.Ed
+.Pp
+Run an extracted OpenVASD archive:
+.Bd -literal -offset indent
+openvas-enterprise-container --run --openvasd-load-images-from-tar
+.Ed
+.Pp
+Run an extracted OpenVASD archive on another host port:
+.Bd -literal -offset indent
+openvas-enterprise-container --run \\
+  --openvasd-load-images-from-tar \\
+  --openvasd-port PORT
+.Ed
+.Pp
+Register an OpenVASD scanner:
+.Bd -literal -offset indent
+openvas-enterprise-container --add-openvasd \\
+  --cn-openvasd sensor.example.com \\
+  --openvasd-port 443
+.Ed
+.Pp
+List or remove registered OpenVASD scanners:
+.Bd -literal -offset indent
+openvas-enterprise-container --get-openvasds
+openvas-enterprise-container --del-openvasd --openvasd-uuid UUID
+.Ed
+.Sh SUPPORT
+Greenbone support:
+.Lk https://www.greenbone.net/support/
+.Sh SEE ALSO
+.Xr less 1
