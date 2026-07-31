@@ -47,6 +47,7 @@ INGRESS_TLS_SERVER_KEY=''
 OCI_TLS_CLIENT_CERT=''
 OCI_TLS_CLIENT_KEY=''
 INIT_DOCKER_OCI=''
+SKIP_INIT_IF_EXIST=''
 DEPLOYMENT_MODE='scan'
 OPENVASD_TAR_WITH_IMAGES='n'
 OPENVASD_LOAD_IMAGES_FROM_TAR='n'
@@ -136,6 +137,8 @@ Deployment options:
 
   --ccert-path PATH              Host client certificate directory used with
                                  mount mode
+
+  --skip-init-if-exist           Exit with status 0 if already initialized
 
 
 Administrator options:
@@ -280,6 +283,10 @@ List or remove registered OpenVASD scanners:
   $0 --get-openvasds
 
   $0 --del-openvasd --openvasd-uuid UUID
+
+
+For CI workflows:
+  Use --skip-init-if-exist with --skip-docker-oci or --init-docker-oci 
 
 
 Support:
@@ -1093,6 +1100,9 @@ init() {
     echo "🚀 Init Enterprise Container Mode Scan..."
 
     if [ -d "${WORKING_DIR}" ]; then
+        if [ "${SKIP_INIT_IF_EXIST}" == "y" ]; then
+            exit 0
+        fi
         echo "Warning: ${WORKING_DIR} exist! CA setup will be overwritten if continue!"
         read -r -p "Continue? (y/n)" response
         if [ "$response" != "y" ]; then
@@ -1750,6 +1760,10 @@ parse_args() {
                 ;;
             --staging)
                 DEV_STAGE_URL_PREFIX='-dev/staging'
+                shift 1
+                ;;
+            --skip-init-if-exist)
+                SKIP_INIT_IF_EXIST='y'
                 shift 1
                 ;;
             -h|--help)
