@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # =============================================================================
 #  OpenVAS Enterprise-Container Deployment Script
@@ -20,7 +20,8 @@ FEED_DIR_NAME='images'
 DEPLOYMENT_MODE_OPTIONS=('scan' 'openvas')
 FEED_MODE_OPTIONS=('volume' 'service' 'mount')
 CCERT_MODE_OPTIONS=('ca' 'cert' 'mount')
-PACKAGE_URL="packages.greenbone.net/openvas-enterprise-container-dev/testing/${PACKAGE}"
+DEV_STAGE_URL_PREFIX=''
+PACKAGE_URL="packages.greenbone.net/openvas-${PACKAGE}${DEV_STAGE_URL_PREFIX}/${PACKAGE}"
 GVMD_SERVICE='enterprise-container-scan-gvmd-1'
 FEED_SYNC_SERVICE_NAME='feed-sync'
 GVMD_SERVICE_UID='1001'
@@ -73,6 +74,7 @@ show_help() {
     less << EOF
 OpenVAS Enterprise-Container Deployment
 
+Requires compose version 5.3.1 and higher!
 
 Info:
   You can move up and down with arrow keys. Press q to quit.
@@ -92,7 +94,7 @@ Actions:
 
   --change-admin-password        Change the gvmd administrator password
 
-  --change-feed-sync-hour        Set the daily hour for scheduled feed synchronization (1–24)
+  --change-feed-sync-hour        Set the daily hour for scheduled feed synchronization (0-23)
 
   --force-feed-sync              Restart feed synchronization immediately
 
@@ -1689,6 +1691,8 @@ compose_ps() {
 run() {
     check_requirements
 
+    PACKAGE_URL="packages.greenbone.net/openvas-${PACKAGE}${DEV_STAGE_URL_PREFIX}/${PACKAGE}"
+
     if [ "${MODE}" == 'init' ]; then
         init
     fi
@@ -1954,6 +1958,22 @@ parse_args() {
                 ;;
             --ps)
                 MODE='ps'
+                shift 1
+                ;;
+            --dev)
+                DEV_STAGE_URL_PREFIX='-dev/dev'
+                shift 1
+                ;;
+            --integration)
+                DEV_STAGE_URL_PREFIX='-dev/integration'
+                shift 1
+                ;;
+            --testing)
+                DEV_STAGE_URL_PREFIX='-dev/testing'
+                shift 1
+                ;;
+            --staging)
+                DEV_STAGE_URL_PREFIX='-dev/staging'
                 shift 1
                 ;;
             -h|--help)
