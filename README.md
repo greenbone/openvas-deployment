@@ -103,7 +103,7 @@ openvas-deployment --down
 | `--feed-mode MODE`       | Feed mode: `volume`, `service`, or `mount`.                                  |
 | `--feed-key FILE`        | Feed key file used with feed mode `volume` or `service`.                     |
 | `--feed-path PATH`       | Host feed directory used with feed mode `mount`.                             |
-| `--feed-sync-hour HOUR`  | Daily scheduled feed synchronization hour from `1` to `24`.                  |
+| `--feed-sync-hour HOUR`  | Daily scheduled feed synchronization hour from `0` to `23`.                  |
 | `--ccert-mode MODE`      | Client certificate mode: `ca`, `cert`, or `mount`.                           |
 | `--ccert-path PATH`      | Host client-certificate directory used with client certificate mode `mount`. |
 
