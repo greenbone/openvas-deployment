@@ -303,6 +303,8 @@ check_requirements() {
             cat <<EOF
 Missing tool: $tool
 
+These are just examples, they are subject to change at any time.
+
 Fedora:
   sudo dnf install docker-cli docker-compose golang-oras openssl tar coreutils grep sed curl less gawk
 
