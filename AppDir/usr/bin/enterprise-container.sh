@@ -298,9 +298,33 @@ EOF
 check_requirements() {
     echo "🚀 Checking system requirements..."
     
-    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat; do
+    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat pwd; do
         if ! command -v $tool > /dev/null 2>&1; then
-            echo "Missing: $tool"
+            cat <<EOF
+Missing tool: $tool
+
+Fedora:
+  sudo dnf install docker-cli golang-oras openssl tar coreutils grep sed curl less gawk
+
+SUSE/openSUSE:
+  sudo zypper install docker oras openssl tar coreutils grep sed curl less gawk
+
+Arch Linux:
+  sudo pacman -S docker openssl tar coreutils grep sed curl less gawk
+  ORAS is available from the AUR, for example:
+    yay -S oras
+
+OpenBSD:
+  doas pkg_add docker-cli oras curl less
+  Note: this installs the Docker CLI, not a native Docker daemon.
+  Should work with:
+    export DOCKER_HOST=ssh://user@remote-host
+  to a Linux system running Docker.
+
+Debian/Ubuntu:
+  sudo apt-get update
+  sudo apt-get install docker.io oras openssl tar coreutils grep sed curl less gawk
+EOF
             exit 1
         fi
     done
