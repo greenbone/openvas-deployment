@@ -312,31 +312,33 @@ check_requirements() {
             cat <<EOF
 Missing tool: $tool
 
+These are just examples, they are subject to change at any time.
+
 Fedora:
-  sudo dnf install docker-cli golang-oras openssl tar coreutils grep sed curl less gawk
+  sudo dnf install docker-cli docker-compose golang-oras openssl tar coreutils grep sed curl less gawk
 
 Arch Linux:
-  sudo pacman -S docker openssl tar coreutils grep sed curl less gawk
+  sudo pacman -S docker docker-compose openssl tar coreutils grep sed curl less gawk
   ORAS is available from the AUR, for example:
     yay -S oras
 
 OpenBSD:
-  doas pkg_add docker-cli oras curl less
+  doas pkg_add docker-cli docker-compose oras curl less
   Note: this installs the Docker CLI, not a native Docker daemon.
   Should work with:
     export DOCKER_HOST=ssh://user@remote-host
   to a Linux system running Docker.
 
 SUSE/openSUSE:
-  sudo zypper install docker oras openssl tar coreutils grep sed curl less gawk
+  sudo zypper install docker docker-compose oras openssl tar coreutils grep sed curl less gawk
 
 Debian:
   sudo apt-get update
-  sudo apt-get install docker.io oras openssl tar coreutils grep sed curl less gawk
+  sudo apt-get install docker.io docker-compose oras openssl tar coreutils grep sed curl less gawk
 
 Ubuntu:
   sudo apt-get update
-  sudo apt-get install docker.io oras openssl tar coreutils grep sed curl less gawk
+  sudo apt-get install docker.io docker-compose-v2 oras openssl tar coreutils grep sed curl less gawk
   sudo snap install oras --classic
 EOF
             exit 1
