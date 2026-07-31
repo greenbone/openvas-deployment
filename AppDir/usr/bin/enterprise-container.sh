@@ -306,9 +306,6 @@ Missing tool: $tool
 Fedora:
   sudo dnf install docker-cli golang-oras openssl tar coreutils grep sed curl less gawk
 
-SUSE/openSUSE:
-  sudo zypper install docker oras openssl tar coreutils grep sed curl less gawk
-
 Arch Linux:
   sudo pacman -S docker openssl tar coreutils grep sed curl less gawk
   ORAS is available from the AUR, for example:
@@ -321,9 +318,17 @@ OpenBSD:
     export DOCKER_HOST=ssh://user@remote-host
   to a Linux system running Docker.
 
-Debian/Ubuntu:
+SUSE/openSUSE:
+  sudo zypper install docker oras openssl tar coreutils grep sed curl less gawk
+
+Debian:
   sudo apt-get update
   sudo apt-get install docker.io oras openssl tar coreutils grep sed curl less gawk
+
+Ubuntu:
+  sudo apt-get update
+  sudo apt-get install docker.io oras openssl tar coreutils grep sed curl less gawk
+  sudo snap install oras --classic
 EOF
             exit 1
         fi
