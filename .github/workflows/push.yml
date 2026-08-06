@@ -48,3 +48,4 @@ jobs:
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
           release-version: ${{ github.ref_name }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          versioning-scheme: 'semver'
