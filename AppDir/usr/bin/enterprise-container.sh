@@ -1079,12 +1079,8 @@ install_feed_key(){
     if [ -f "${FEED_KEY}" ]; then
         echo "Info: Install Enterprise-Container Feed Key..."
         if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
-            if base64 -d "${FEED_KEY}" > "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"; then
-                chmod 0600 "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
-            else
-                echo "Invalid Base64"
-                exit 1
-            fi
+            base64 -d "${FEED_KEY}" > "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+            chmod 0600 "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
         else
             install -m 0600 "${FEED_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
         fi
