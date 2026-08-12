@@ -305,7 +305,7 @@ EOF
 check_requirements() {
     echo "🚀 Checking system requirements..."
     
-    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat pwd; do
+    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat pwd base64 chmod; do
         if ! command -v $tool > /dev/null 2>&1; then
             cat <<EOF
 Missing tool: $tool
@@ -1078,7 +1078,12 @@ install_license_file() {
 install_feed_key(){
     if [ -f "${FEED_KEY}" ]; then
         echo "Info: Install Enterprise-Container Feed Key..."
-        install -m 0600 "${FEED_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+        if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
+            base64 -d "${FEED_KEY}" > "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+            chmod 0600 "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+        else
+            install -m 0600 "${FEED_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+        fi
     fi
 }
 
