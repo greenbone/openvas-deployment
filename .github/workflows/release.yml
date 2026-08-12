@@ -26,4 +26,5 @@ jobs:
       release-type: ${{ inputs.release-type }}
       release-version: ${{ inputs.release-version }}
       update-project: false
+      sign-release-files: false
     secrets: inherit

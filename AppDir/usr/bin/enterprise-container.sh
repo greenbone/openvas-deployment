@@ -55,6 +55,7 @@ INGRESS_TLS_SERVER_KEY=''
 OCI_TLS_CLIENT_CERT=''
 OCI_TLS_CLIENT_KEY=''
 INIT_DOCKER_OCI=''
+SKIP_INIT_IF_EXIST=''
 DEPLOYMENT_MODE='scan'
 OPENVASD_TAR_WITH_IMAGES='n'
 OPENVASD_TAR_WITH_FEED='n'
@@ -146,6 +147,8 @@ Deployment options:
 
   --ccert-path PATH              Host client certificate directory used with
                                  mount mode
+
+  --skip-init-if-exist           Exit with status 0 if already initialized
 
 
 Administrator options:
@@ -292,6 +295,10 @@ List or remove registered OpenVASD scanners:
   $0 --del-openvasd --openvasd-uuid UUID
 
 
+For CI workflows:
+  Use --skip-init-if-exist with --skip-docker-oci or --init-docker-oci 
+
+
 Support:
   https://www.greenbone.net/support/
 EOF
@@ -306,8 +313,9 @@ EOF
 # if Docker and Docker Compose are running. If any are missing or not running, 
 # the script exits with an error.
 check_requirements() {
-    echo "🚀 Checking system requirements..."   
-    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat pwd; do
+    echo "🚀 Checking system requirements..."
+    
+    for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat pwd base64 chmod; do
         if ! command -v $tool > /dev/null 2>&1; then
             cat <<EOF
 Missing tool: $tool
@@ -1315,7 +1323,12 @@ install_license_file() {
 install_feed_key(){
     if [ -f "${FEED_KEY}" ]; then
         echo "Info: Install Enterprise-Container Feed Key..."
-        install -m 0600 "${FEED_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+        if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
+            base64 -d "${FEED_KEY}" > "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+            chmod 0600 "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+        else
+            install -m 0600 "${FEED_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+        fi
     fi
 }
 
@@ -1337,6 +1350,9 @@ init() {
     echo "🚀 Init Enterprise Container Mode Scan..."
 
     if [ -d "${WORKING_DIR}" ]; then
+        if [ "${SKIP_INIT_IF_EXIST}" == "y" ]; then
+            exit 0
+        fi
         echo "Warning: ${WORKING_DIR} exist! CA setup will be overwritten if continue!"
         read -r -p "Continue? (y/n)" response
         if [ "$response" != "y" ]; then
@@ -2004,6 +2020,10 @@ parse_args() {
                 ;;
             --staging)
                 DEV_STAGE_URL_PREFIX='-dev/staging'
+                shift 1
+                ;;
+            --skip-init-if-exist)
+                SKIP_INIT_IF_EXIST='y'
                 shift 1
                 ;;
             -h|--help)
