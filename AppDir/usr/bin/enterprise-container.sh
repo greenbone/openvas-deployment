@@ -16,7 +16,7 @@ STORE_DIR_NAME='product'
 CERT_DIR_NAME='certs'
 CERT_DIR_OCI_NAME='oci'
 IMAGE_DIR_NAME='images'
-DEPLOYMENT_MODE_OPTIONS=('scan' 'openvas')
+DEPLOYMENT_MODE_OPTIONS=('scan' 'openvasd')
 FEED_MODE_OPTIONS=('volume' 'service' 'mount')
 CCERT_MODE_OPTIONS=('ca' 'cert' 'mount')
 DEV_STAGE_URL_PREFIX=''
@@ -60,7 +60,7 @@ SERVICE_NAME=''
 # =============================================================================
 # show_help()
 # =============================================================================
-# Prints help text. 
+# Prints help text.
 show_help() {
     less << EOF
 OpenVAS Enterprise-Container Deployment
@@ -286,7 +286,7 @@ List or remove registered OpenVASD scanners:
 
 
 For CI workflows:
-  Use --skip-init-if-exist with --skip-docker-oci or --init-docker-oci 
+  Use --skip-init-if-exist with --skip-docker-oci or --init-docker-oci
 
 
 Support:
@@ -299,12 +299,12 @@ EOF
 # =============================================================================
 # check_requirements()
 # =============================================================================
-# Checks if the required tools (docker, oras, openssl, etc.) are installed and 
-# if Docker and Docker Compose are running. If any are missing or not running, 
+# Checks if the required tools (docker, oras, openssl, etc.) are installed and
+# if Docker and Docker Compose are running. If any are missing or not running,
 # the script exits with an error.
 check_requirements() {
     echo "🚀 Checking system requirements..."
-    
+
     for tool in docker oras openssl tar install grep sed sort tail ls curl cp less tar awk tr cat pwd base64 chmod; do
         if ! command -v $tool > /dev/null 2>&1; then
             cat <<EOF
@@ -347,7 +347,7 @@ EOF
         echo "Docker Compose not available"
         exit 1
     fi
-    
+
     if ! docker ps > /dev/null 2>&1; then
         echo "Docker not running"
         exit 1
@@ -415,6 +415,12 @@ create_openvasd_cert() {
     if ! [ "${CN_OPENVASD}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
         exit 1
+    fi
+
+    # Make sure we have the ${STORE_DIR_NAME}/OPENVASD_CN file.
+    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ] && ! [ -f "${WORKING_DIR}/OPENVASD_CN" ]; then
+        echo "Writing ${STORE_DIR_NAME}/OPENVASD_CN"
+        echo "${CN_OPENVASD}" > "${STORE_DIR_NAME}/OPENVASD_CN"
     fi
 
     local OPENVASD_FOLDER="${CN_OPENVASD//./_}"
@@ -1514,6 +1520,7 @@ run() {
         compose_down_volumes
     fi
     if [ "${MODE}" == 'create-openvasd-cert' ]; then
+        load_env
         create_openvasd_cert
     fi
     if [ "${MODE}" == 'get-openvasds' ]; then
