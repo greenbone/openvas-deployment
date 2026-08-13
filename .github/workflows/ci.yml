@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: self-hosted-generic-vm-amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        
+      - name: Install
+        run: |
+          sudo install -m 0755 AppDir/usr/bin/enterprise-container.sh /usr/bin/openvas-deployment
+          echo '${{ secrets.FEED_KEY }}' > gsf.key
+          echo '${{ secrets.OCI_CERT }}' > oci-client.cert
+          echo '${{ secrets.OCI_KEY }}' > oci-client.key
+
+      - name: CI
+        run: bash tests/*.sh

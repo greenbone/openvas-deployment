@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # =============================================================================
-#  OpenVAS Enterprise-Container Deployment Script
+#  OpenVAS Deployment Script
 # =============================================================================
 #  This script is for demo purposes until our deployment tool
 #  supports this product!
