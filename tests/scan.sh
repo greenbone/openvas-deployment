@@ -73,8 +73,8 @@ run_openvasd_cert_tar() {
             echo 'Openvasd sensor setup port test failed!'
             exit 1
         fi
-        list
         clean
+        list
     popd > /dev/null
     rm -rf sensor1_test_test
     rm -f sensor1_test_test.tar
@@ -100,8 +100,8 @@ run_openvasd_tar() {
             echo 'Openvasd sensor setup port test failed!'
             exit 1
         fi
-        list
         clean
+        list
     popd > /dev/null
     rm -rf sensor2_test_test
     rm -f sensor2_test_test.tar

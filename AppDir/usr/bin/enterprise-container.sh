@@ -296,12 +296,13 @@ Option 1:
 
 Create OpenVASD certificates:
   $0 --create-openvasd-certs --cn-openvasd sensor.example.com
+  $0 --create-openvasd-cert-tar --cn-openvasd sensor.example.com
 
 Copy the following files to the new host:
   - ${0}
-  - server.crt
-  - server.key
-  - ca.crt
+  - ./sensor_example_com.tar
+  - your feed key
+  - your oci client certs
 
 
 Initialize the remote OpenVASD deployment:
