@@ -19,6 +19,10 @@ check_req() {
     fi
 }
 
+clean() {
+    rm -rf product
+}
+
 run() {
     echo 'Test Init'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key --oci-client-cert oci-client.cert --oci-client-key oci-client.key
@@ -30,8 +34,19 @@ run() {
     openvas-deployment --down-volumes
     echo 'List product folder'
     tree product
-    rm -rf product
+}
+
+run_openvasd_cert_tar() {
+    echo 'Test Openvasd Cert Gen'
+    openvas-deployment --create-openvasd-certs --cn-openvasd sensor.test.test
+    echo 'Test Openvasd Cert Tar'
+    openvas-deployment --create-openvasd-cert-tar --cn-openvasd sensor.test.test
+    if ! [ -f 'sensor_test_test.tar' ]; then
+        echo 'Openvasd cert tar gen failed!'
+    fi
 }
 
 check_req
 run
+run_openvasd_cert_tar
+clean

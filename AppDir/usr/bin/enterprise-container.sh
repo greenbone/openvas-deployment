@@ -111,6 +111,8 @@ Actions:
 
   --create-openvasd-certs        Create TLS certificates for an OpenVASD scanner
 
+  --create-openvasd-cert-tar     Create an OpenVASD certificate archive
+
   --create-openvasd-tar          Create an OpenVASD deployment archive
 
   --get-openvasds                List OpenVASD scanners registered in gvmd
@@ -466,6 +468,49 @@ read_license_file() {
             out["${section}.${key}"]="${value}"
         fi
     done < "$file"
+}
+
+# =============================================================================
+# create_openvasd_cert_tar()
+# =============================================================================
+# Creates a tar archive containing the OpenVASD certificate directory for the
+# configured OpenVASD common name (CN).
+#
+# The certificate directory name is derived from the OpenVASD CN by replacing
+# dots with underscores.
+#
+# Arguments:
+#   $1
+#     OpenVASD common name (CN) used to identify the certificate directory.
+#     Defaults to CN_OPENVASD.
+#
+#   $2
+#     Base certificate directory containing the OpenVASD certificate folders.
+#     Defaults to CERT_DIR_ENTERPRISE_CONTAINER.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the OpenVASD common name is missing.
+#   1 if the OpenVASD certificate directory does not exist.
+create_openvasd_cert_tar() {
+    local openvasd_cn="${1:-$CN_OPENVASD}"
+    local cert_dir_enterprise_container="${2:-$CERT_DIR_ENTERPRISE_CONTAINER}"
+
+    if ! [ "${openvasd_cn}" ]; then
+        echo "Error: --cn-openvasd argument missing!"
+        exit 1
+    fi
+
+    local openvasd_folder_name="${openvasd_cn//./_}"
+    local openvasd_folder="${cert_dir_enterprise_container}/${openvasd_folder_name}"
+
+    if ! [ -d "${openvasd_folder}" ]; then
+        echo "Error: ${openvasd_folder} does not exist!"
+        exit 1
+    fi
+    tar cf "${openvasd_folder_name}.tar" -C "${openvasd_folder}" .
 }
 
 # =============================================================================
@@ -1739,6 +1784,9 @@ run() {
     if [ "${MODE}" == 'create-openvasd-tar' ]; then
         create_openvasd_tar
     fi
+    if [ "${MODE}" == 'create-openvasd-cert-tar' ]; then
+        create_openvasd_cert_tar
+    fi
     if [ "${MODE}" == 'update' ]; then
         artifact_download
     fi
@@ -1930,6 +1978,10 @@ parse_args() {
             --ccert-path)
                 CCERT_PATH="$2"
                 shift 2
+                ;;
+            --create-openvasd-cert-tar)
+                MODE='create-openvasd-cert-tar'
+                shift 1
                 ;;
             --create-openvasd-tar)
                 MODE='create-openvasd-tar'
