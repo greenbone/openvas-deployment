@@ -16,7 +16,7 @@ STORE_DIR_NAME='product'
 CERT_DIR_NAME='certs'
 CERT_DIR_OCI_NAME='oci'
 IMAGE_DIR_NAME='images'
-DEPLOYMENT_MODE_OPTIONS=('scan' 'openvas')
+DEPLOYMENT_MODE_OPTIONS=('scan' 'openvasd')
 FEED_MODE_OPTIONS=('volume' 'service' 'mount')
 CCERT_MODE_OPTIONS=('ca' 'cert' 'mount')
 DEV_STAGE_URL_PREFIX=''
@@ -51,6 +51,9 @@ SKIP_INIT_IF_EXIST=''
 DEPLOYMENT_MODE='scan'
 OPENVASD_TAR_WITH_IMAGES='n'
 OPENVASD_LOAD_IMAGES_FROM_TAR='n'
+OPENVASD_CLIENT_CA=''
+OPENVASD_SERVER_CERT=''
+OPENVASD_SERVER_KEY=''
 GVMD_ADMIN_PASSWORD=''
 GREENBONE_FEED_SYNC_JOB_HOUR='3'
 declare -A LICENSE_DATA
@@ -80,16 +83,18 @@ Actions:
   --init                         Initialize deployment, certificates, and
                                  deployment settings
 
-  --init-openvasd                Initialize OCI client certificates for an
-                                 OpenVASD deployment
+  --init-openvasd-tar            Initialize OCI client certificates from an
+                                 OpenVASD deployment archive created with
+                                 --create-openvasd-tar
 
   --change-admin-password        Change the gvmd administrator password
 
-  --change-feed-sync-hour        Set the daily hour for scheduled feed synchronization (0-23)
+  --change-feed-sync-hour        Set the daily hour for scheduled feed
+                                 synchronization (0-23)
 
   --force-feed-sync              Restart feed synchronization immediately
 
-  --update                       Download the latest product version
+  --update                       Download and install the latest product version
 
   --run                          Start or redeploy the configured deployment
 
@@ -117,8 +122,17 @@ Actions:
 
 Deployment options:
   --deployment-mode MODE         Deployment mode:
-                                   scan | openvas
+                                   scan | openvasd
                                  Default: ${DEPLOYMENT_MODE}
+
+  --openvasd-client-ca FILE      OpenVASD client CA certificate used for
+                                 --init --deployment-mode openvasd
+
+  --openvasd-server-cert FILE    OpenVASD server certificate used for
+                                 --init --deployment-mode openvasd
+
+  --openvasd-server-key FILE     OpenVASD server private key used for
+                                 --init --deployment-mode openvasd
 
   --feed-mode MODE               Feed mode:
                                    volume | service | mount
@@ -180,6 +194,20 @@ OpenVASD options:
   --openvasd-load-images-from-tar
                                  Load packaged Docker images before deployment
                                  Default: disabled
+
+
+Development options:
+  --dev                          Use development stage URL prefix:
+                                 -dev/dev
+
+  --integration                  Use development stage URL prefix:
+                                 -dev/integration
+
+  --testing                      Use development stage URL prefix:
+                                 -dev/testing
+
+  --staging                      Use development stage URL prefix:
+                                 -dev/staging
 
 
 Help:
@@ -255,23 +283,60 @@ Stop deployment and remove Docker volumes:
 
 
 Update ingress certificates:
-  $0 --update-ingress-certs --ingress-server-cert ./ingress.crt --ingress-server-key ./ingress.key
+  $0 --update-ingress-certs \\
+     --ingress-server-cert ./ingress.crt \\
+     --ingress-server-key ./ingress.key
 
 
 External OpenVASD sensor setup:
+
+Option 1:
+
+Create OpenVASD certificates:
+  $0 --create-openvasd-certs --cn-openvasd sensor.example.com
+
+Copy the following files to the new host:
+  - ${0}
+  - server.crt
+  - server.key
+  - ca.crt
+
+
+Initialize the remote OpenVASD deployment:
+  ${0} --init --deployment-mode openvasd \\
+    --cn-openvasd sensor.example.com \\
+    --oci-client-cert oci.crt \\
+    --oci-client-key oci.key \\
+    --feed-key key \\
+    --openvasd-server-cert server.crt \\
+    --openvasd-server-key server.key \\
+    --openvasd-client-ca ca.crt
+
+
+Update and start the OpenVASD deployment:
+  ${0} --update
+  ${0} --run
+
+Register an OpenVASD scanner:
+  $0 --add-openvasd --cn-openvasd sensor.example.com --openvasd-port 443
+
+Option 2:
 
 Create OpenVASD certificates:
   $0 --create-openvasd-certs --cn-openvasd sensor.example.com
 
 
 Create an OpenVASD deployment archive:
-  $0 --create-openvasd-tar --cn-openvasd sensor.example.com --openvasd-tar-with-images
+  $0 --create-openvasd-tar \\
+     --cn-openvasd sensor.example.com \\
+     --openvasd-tar-with-images
 
 
-Run an extracted OpenVASD archive on your openvasd(sensor) node/host:
+Run an extracted OpenVASD archive on your OpenVASD sensor node/host:
   $0 --run --openvasd-load-images-from-tar
 
-Run an extracted OpenVASD archive with other host port:
+
+Run an extracted OpenVASD archive with a custom host port:
   $0 --run --openvasd-load-images-from-tar --openvasd-port PORT
 
 
@@ -286,7 +351,7 @@ List or remove registered OpenVASD scanners:
 
 
 For CI workflows:
-  Use --skip-init-if-exist with --skip-docker-oci or --init-docker-oci 
+  Use --skip-init-if-exist with --skip-docker-oci or --init-docker-oci.
 
 
 Support:
@@ -434,27 +499,38 @@ create_openvasd_cert() {
     cat << EOF
 Remote OpenVASD sensor setup:
 
-Copy the generated certificate files to the OpenVASD sensor host:
+Option 1:
 
-  ${OPENVASD_FOLDER}/server.crt -> <config-folder>/server.crt
-  ${OPENVASD_FOLDER}/server.key -> <config-folder>/server.key
-  ${OPENVASD_FOLDER}/ca.crt     -> <config-folder>/clients/ca.crt
+Use ${0} to deploy OpenVASD on another host/node.
 
-Configure OpenVASD to use these TLS certificates and restart the
-OpenVASD service.
+Copy the following files to the new host:
+  - ${0}
+  - ${OPENVASD_FOLDER}/server.crt
+  - ${OPENVASD_FOLDER}/server.key
+  - ${OPENVASD_FOLDER}/ca.crt
 
-Or
+Initialize the remote OpenVASD deployment:
+  ${0} --init --deployment-mode openvasd \\
+    --cn-openvasd ${CN_OPENVASD} \\
+    --oci-client-cert oci.crt \\
+    --oci-client-key oci.key \\
+    --feed-key key \\
+    --openvasd-server-cert server.crt \\
+    --openvasd-server-key server.key \\
+    --openvasd-client-ca ca.crt
 
-OpenVASD Docker Compose TLS configuration:
+  ${0} --update
+  ${0} --run
 
-  export DEPLOYMENT_MODE=openvasd
-  export FEED_KEY=\$(< "gsf.key")
-  export OPENVAS_SCANNER_TLS_CERT=\$(< "server.crt")
-  export OPENVAS_SCANNER_TLS_KEY=\$(< "server.key")
-  export OPENVAS_TLS_CLIENT_CA=\$(< "clients/ca.crt")
-  docker compose up
+Register an OpenVASD scanner on an enterprise-container
+(SCAN deployment mode) node/host:
 
-Or
+  ${0} --add-openvasd \\
+    --cn-openvasd sensor.example.com \\
+    --openvasd-port 443
+
+========================================================================
+Option 2:
 
 Create an OpenVASD deployment archive for an external sensor:
 
@@ -462,29 +538,60 @@ Create an OpenVASD deployment archive for an external sensor:
 
 Include Docker images in the archive (no --init-openvasd required):
 
-  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD} --openvasd-tar-with-images
+  ${0} --create-openvasd-tar \\
+    --cn-openvasd ${CN_OPENVASD} \\
+    --openvasd-tar-with-images
 
-Copy the archive to the OpenVASD sensor host, extract it, and start
-the sensor deployment:
+
+Deploy the sensor from an archive:
+
+1. Copy the archive to the OpenVASD sensor host.
+2. Extract the archive.
+3. Initialize and start the sensor:
 
   ${0} --init-openvasd
   ${0} --run
 
-To load packaged Docker images before starting the sensor
+
+Load packaged Docker images before starting the sensor
 (no --init-openvasd required):
 
   ${0} --run --openvasd-load-images-from-tar
 
-Optionally, use a different OpenVASD listen port:
 
-  ${0} --run --openvasd-load-images-from-tar --openvasd-port <PORT>
+Optionally, use a custom OpenVASD listen port:
 
-Then
+  ${0} --run \\
+    --openvasd-load-images-from-tar \\
+    --openvasd-port <PORT>
 
-Register an OpenVASD scanner on enterprise-container(SCAN deployment mode) node/host:
 
-  ${0} --add-openvasd --cn-openvasd sensor.example.com --openvasd-port 443
+Register an OpenVASD scanner on an enterprise-container
+(SCAN deployment mode) node/host:
 
+  ${0} --add-openvasd \\
+    --cn-openvasd sensor.example.com \\
+    --openvasd-port 443
+
+========================================================================
+Option 3:
+
+Alternatively, copy the generated certificate files to the OpenVASD sensor host:
+
+  ${OPENVASD_FOLDER}/server.crt -> <config-folder>/server.crt
+  ${OPENVASD_FOLDER}/server.key -> <config-folder>/server.key
+  ${OPENVASD_FOLDER}/ca.crt     -> <config-folder>/clients/ca.crt
+
+
+Configure OpenVASD to use the TLS certificates and restart the
+OpenVASD service.
+
+Register an OpenVASD scanner on an enterprise-container
+(SCAN deployment mode) node/host:
+
+  ${0} --add-openvasd \\
+    --cn-openvasd sensor.example.com \\
+    --openvasd-port 443
 EOF
 }
 
@@ -647,7 +754,7 @@ init_docker_oci() {
 # =============================================================================
 # Initializes the OpenVASD deployment by configuring the OCI client
 # certificates used by dockerd.
-init_openvasd() {
+init_openvasd_tar() {
     init_docker_oci
 }
 
@@ -816,6 +923,38 @@ change_feed_sync_hour() {
 }
 
 # =============================================================================
+# init_env_openvasd()
+# =============================================================================
+# Initializes the OpenVASD environment configuration by storing the OpenVASD
+# common name (CN) in the working directory.
+#
+# Arguments:
+#   $1
+#     OpenVASD common name (CN).
+#     Defaults to CN_OPENVASD.
+#
+#   $2
+#     Working directory where the OPENVASD_CN file is created.
+#     Defaults to WORKING_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the OpenVASD common name is missing.
+init_env_openvasd() {
+    local cn_openvasd="${1:-$CN_OPENVASD}"
+    local working_dir="${2:-$WORKING_DIR}"
+
+    if [ "${cn_openvasd}" ]; then
+        echo "${cn_openvasd}" > "${working_dir}/OPENVASD_CN"
+    else
+        echo "Error: --cn-openvasd argument missing!"
+    exit 1
+    fi
+}
+
+# =============================================================================
 # init_env()
 # =============================================================================
 # Validates the deployment, feed, and client-certificate configuration and
@@ -847,7 +986,7 @@ init_env() {
         exit 1
     fi
     if [ "${FEED_MODE}" == 'mount' ] && [ -d "${FEED_PATH}" ]; then
-        echo "Error: feed mode option mount is not supported currently!."
+        echo "Error: feed mode option mount is not supported currently!"
         exit 1
         echo "${FEED_PATH}" > "${WORKING_DIR}/FEED_PATH"
     elif [ "${FEED_MODE}" == 'mount' ]; then
@@ -855,7 +994,7 @@ init_env() {
         exit 1
     fi
     if [ "${CCERT_MODE}" == 'mount' ] && [ -d "${CCERT_PATH}" ]; then
-        echo "Error: ccert mode option mount is not supported currently!."
+        echo "Error: ccert mode option mount is not supported currently!"
         exit 1
         echo "${CCERT_PATH}" > "${WORKING_DIR}/CCERT_PATH"
     elif [ "${CCERT_MODE}" == 'mount' ]; then
@@ -868,6 +1007,38 @@ init_env() {
         echo 'mount' > "${WORKING_DIR}/CCERT_TYPE"
     fi
     init_feed_sync_hour
+    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+        init_env_openvasd
+    fi
+}
+
+# =============================================================================
+# load_env_openvasd()
+# =============================================================================
+# Loads the OpenVASD environment configuration from the OPENVASD_CN file in the
+# working directory and exports the OpenVASD common name (CN) for use by
+# subsequent deployment operations.
+#
+# Arguments:
+#   $1
+#     Working directory containing the OPENVASD_CN file.
+#     Defaults to WORKING_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the OPENVASD_CN file is missing.
+
+load_env_openvasd() {
+    local working_dir="${1:-$WORKING_DIR}"
+
+    if [ -f "${working_dir}/OPENVASD_CN" ]; then
+        export CN_OPENVASD="$(< "${working_dir}/OPENVASD_CN")"
+    else
+        echo "Error: No openvasd cn found at ${working_dir}/OPENVASD_CN! Please run --init --deployment-mode openvasd!"
+        exit 1
+    fi
 }
 
 # =============================================================================
@@ -930,6 +1101,9 @@ load_env() {
         echo "Error: No FEED_SYNC_JOB_HOUR found at ${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR! Please run --init or --change-feed-sync-hour with --feed-sync-hour!"
         exit 1
     fi
+    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+        load_env_openvasd
+    fi
 }
 
 # =============================================================================
@@ -969,6 +1143,71 @@ init_jwt() {
         -pubout \
         -outform PEM \
         -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem"
+}
+
+# =============================================================================
+# init_certs_openvasd()
+# =============================================================================
+# Initializes the certificate directory for an OpenVASD instance and installs
+# the required TLS certificates and keys.
+#
+# The function creates a dedicated certificate folder based on the OpenVASD
+# common name (CN), then copies the provided server certificate, server key,
+# and client CA certificate into the target directory with appropriate file
+# permissions.
+#
+# Arguments:
+#   $1
+#     OpenVASD common name (CN).
+#     Defaults to CN_OPENVASD.
+#
+#   $2
+#     OpenVASD server certificate path.
+#     Defaults to OPENVASD_SERVER_CERT.
+#
+#   $3
+#     OpenVASD server private key path.
+#     Defaults to OPENVASD_SERVER_KEY.
+#
+#   $4
+#     Enterprise container certificate directory.
+#     Defaults to CERT_DIR_ENTERPRISE_CONTAINER.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if any required certificate or key file is missing.
+init_certs_openvasd() {
+    local openvasd_cn="${1:-$CN_OPENVASD}"
+    local openvasd_client_ca="${1:-$OPENVASD_CLIENT_CA}"
+    local openvasd_server_cert="${2:-$OPENVASD_SERVER_CERT}"
+    local openvasd_server_key="${3:-$OPENVASD_SERVER_KEY}"
+    local cert_dir_enterprise_container="${4:-$CERT_DIR_ENTERPRISE_CONTAINER}"
+
+    local openvasd_cert_folder="${openvasd_cn//./_}"
+    local cert_dir_openvasd="${cert_dir_enterprise_container}/${openvasd_cert_folder}"
+
+    mkdir -p "${cert_dir_openvasd}"
+
+    if [ -f "${openvasd_server_cert}" ]; then
+        install -m 0644 "${openvasd_server_cert}" "${cert_dir_openvasd}/server.crt"
+    else
+        echo "Error: Missing argument --openvasd-server-cert !"
+        exit 1
+    fi
+    if [ -f "${openvasd_server_key}" ]; then
+        install -m 0600 "${openvasd_server_key}" "${cert_dir_openvasd}/server.key"
+    else
+        echo "Error: Missing argument --openvasd-server-key !"
+        exit 1
+    fi
+    if [ -f "${openvasd_client_ca}" ]; then
+        install -m 0600 "${openvasd_client_ca}" "${cert_dir_openvasd}/ca.crt"
+    else
+        echo "Error: Missing argument --openvasd-client-ca !"
+        exit 1
+    fi
 }
 
 # =============================================================================
@@ -1135,7 +1374,12 @@ init() {
         install_oci_certs
     fi
 
-    init_certs
+    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+        init_certs_openvasd
+    else
+        init_certs
+    fi
+
     init_jwt
     install_feed_key
     init_docker_oci
@@ -1252,12 +1496,6 @@ get_latest_version() {
 # Terminates the script when the common name or any required certificate file
 # is missing.
 deploy_load_certs_openvasd() {
-    if [ -f "${WORKING_DIR}/OPENVASD_CN" ]; then
-        local openvasd_cn="$(< "${WORKING_DIR}/OPENVASD_CN")"
-    else
-        echo "Error: No Openvasd cn found at ${WORKING_DIR}/OPENVASD_CN! Please run --init-openvasd!"
-        exit 1
-    fi
     local openvasd_cert_folder="${openvasd_cn//./_}"
     local cert_dir_openvasd="${CERT_DIR_ENTERPRISE_CONTAINER}/${openvasd_cert_folder}"
 
@@ -1488,15 +1726,15 @@ compose_ps() {
 # =============================================================================
 # The run function orchestrates the execution of the script.
 run() {
-    check_requirements
+    #check_requirements
 
     PACKAGE_URL="packages.greenbone.net/openvas-${PACKAGE}${DEV_STAGE_URL_PREFIX}/${PACKAGE}"
 
     if [ "${MODE}" == 'init' ]; then
         init
     fi
-    if [ "${MODE}" == 'init-openvasd' ]; then
-        init_openvasd
+    if [ "${MODE}" == 'init-openvasd-tar' ]; then
+        init_openvasd_tar
     fi
     if [ "${MODE}" == 'create-openvasd-tar' ]; then
         create_openvasd_tar
@@ -1554,20 +1792,15 @@ run() {
 # Parses the command-line arguments and initializes the corresponding global
 # variables that control the script's behavior.
 #
-# Supported options include:
-#   - Selecting the execution mode (MODE)
-#   - Configuring deployment settings
-#   - Providing certificate, key, and license file paths
-#   - Configuring feed synchronization options
-#   - Managing OpenVASD instances and certificates
-#   - Controlling Docker OCI initialization
-#
 # If no arguments are provided, or if --help is specified, the help message is
 # displayed via show_help().
 #
 # Globals modified:
 #   MODE
 #   DEPLOYMENT_MODE
+#   OPENVASD_CLIENT_CA
+#   OPENVASD_SERVER_CERT
+#   OPENVASD_SERVER_KEY
 #   LICENSE_FILE
 #   OCI_TLS_CLIENT_CERT
 #   OCI_TLS_CLIENT_KEY
@@ -1586,6 +1819,9 @@ run() {
 #   CN_OPENVASD
 #   OPENVASD_UUID
 #   OPENVASD_PORT
+#   SERVICE_NAME
+#   DEV_STAGE_URL_PREFIX
+#   SKIP_INIT_IF_EXIST
 #
 # Arguments:
 #   All command-line arguments passed to the script ("$@").
@@ -1603,12 +1839,24 @@ parse_args() {
                 MODE='init'
                 shift 1
                 ;;
-            --init-openvasd)
-                MODE='init-openvasd'
+            --init-openvasd-tar)
+                MODE='init-openvasd-tar'
                 shift 1
                 ;;
             --deployment-mode)
                 DEPLOYMENT_MODE="$2"
+                shift 2
+                ;;
+            --openvasd-client-ca)
+                OPENVASD_CLIENT_CA="$2"
+                shift 2
+                ;;
+            --openvasd-server-cert)
+                OPENVASD_SERVER_CERT="$2"
+                shift 2
+                ;;
+            --openvasd-server-key)
+                OPENVASD_SERVER_KEY="$2"
                 shift 2
                 ;;
             --license-file)
