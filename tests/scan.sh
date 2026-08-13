@@ -20,6 +20,12 @@ check_req() {
 }
 
 clean() {
+    echo 'Show docker container'
+    docker ps
+    echo 'Test down volumes'
+    openvas-deployment --down-volumes
+    echo 'List product folder'
+    tree product
     rm -rf product
 }
 
@@ -30,10 +36,6 @@ run() {
     openvas-deployment --update
     echo 'Test Run'
     openvas-deployment --run
-    echo 'Test down volumes'
-    openvas-deployment --down-volumes
-    echo 'List product folder'
-    tree product
 }
 
 run_openvasd_cert_tar() {
@@ -43,7 +45,35 @@ run_openvasd_cert_tar() {
     openvas-deployment --create-openvasd-cert-tar --cn-openvasd sensor.test.test
     if ! [ -f 'sensor_test_test.tar' ]; then
         echo 'Openvasd cert tar gen failed!'
+        exit 1
     fi
+    mkdir sensor_test_test
+    pushd sensor_test_test > /dev/null || exit
+        echo 'Test Openvasd Cert extract'
+        tar xvf ../sensor_test_test.tar
+        echo 'Test Openvasd Cert init'
+        openvas-deployment --init --init-docker-oci --deployment-mode openvasd \
+            --cn-openvasd sensor.test.test \
+            --oci-client-cert ../oci-client.cert \
+            --oci-client-key ../oci-client.key \
+            --feed-key ../gsf.key \
+            --openvasd-server-cert server.crt \
+            --openvasd-server-key server.key \
+            --openvasd-client-ca ca.crt
+        echo 'Test Openvasd Cert update'
+        openvas-deployment --update
+        echo 'Test Openvasd Cert run'
+        openvas-deployment --run --openvasd-port '1337'
+        if ! ss -ltn | grep -q ':1337 '; then
+            echo 'Openvasd sensor setup port test failed!'
+            exit 1
+        fi
+        echo 'Show docker container'
+        docker ps
+        echo 'Test down volumes'
+        openvas-deployment --down-volumes
+    popd > /dev/null
+    rm -rf sensor_test_test
 }
 
 check_req
