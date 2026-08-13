@@ -10,10 +10,10 @@ check_req() {
     if ! [ -f 'gsf.key' ]; then
         echo "No gsf.key found"
         exit 1
-    elif [ -f 'oci-client.cert' ]; then
+    elif ! [ -f 'oci-client.cert' ]; then
         echo "No oci-client.cert found"
         exit 1
-    elif [ -f 'oci-client.key' ]; then
+    elif ! [ -f 'oci-client.key' ]; then
         echo "No oci-client.key found"
         exit 1
     fi
