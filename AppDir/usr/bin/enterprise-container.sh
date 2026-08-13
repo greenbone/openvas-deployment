@@ -527,8 +527,8 @@ create_openvasd_cert() {
         exit 1
     fi
 
-    local OPENVASD_FOLDER="${CN_OPENVASD//./_}"
-    OPENVASD_FOLDER="${CERT_DIR_ENTERPRISE_CONTAINER}/${OPENVASD_FOLDER}"
+    local OPENVASD_FOLDER_NAME="${CN_OPENVASD//./_}"
+    local OPENVASD_FOLDER="${CERT_DIR_ENTERPRISE_CONTAINER}/${OPENVASD_FOLDER_NAME}"
 
     mkdir -p "${OPENVASD_FOLDER}"
 
@@ -548,11 +548,14 @@ Option 1:
 
 Use ${0} to deploy OpenVASD on another host/node.
 
+  ${0} --create-openvasd-certs --cn-openvasd ${CN_OPENVASD}
+  ${0} --create-openvasd-cert-tar --cn-openvasd ${CN_OPENVASD}
+
 Copy the following files to the new host:
   - ${0}
-  - ${OPENVASD_FOLDER}/server.crt
-  - ${OPENVASD_FOLDER}/server.key
-  - ${OPENVASD_FOLDER}/ca.crt
+  - ./${OPENVASD_FOLDER_NAME}.tar
+  - your feed key
+  - your oci client certs
 
 Initialize the remote OpenVASD deployment:
   ${0} --init --deployment-mode openvasd \\
