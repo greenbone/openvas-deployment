@@ -111,5 +111,5 @@ check_req
 run
 run_openvasd_cert_tar
 run_openvasd_tar
-list
 clean
+list
