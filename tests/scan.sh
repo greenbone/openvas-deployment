@@ -63,6 +63,8 @@ run_openvasd_cert_tar() {
         echo 'Test Openvasd Cert update'
         openvas-deployment --update
         echo 'Test Openvasd Cert run'
+        export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.0.128/26'
+        export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:3::/64'
         openvas-deployment --run --openvasd-port '1337'
         if ! ss -ltn | grep -q ':1337 '; then
             echo 'Openvasd sensor setup port test failed!'
