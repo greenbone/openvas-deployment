@@ -299,14 +299,14 @@ Create OpenVASD certificates:
   $0 --create-openvasd-cert-tar --cn-openvasd sensor.example.com
 
 Copy the following files to the new host:
-  - ${0}
+  - $0
   - ./sensor_example_com.tar
   - your feed key
   - your oci client certs
 
 
 Initialize the remote OpenVASD deployment:
-  ${0} --init --deployment-mode openvasd \\
+  $0 --init --deployment-mode openvasd \\
     --cn-openvasd sensor.example.com \\
     --oci-client-cert oci.crt \\
     --oci-client-key oci.key \\
@@ -317,8 +317,8 @@ Initialize the remote OpenVASD deployment:
 
 
 Update and start the OpenVASD deployment:
-  ${0} --update
-  ${0} --run
+  $0 --update
+  $0 --run
 
 Register an OpenVASD scanner:
   $0 --add-openvasd --cn-openvasd sensor.example.com --openvasd-port 443
@@ -871,7 +871,6 @@ create_openvasd_tar() {
     local openvasd_name="${CN_OPENVASD//./-}"
     local openvasd_cert_folder="${CN_OPENVASD//./_}"
     openvasd_cert_folder="${CERT_DIR_ENTERPRISE_CONTAINER}/${openvasd_cert_folder}"
-    local sh_file="$(pwd)/${0}"
     local tmp_dir="$(mktemp -d)"
     local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}"
     pushd "${tmp_dir}" > /dev/null || exit
@@ -889,7 +888,7 @@ create_openvasd_tar() {
         echo "${FEED_PATH}" > "${STORE_DIR_NAME}/FEED_PATH"
         echo "${CCERT_PATH}" > "${STORE_DIR_NAME}/CCERT_PATH"
         echo "${CCERT_TYPE}" > "${STORE_DIR_NAME}/CCERT_TYPE"
-        cp "${sh_file}" .
+        cp "${0}" .
     popd > /dev/null
 
     if [ "${OPENVASD_TAR_WITH_IMAGES}" == 'y' ]; then
