@@ -30,14 +30,16 @@ check_req() {
 }
 
 clean() {
-    echo_task 'Show docker container for $1'
-    docker ps
     echo_task 'Test down volumes'
     openvas-deployment --down-volumes
 }
 
 list() {
-    echo_task 'List product folder for $1'
+    echo_task "Show docker container for $1"
+    openvas-deployment --ps
+    echo_task "Show docker logs for $1"
+    openvas-deployment --logs >/dev/null 2>&1
+    echo_task "List product folder for $1"
     tree product
 }
 
@@ -59,6 +61,21 @@ run() {
     openvas-deployment --update
     echo_task 'Test Run'
     openvas-deployment --run
+}
+
+change_admin_pw() {
+    echo_task 'Test change admin pasword'
+    openvas-deployment --change-admin-password --admin-password 'admin'
+}
+
+change_feed_sync_hour() {
+    echo_task 'Test change feed sync hour'
+    openvas-deployment --change-feed-sync-hour --feed-sync-hour 4 --feed-sync-force-no-log
+}
+
+change_force_feed_sync() {
+    echo_task 'Test force feed sync'
+    openvas-deployment --force-feed-sync --feed-sync-force-no-log
 }
 
 run_openvasd_cert_tar() {
@@ -99,8 +116,8 @@ run_openvasd_cert_tar() {
     openvas-deployment --add-openvasd --cn-openvasd sensor1.test.test --openvasd-port 1337
     echo_task 'Cleanup Openvasd cert tar'
     pushd sensor1_test_test > /dev/null || exit
-        clean 'Openvasd cert tar'
         list 'Openvasd cert tar'
+        clean 'Openvasd cert tar'
     popd > /dev/null
 }
 
@@ -126,21 +143,23 @@ run_openvasd_tar() {
             echo_error 'Error openvasd sensor setup port test failed!'
             exit 1
         fi
-
     popd > /dev/null
     echo_task 'Test add openvasd to gvmd'
     gvmd_add_openvasd_host_to_etc_hosts 'sensor2.test.test' '100.104.0.193'
     openvas-deployment --add-openvasd --cn-openvasd sensor2.test.test --openvasd-port 2337
     echo_task 'Cleanup Openvasd tar'
     pushd sensor2_test_test > /dev/null || exit
-        clean 'Openvasd tar'
         list 'Openvasd tar'
+        clean 'Openvasd tar'
     popd > /dev/null
 }
 
 check_req
 run
+change_admin_pw
+change_feed_sync_hour
+change_force_feed_sync
 run_openvasd_cert_tar
 run_openvasd_tar
-clean
-list
+list 'Openvasd scan'
+clean 'Openvasd scan'

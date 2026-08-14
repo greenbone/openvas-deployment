@@ -59,6 +59,7 @@ GREENBONE_FEED_SYNC_JOB_HOUR='3'
 declare -A LICENSE_DATA
 LICENSE_FILE=''
 SERVICE_NAME=''
+FEED_SYNC_FORCE_NO_LOG='n'
 
 # =============================================================================
 # show_help()
@@ -936,9 +937,11 @@ force_feed_sync() {
 
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
         docker compose restart feed-sync
-        read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" response
-        if [ "$response" == "y" ]; then
-            docker compose logs -f feed-sync
+        if [ "${FEED_SYNC_FORCE_NO_LOG}" == 'n' ]; then
+            read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" response
+            if [ "$response" == "y" ]; then
+                docker compose logs -f feed-sync
+            fi
         fi
     popd > /dev/null
 }
@@ -1980,6 +1983,10 @@ parse_args() {
                 ;;
             --change-feed-sync-hour)
                 MODE='change-feed-sync-hour'
+                shift 1
+                ;;
+            --feed-sync-force-no-log)
+                FEED_SYNC_FORCE_NO_LOG='y'
                 shift 1
                 ;;
             --feed-sync-hour)
