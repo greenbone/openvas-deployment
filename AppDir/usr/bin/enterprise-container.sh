@@ -300,7 +300,7 @@ Create OpenVASD certificates:
 
 Copy the following files to the new host:
   - $0
-  - ./sensor_example_com.tar
+  - ./sensor-example-com.tar
   - your feed key
   - your oci client certs
 
@@ -506,12 +506,13 @@ create_openvasd_cert_tar() {
 
     local openvasd_folder_name="${openvasd_cn//./_}"
     local openvasd_folder="${cert_dir_enterprise_container}/${openvasd_folder_name}"
+    local openvasd_name="${openvasd_cn//./-}"
 
     if ! [ -d "${openvasd_folder}" ]; then
         echo "Error: ${openvasd_folder} does not exist!"
         exit 1
     fi
-    tar cf "${openvasd_folder_name}.tar" -C "${openvasd_folder}" .
+    tar cf "${openvasd_name}.tar" -C "${openvasd_folder}" .
 }
 
 # =============================================================================
@@ -522,25 +523,28 @@ create_openvasd_cert_tar() {
 # files in a certificate directory derived from the common name and prints the
 # target paths where the files should be copied on the remote OpenVASD machine.
 create_openvasd_cert() {
+    local openvasd_cn="${1:-$CN_OPENVASD}"
+    local cert_dir_enterprise_container="${2:-$CERT_DIR_ENTERPRISE_CONTAINER}"
 
-    if ! [ "${CN_OPENVASD}" ]; then
+    if ! [ "${openvasd_cn}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
         exit 1
     fi
 
-    local OPENVASD_FOLDER_NAME="${CN_OPENVASD//./_}"
-    local OPENVASD_FOLDER="${CERT_DIR_ENTERPRISE_CONTAINER}/${OPENVASD_FOLDER_NAME}"
+    local openvas_folder_name="${openvasd_cn//./_}"
+    local openvas_folder="${cert_dir_enterprise_container}/${openvas_folder_name}"
+    local openvasd_name="${openvasd_cn//./-}"
 
-    mkdir -p "${OPENVASD_FOLDER}"
+    mkdir -p "${openvas_folder}"
 
     # Create a Openvasd Server certificate
-    openssl genrsa -out "${OPENVASD_FOLDER}/server.key" 2048 2>/dev/null
-    openssl req -new -key "${OPENVASD_FOLDER}/server.key" -out "${OPENVASD_FOLDER}/server.csr" \
-       -subj "/CN=${CN_OPENVASD}" 2>/dev/null
-    openssl x509 -req -in "${OPENVASD_FOLDER}/server.csr" -out "${OPENVASD_FOLDER}/server.crt" -days 365 \
-       -CA "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" -CAkey "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.key" \
+    openssl genrsa -out "${openvas_folder}/server.key" 2048 2>/dev/null
+    openssl req -new -key "${openvas_folder}/server.key" -out "${openvas_folder}/server.csr" \
+       -subj "/CN=${openvasd_cn}" 2>/dev/null
+    openssl x509 -req -in "${openvas_folder}/server.csr" -out "${openvas_folder}/server.crt" -days 365 \
+       -CA "${cert_dir_enterprise_container}/ca.crt" -CAkey "${cert_dir_enterprise_container}/ca.key" \
        -extfile <(printf '%s\n' "basicConstraints=CA:FALSE" "extendedKeyUsage=serverAuth" "keyUsage=digitalSignature,keyEncipherment") 2>/dev/null
-    cp "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" "${OPENVASD_FOLDER}/ca.crt"
+    cp "${cert_dir_enterprise_container}/ca.crt" "${openvas_folder}/ca.crt"
 
     cat << EOF
 Remote OpenVASD sensor setup:
@@ -549,18 +553,20 @@ Option 1:
 
 Use ${0} to deploy OpenVASD on another host/node.
 
-  ${0} --create-openvasd-certs --cn-openvasd ${CN_OPENVASD}
-  ${0} --create-openvasd-cert-tar --cn-openvasd ${CN_OPENVASD}
+  ${0} --create-openvasd-certs --cn-openvasd ${openvasd_cn}
+  ${0} --create-openvasd-cert-tar --cn-openvasd ${openvasd_cn}
 
 Copy the following files to the new host:
   - ${0}
-  - ./${OPENVASD_FOLDER_NAME}.tar
+  - ./${openvasd_name}.tar
   - your feed key
   - your oci client certs
 
+Extract the archive.
+
 Initialize the remote OpenVASD deployment:
   ${0} --init --deployment-mode openvasd \\
-    --cn-openvasd ${CN_OPENVASD} \\
+    --cn-openvasd ${openvasd_cn} \\
     --oci-client-cert oci.crt \\
     --oci-client-key oci.key \\
     --feed-key key \\
@@ -575,7 +581,7 @@ Register an OpenVASD scanner on an enterprise-container
 (SCAN deployment mode) node/host:
 
   ${0} --add-openvasd \\
-    --cn-openvasd sensor.example.com \\
+    --cn-openvasd ${openvasd_cn}\\
     --openvasd-port 443
 
 ========================================================================
@@ -583,18 +589,18 @@ Option 2:
 
 Create an OpenVASD deployment archive for an external sensor:
 
-  ${0} --create-openvasd-tar --cn-openvasd ${CN_OPENVASD}
+  ${0} --create-openvasd-tar --cn-openvasd ${openvasd_cn}
 
 Include Docker images in the archive (no --init-openvasd required):
 
   ${0} --create-openvasd-tar \\
-    --cn-openvasd ${CN_OPENVASD} \\
+    --cn-openvasd ${openvasd_cn} \\
     --openvasd-tar-with-images
 
 
 Deploy the sensor from an archive:
 
-1. Copy the archive to the OpenVASD sensor host.
+1. Copy the archive ${openvasd_name}.tar.gz to the OpenVASD sensor host.
 2. Extract the archive.
 3. Initialize and start the sensor:
 
@@ -619,7 +625,7 @@ Register an OpenVASD scanner on an enterprise-container
 (SCAN deployment mode) node/host:
 
   ${0} --add-openvasd \\
-    --cn-openvasd sensor.example.com \\
+    --cn-openvasd ${openvasd_cn} \\
     --openvasd-port 443
 
 ========================================================================
@@ -627,9 +633,9 @@ Option 3:
 
 Alternatively, copy the generated certificate files to the OpenVASD sensor host:
 
-  ${OPENVASD_FOLDER}/server.crt -> <config-folder>/server.crt
-  ${OPENVASD_FOLDER}/server.key -> <config-folder>/server.key
-  ${OPENVASD_FOLDER}/ca.crt     -> <config-folder>/clients/ca.crt
+  ${openvas_folder}/server.crt -> <config-folder>/server.crt
+  ${openvas_folder}/server.key -> <config-folder>/server.key
+  ${openvas_folder}/ca.crt     -> <config-folder>/clients/ca.crt
 
 
 Configure OpenVASD to use the TLS certificates and restart the
@@ -639,7 +645,7 @@ Register an OpenVASD scanner on an enterprise-container
 (SCAN deployment mode) node/host:
 
   ${0} --add-openvasd \\
-    --cn-openvasd sensor.example.com \\
+    --cn-openvasd ${openvasd_cn} \\
     --openvasd-port 443
 EOF
 }
@@ -768,7 +774,9 @@ init_admin_password() {
         echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
     else
         echo "Info: No admin password set. Create random."
-        echo "$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
+        set +e
+        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
+        set -e
         GVMD_ADMIN_PASSWORD="$(< "${WORKING_DIR}/GVMD_ADMIN_PASSWORD")"
         echo "Your admin password is: ${GVMD_ADMIN_PASSWORD}"
     fi
@@ -1077,7 +1085,6 @@ init_env() {
 #
 # Exits:
 #   1 if the OPENVASD_CN file is missing.
-
 load_env_openvasd() {
     local working_dir="${1:-$WORKING_DIR}"
 
@@ -1090,16 +1097,52 @@ load_env_openvasd() {
 }
 
 # =============================================================================
+# load_env_scan()
+# =============================================================================
+# Loads the scan environment configuration by reading the GVMD administrator
+# password from the GVMD_ADMIN_PASSWORD file in the working directory and
+# exporting it for use by subsequent scan operations.
+#
+# Arguments:
+#   $1
+#     Working directory containing the GVMD_ADMIN_PASSWORD file.
+#     Defaults to WORKING_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the GVMD_ADMIN_PASSWORD file is missing.
+load_env_scan() {
+    local working_dir="${1:-$WORKING_DIR}"
+
+    if [ -f "${working_dir}/GVMD_ADMIN_PASSWORD" ]; then
+        export GVMD_ADMIN_PASSWORD="$(< "${working_dir}/GVMD_ADMIN_PASSWORD")"
+    else
+        echo "Error: No admin password found at ${working_dir}/GVMD_ADMIN_PASSWORD! Please run --init or --change-admin-password!"
+        exit 1
+    fi
+}
+
+# =============================================================================
 # load_env()
 # =============================================================================
-# Loads the deployment configuration from files in the working directory and
-# exports the corresponding environment variables.
+# Loads the deployment environment configuration from files in WORKING_DIR and
+# exports the values required by subsequent deployment operations.
 #
-# The function requires deployment, feed, CCERT mode, and CCERT type files.
-# It also loads mount paths when the corresponding mode is set to "mount" and
-# loads the gvmd administrator password for scan deployments. If a required
-# configuration file is missing, it prints an error message and exits with a
-# non-zero status.
+# Loads the deployment, feed, CCERT, and feed synchronization settings. When
+# mount mode is enabled, it also loads the corresponding feed and CCERT paths.
+# Finally, it loads deployment-mode-specific environment variables for scan or
+# OpenVASD deployments.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if a required configuration file is missing.
 load_env() {
     if [ -f "${WORKING_DIR}/DEPLOYMENT_MODE" ]; then
         export DEPLOYMENT_MODE="$(< "${WORKING_DIR}/DEPLOYMENT_MODE")"
@@ -1137,19 +1180,15 @@ load_env() {
         echo "Error: No ccert type found at ${WORKING_DIR}/CCERT_TYPE! Please run --init!"
         exit 1
     fi
-    if [ "${DEPLOYMENT_MODE}" == 'scan' ] && [ -f "${WORKING_DIR}/GVMD_ADMIN_PASSWORD" ]; then
-        export GVMD_ADMIN_PASSWORD="$(< "${WORKING_DIR}/GVMD_ADMIN_PASSWORD")"
-    elif [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-        echo "Error: No admin password found at ${WORKING_DIR}/GVMD_ADMIN_PASSWORD! Please run --init or --change-admin-password!"
-        exit 1
-    fi
     if [ -f "${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR" ]; then
         export GREENBONE_FEED_SYNC_JOB_HOUR="$(< "${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR")"
     else
         echo "Error: No FEED_SYNC_JOB_HOUR found at ${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR! Please run --init or --change-feed-sync-hour with --feed-sync-hour!"
         exit 1
     fi
-    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+        load_env_scan
+    elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         load_env_openvasd
     fi
 }
@@ -1185,12 +1224,14 @@ init_jwt() {
         -quiet \
         -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
         -pkeyopt ec_paramgen_curve:"P-256" \
-        -pkeyopt ec_param_enc:named_curve
+        -pkeyopt ec_param_enc:named_curve \
+        >/dev/null 2>&1
     openssl ec \
         -in "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
         -pubout \
         -outform PEM \
-        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem"
+        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem" \
+        >/dev/null 2>&1
 }
 
 # =============================================================================
@@ -1291,7 +1332,7 @@ init_certs() {
         install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt"
         install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key"
     else
-        echo "Create self sign Ingress certs!"
+        echo "Info: Create self sign Ingress certs!"
         openssl genrsa -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key" 2048 2>/dev/null
         openssl req -new -x509 -key "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key" -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt" -days 365 \
            -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
