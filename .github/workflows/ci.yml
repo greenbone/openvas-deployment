@@ -22,4 +22,6 @@ jobs:
           echo '${{ secrets.OCI_KEY }}' > oci-client.key
 
       - name: CI
+        env:
+          MHOSTS: yes
         run: bash tests/*.sh
