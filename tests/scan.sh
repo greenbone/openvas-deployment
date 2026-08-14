@@ -95,7 +95,7 @@ run_openvasd_cert_tar() {
         fi
     popd > /dev/null
     echo_task 'Test add openvasd to gvmd'
-    gvmd_add_openvasd_host_to_etc_hosts 'sensor1.test.test' '100.104.0.128'
+    gvmd_add_openvasd_host_to_etc_hosts 'sensor1.test.test' '100.104.0.129'
     openvas-deployment --add-openvasd --cn-openvasd sensor1.test.test --openvasd-port 1337
     echo_task 'Cleanup Openvasd cert tar'
     pushd sensor1_test_test > /dev/null || exit
@@ -129,7 +129,7 @@ run_openvasd_tar() {
 
     popd > /dev/null
     echo_task 'Test add openvasd to gvmd'
-    gvmd_add_openvasd_host_to_etc_hosts 'sensor2.test.test' '100.104.0.192'
+    gvmd_add_openvasd_host_to_etc_hosts 'sensor2.test.test' '100.104.0.193'
     openvas-deployment --add-openvasd --cn-openvasd sensor2.test.test --openvasd-port 2337
     echo_task 'Cleanup Openvasd tar'
     pushd sensor2_test_test > /dev/null || exit
