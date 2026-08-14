@@ -32,6 +32,13 @@ list() {
     rm -rf product
 }
 
+gvmd_add_openvasd_host_to_etc_hosts() {
+    local domain="${1:?Missing domain argument}"
+    local ip="${2:?Missing IP argument}"
+
+    docker exec -u 0 enterprise-container-scan-gvmd-1 sh -c "echo \"$ip $domain\" >> /etc/hosts"
+}
+
 run() {
     echo 'Test Init'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key --oci-client-cert oci-client.cert --oci-client-key oci-client.key
@@ -76,6 +83,7 @@ run_openvasd_cert_tar() {
         clean
         list
     popd > /dev/null
+    gvmd_add_openvasd_host_to_etc_hosts 'sensor1.test.test' '100.104.0.128'
     rm -rf sensor1_test_test
     rm -f sensor1_test_test.tar
 }
@@ -85,14 +93,14 @@ run_openvasd_tar() {
     openvas-deployment --create-openvasd-certs --cn-openvasd sensor2.test.test
     echo 'Test Openvasd Tar'
     openvas-deployment --create-openvasd-tar --cn-openvasd sensor2.test.test
-    if ! [ -f 'sensor2_test_test.tar' ]; then
-        echo 'Openvasd cert tar gen failed!'
+    if ! [ -f 'sensor2_test_test.tar.gz' ]; then
+        echo 'Openvasd tar gen failed!'
         exit 1
     fi
     mkdir sensor2_test_test
     pushd sensor2_test_test > /dev/null || exit
         echo 'Test Openvasd Cert extract'
-        tar xvf ../sensor2_test_test.tar
+        tar xzvf ../sensor2_test_test.tar.gz
         export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.0.192/26'
         export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:4::/64'
         openvas-deployment --run --openvasd-port '2337'
@@ -103,6 +111,7 @@ run_openvasd_tar() {
         clean
         list
     popd > /dev/null
+    gvmd_add_openvasd_host_to_etc_hosts 'sensor2.test.test' '100.104.0.192'
     rm -rf sensor2_test_test
     rm -f sensor2_test_test.tar
 }
