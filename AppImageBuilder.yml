@@ -8,7 +8,7 @@ AppDir:
     name: openvas-deployment
     icon: utilities-terminal
     version: 0.0.6
-    exec: usr/bin/bash
+    exec: bin/bash
     exec_args: "$APPDIR/usr/bin/enterprise-container.sh $@"
 
   apt:

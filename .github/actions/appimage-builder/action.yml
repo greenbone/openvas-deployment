@@ -34,4 +34,7 @@ runs:
 
     - name: Build
       shell: bash
-      run: appimage-builder --recipe AppImageBuilder.yml
+      run: |
+        ln -sfn usr/bin AppDir/bin
+        ln -sfn usr/sbin AppDir/sbin
+        appimage-builder --recipe AppImageBuilder.yml
