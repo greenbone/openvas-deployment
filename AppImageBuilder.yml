@@ -36,6 +36,15 @@ AppDir:
       - docker-compose-plugin
       - oras
 
+  runtime:
+    path_mappings:
+      - /usr/bin/:$APPDIR/usr/bin/
+      - /usr/sbin/:$APPDIR/usr/sbin/
+      - /etc/ssl/:$APPDIR/etc/ssl/
+    env:
+      PATH: '$APPDIR/usr/bin:$APPDIR/usr/sbin:$PATH'
+      APPDIR_LIBRARY_PATH: '$APPDIR/usr/lib/x86_64-linux-gnu:$APPDIR/lib/x86_64-linux-gnu'
+
 AppImage:
   update-information: None
   arch: x86_64
