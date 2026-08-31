@@ -8,8 +8,8 @@ AppDir:
     name: openvas-deployment
     icon: utilities-terminal
     version: 0.0.6
-    exec: usr/bin/enterprise-container.sh
-    exec_args: $@
+    exec: usr/bin/bash
+    exec_args: "$APPDIR/usr/bin/enterprise-container.sh $@"
 
   apt:
     arch: amd64
@@ -19,13 +19,16 @@ AppDir:
       - sourceline: 'deb [arch=amd64] https://download.docker.com/linux/debian trixie stable'
         key_url: 'https://download.docker.com/linux/debian/gpg'
     include:
+      - dash
+      - perl
+      - make
       - bash
       - coreutils
       - ca-certificates
       - curl
       - grep
       - sed
-      - mawk
+      - gawk
       - less
       - tar
       - openssl
@@ -35,5 +38,4 @@ AppDir:
 
 AppImage:
   update-information: None
-  sign-key: None
   arch: x86_64

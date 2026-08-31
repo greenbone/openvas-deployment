@@ -20,7 +20,7 @@ jobs:
       - name: Install
         run: |
           ls
-          sudo install -m 0755 /openvas-deployment-0.0.6-x86_64.AppImage /usr/bin/openvas-deployment
+          sudo install -m 0755 openvas-deployment-0.0.6-x86_64.AppImage /usr/bin/openvas-deployment
           echo '${{ secrets.FEED_KEY }}' > gsf.key
           echo '${{ secrets.OCI_CERT }}' > oci-client.cert
           echo '${{ secrets.OCI_KEY }}' > oci-client.key
