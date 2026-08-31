@@ -1,0 +1,39 @@
+version: 1
+
+AppDir:
+  path: ./AppDir
+
+  app_info:
+    id: net.greenbone.openvas-deployment
+    name: openvas-deployment
+    icon: utilities-terminal
+    version: 0.0.6
+    exec: usr/bin/enterprise-container.sh
+    exec_args: $@
+
+  apt:
+    arch: amd64
+    sources:
+      - sourceline: 'deb [arch=amd64] http://deb.debian.org/debian trixie main'
+        key_url: 'https://ftp-master.debian.org/keys/archive-key-13.asc'
+      - sourceline: 'deb [arch=amd64] https://download.docker.com/linux/debian trixie stable'
+        key_url: 'https://download.docker.com/linux/debian/gpg'
+    include:
+      - bash
+      - coreutils
+      - ca-certificates
+      - curl
+      - grep
+      - sed
+      - mawk
+      - less
+      - tar
+      - openssl
+      - docker-ce-cli
+      - docker-compose-plugin
+      - oras
+
+AppImage:
+  update-information: None
+  sign-key: None
+  arch: x86_64

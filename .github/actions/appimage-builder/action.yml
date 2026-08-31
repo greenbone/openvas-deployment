@@ -1,0 +1,37 @@
+name: Appimage builder
+
+inputs:
+  working_directory:
+    description: "Set working directory."
+    default: ./
+
+branding:
+  icon: "package"
+  color: "green"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Installing dependencies
+      shell: bash
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          binutils coreutils \
+          desktop-file-utils \
+          fakeroot \
+          fuse \
+          libgdk-pixbuf2.0-dev \
+          patchelf \
+          python3-pip \
+          python3-setuptools \
+          squashfs-tools \
+          strace util-linux \
+          zsync
+        sudo wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O /usr/local/bin/appimagetool
+        sudo chmod +x /usr/local/bin/appimagetool
+        pipx install appimage-builder
+
+    - name: Build
+      shell: bash
+      run: appimage-builder --recipe AppImageBuilder.yml
