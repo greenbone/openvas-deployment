@@ -17,6 +17,12 @@ jobs:
       - name: CI AppImage build
         uses: ./.github/actions/appimage-builder
         
+      - name: Tree AppImage
+        run: |
+          mkdir extract && cd extract
+          ../openvas-deployment-0.0.6-x86_64.AppImage --appimage-extract
+          tree .
+        
       - name: Install
         run: |
           ls
