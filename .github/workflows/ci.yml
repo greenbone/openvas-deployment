@@ -16,7 +16,14 @@ jobs:
         
       - name: CI AppImage build
         uses: ./.github/actions/appimage-builder
-        
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: openvas-deployment-0.0.6-x86_64.AppImage
+          path: openvas-deployment-0.0.6-x86_64.AppImage
+          retention-days: 1
+
       - name: Tree AppImage
         run: |
           mkdir extract && cd extract
