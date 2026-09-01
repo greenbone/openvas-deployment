@@ -16,7 +16,7 @@ jobs:
         
       - name: Install
         run: |
-          sudo install -m 0755 AppDir/usr/bin/enterprise-container.sh /usr/bin/openvas-deployment
+          sudo install -m 0755 AppDir/usr/bin/openvas-deployment /usr/bin/openvas-deployment
           echo '${{ secrets.FEED_KEY }}' > gsf.key
           echo '${{ secrets.OCI_CERT }}' > oci-client.cert
           echo '${{ secrets.OCI_KEY }}' > oci-client.key
