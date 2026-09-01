@@ -1538,17 +1538,21 @@ artifact_download() {
     fi
 
     # Check if compose files already exist
-    if [ -f "$ARTIFACT_DIR/${VERSION}/compose.yaml" ]; then
+    if [ -f "${ARTIFACT_DIR}/${VERSION}/compose.yaml" ]; then
         echo "Info: Latest version ${VERSION} already downloaded."
         return 0
     fi
 
     # Create artifact dir
-    mkdir -p "$ARTIFACT_DIR/${VERSION}"
+    mkdir -p "${ARTIFACT_DIR}/${VERSION}"
 
     # Download artifact
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        oras pull --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PACKAGE_URL}:${VERSION}"
+        oras pull \
+          --cert-file "${CERT_DIR_OCI}/client.crt" \
+          --key-file "${CERT_DIR_OCI}/client.key" \
+          "${PACKAGE_URL}:${VERSION}" \
+          -o "${ARTIFACT_DIR}/${VERSION}"
         tar  xzf "${PACKAGE}.tar.gz"
         rm -f "${PACKAGE}.tar.gz"
     popd > /dev/null
