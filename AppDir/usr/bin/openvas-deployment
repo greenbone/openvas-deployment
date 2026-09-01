@@ -9,30 +9,38 @@
 
 set -euo pipefail
 
-# Global Variables
+# Global Static
 DOCKER_CERTS='/etc/docker/certs.d/packages.greenbone.net'
-PACKAGE='enterprise-container'
 STORE_DIR_NAME='product'
 CERT_DIR_NAME='certs'
 CERT_DIR_OCI_NAME='oci'
+ARTIFACT_DIR_NAME='artifacts'
 IMAGE_DIR_NAME='images'
+SECRETS_DIR_NAME='secrets'
+SETTINGS_DIR_NAME='settings'
+PRODUCT_OPTIONS=('enterprise-container' 'security-intelligence')
 DEPLOYMENT_MODE_OPTIONS=('scan' 'openvasd')
 FEED_MODE_OPTIONS=('volume' 'service' 'mount')
 CCERT_MODE_OPTIONS=('ca' 'cert' 'mount')
-DEV_STAGE_URL_PREFIX=''
-PACKAGE_URL="packages.greenbone.net/openvas-${PACKAGE}${DEV_STAGE_URL_PREFIX}/${PACKAGE}"
 GVMD_CONTAINER='enterprise-container-scan-gvmd-1'
 GVMD_CONTAINER_UID='1001'
+
+# Global
+PRODUCT=''
+DEV_STAGE_URL_PREFIX=''
+PRODUCT_URL="packages.greenbone.net/openvas-${PRODUCT}${DEV_STAGE_URL_PREFIX}/${PRODUCT}"
 
 # Working dir's
 WORKING_DIR="$(pwd)/${STORE_DIR_NAME}"
 CERT_DIR="${WORKING_DIR}/${CERT_DIR_NAME}"
 CERT_DIR_OCI="${CERT_DIR}/${CERT_DIR_OCI_NAME}"
-CERT_DIR_ENTERPRISE_CONTAINER="${CERT_DIR}/${PACKAGE}"
-ARTIFACT_DIR="${WORKING_DIR}/${PACKAGE}"
-IMAGE_DIR="${WORKING_DIR}/${IMAGE_DIR_NAME}"
+CERT_DIR_PRODUCT="${CERT_DIR}/${PRODUCT}"
+ARTIFACT_DIR="${WORKING_DIR}/${ARTIFACT_DIR_NAME}/${PRODUCT}"
+IMAGE_DIR="${WORKING_DIR}/${IMAGE_DIR_NAME}/${PRODUCT}"
+SECRETS_DIR="${WORKING_DIR}/${SECRETS_DIR_NAME}/${PRODUCT}"
+SETTINGS_DIR="${WORKING_DIR}/${SETTINGS_DIR_NAME}/${PRODUCT}"
 
-# Runtime globals and defaults
+# Runtime
 MODE=''
 FEED_KEY='None'
 FEED_MODE='volume'
@@ -60,6 +68,8 @@ declare -A LICENSE_DATA
 LICENSE_FILE=''
 SERVICE_NAME=''
 FEED_SYNC_FORCE_NO_LOG='n'
+METAFEED_CERT=''
+METAFEED_KEY=''
 
 # =============================================================================
 # show_help()
@@ -67,7 +77,7 @@ FEED_SYNC_FORCE_NO_LOG='n'
 # Prints help text. 
 show_help() {
     less << EOF
-OpenVAS Enterprise-Container Deployment
+OpenVAS Deployment
 
 Requires compose version 5.3.1 and higher!
 
@@ -488,7 +498,7 @@ read_license_file() {
 #
 #   $2
 #     Base certificate directory containing the OpenVASD certificate folders.
-#     Defaults to CERT_DIR_ENTERPRISE_CONTAINER.
+#     Defaults to CERT_DIR_PRODUCT.
 #
 # Returns:
 #   None.
@@ -498,7 +508,7 @@ read_license_file() {
 #   1 if the OpenVASD certificate directory does not exist.
 create_openvasd_cert_tar() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
-    local cert_dir_enterprise_container="${2:-$CERT_DIR_ENTERPRISE_CONTAINER}"
+    local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
 
     if ! [ "${openvasd_cn}" ]; then
         echo "Error: --cn-openvasd argument missing!"
@@ -506,7 +516,7 @@ create_openvasd_cert_tar() {
     fi
 
     local openvasd_folder_name="${openvasd_cn//./_}"
-    local openvasd_folder="${cert_dir_enterprise_container}/${openvasd_folder_name}"
+    local openvasd_folder="${cert_dir_product}/${openvasd_folder_name}"
     local openvasd_name="${openvasd_cn//./-}"
 
     if ! [ -d "${openvasd_folder}" ]; then
@@ -525,7 +535,7 @@ create_openvasd_cert_tar() {
 # target paths where the files should be copied on the remote OpenVASD machine.
 create_openvasd_cert() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
-    local cert_dir_enterprise_container="${2:-$CERT_DIR_ENTERPRISE_CONTAINER}"
+    local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
 
     if ! [ "${openvasd_cn}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
@@ -533,7 +543,7 @@ create_openvasd_cert() {
     fi
 
     local openvas_folder_name="${openvasd_cn//./_}"
-    local openvas_folder="${cert_dir_enterprise_container}/${openvas_folder_name}"
+    local openvas_folder="${cert_dir_product}/${openvas_folder_name}"
     local openvasd_name="${openvasd_cn//./-}"
 
     mkdir -p "${openvas_folder}"
@@ -543,9 +553,9 @@ create_openvasd_cert() {
     openssl req -new -key "${openvas_folder}/server.key" -out "${openvas_folder}/server.csr" \
        -subj "/CN=${openvasd_cn}" 2>/dev/null
     openssl x509 -req -in "${openvas_folder}/server.csr" -out "${openvas_folder}/server.crt" -days 365 \
-       -CA "${cert_dir_enterprise_container}/ca.crt" -CAkey "${cert_dir_enterprise_container}/ca.key" \
+       -CA "${cert_dir_product}/ca.crt" -CAkey "${cert_dir_product}/ca.key" \
        -extfile <(printf '%s\n' "basicConstraints=CA:FALSE" "extendedKeyUsage=serverAuth" "keyUsage=digitalSignature,keyEncipherment") 2>/dev/null
-    cp "${cert_dir_enterprise_container}/ca.crt" "${openvas_folder}/ca.crt"
+    cp "${cert_dir_product}/ca.crt" "${openvas_folder}/ca.crt"
 
     cat << EOF
 Remote OpenVASD sensor setup:
@@ -699,14 +709,14 @@ add_openvasd() {
 
     local OPENVASD_FOLDER="${CN_OPENVASD//./_}"
     local OPENVASD_NAME="${CN_OPENVASD//./-}"
-    OPENVASD_FOLDER="${CERT_DIR_ENTERPRISE_CONTAINER}/${OPENVASD_FOLDER}"
+    OPENVASD_FOLDER="${CERT_DIR_PRODUCT}/${OPENVASD_FOLDER}"
 
     set +e
 
     status_code=$(curl -sS -o /dev/null \
-        --cacert "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" \
-        --cert "${CERT_DIR_ENTERPRISE_CONTAINER}/client.crt" \
-        --key "${CERT_DIR_ENTERPRISE_CONTAINER}/client.key" \
+        --cacert "${CERT_DIR_PRODUCT}/ca.crt" \
+        --cert "${CERT_DIR_PRODUCT}/client.crt" \
+        --key "${CERT_DIR_PRODUCT}/client.key" \
         -w "%{http_code}" \
         "https://${CN_OPENVASD}:${OPENVASD_PORT}/health/ready"
     )
@@ -720,9 +730,9 @@ add_openvasd() {
         exit 1
     fi
 
-    docker cp "${CERT_DIR_ENTERPRISE_CONTAINER}/client.key" "${GVMD_CONTAINER}:/tmp/client.key"
-    docker cp "${CERT_DIR_ENTERPRISE_CONTAINER}/client.crt" "${GVMD_CONTAINER}:/tmp/client.crt"
-    docker cp "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" "${GVMD_CONTAINER}:/tmp/ca.crt"
+    docker cp "${CERT_DIR_PRODUCT}/client.key" "${GVMD_CONTAINER}:/tmp/client.key"
+    docker cp "${CERT_DIR_PRODUCT}/client.crt" "${GVMD_CONTAINER}:/tmp/client.crt"
+    docker cp "${CERT_DIR_PRODUCT}/ca.crt" "${GVMD_CONTAINER}:/tmp/ca.crt"
 
     docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.key"
     docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.crt"
@@ -875,20 +885,20 @@ create_openvasd_tar() {
         exit 1
     fi
 
-    load_env
+    load_settings
 
     local openvasd_name="${CN_OPENVASD//./-}"
     local openvasd_cert_folder="${CN_OPENVASD//./_}"
-    openvasd_cert_folder="${CERT_DIR_ENTERPRISE_CONTAINER}/${openvasd_cert_folder}"
+    openvasd_cert_folder="${CERT_DIR_PRODUCT}/${openvasd_cert_folder}"
     local tmp_dir="$(mktemp -d)"
     local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}"
     pushd "${tmp_dir}" > /dev/null || exit
-        local tmp_cert_dir_enterprise_container="${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PACKAGE}"
-        mkdir -p "${tmp_cert_dir_enterprise_container}"
+        mkdir -p "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}"
+        mkdir -p "${STORE_DIR_NAME}/${ARTIFACT_DIR_NAME}"
         cp -r "${CERT_DIR_OCI}" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/"
-        cp -r "${ARTIFACT_DIR}" "${STORE_DIR_NAME}/"
-        cp -r "${openvasd_cert_folder}" "${tmp_cert_dir_enterprise_container}/"
-        cp "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key" "${tmp_cert_dir_enterprise_container}/"
+        cp -r "${ARTIFACT_DIR}" "${STORE_DIR_NAME}/${ARTIFACT_DIR_NAME}/"
+        cp -r "${openvasd_cert_folder}" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}/"
+        cp "${CERT_DIR_PRODUCT}/feed.key" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}/"
         echo 'openvasd' > "${STORE_DIR_NAME}/DEPLOYMENT_MODE"
         echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${STORE_DIR_NAME}/GREENBONE_FEED_SYNC_JOB_HOUR"
         echo "${CN_OPENVASD}" > "${STORE_DIR_NAME}/OPENVASD_CN"
@@ -933,7 +943,7 @@ create_openvasd_tar() {
 force_feed_sync() {
     get_latest_version
 
-    load_env
+    load_settings
 
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
         docker compose restart feed-sync
@@ -982,7 +992,7 @@ change_feed_sync_hour() {
 }
 
 # =============================================================================
-# init_env_openvasd()
+# init_settings_openvasd()
 # =============================================================================
 # Initializes the OpenVASD environment configuration by storing the OpenVASD
 # common name (CN) in the working directory.
@@ -1001,7 +1011,7 @@ change_feed_sync_hour() {
 #
 # Exits:
 #   1 if the OpenVASD common name is missing.
-init_env_openvasd() {
+init_settings_openvasd() {
     local cn_openvasd="${1:-$CN_OPENVASD}"
     local working_dir="${2:-$WORKING_DIR}"
 
@@ -1014,7 +1024,7 @@ init_env_openvasd() {
 }
 
 # =============================================================================
-# init_env()
+# init_settings()
 # =============================================================================
 # Validates the deployment, feed, and client-certificate configuration and
 # writes the selected values to the working directory.
@@ -1025,21 +1035,36 @@ init_env_openvasd() {
 # Mount-based feed and client-certificate modes are currently rejected. For
 # client-certificate modes "ca" and "cert", CCERT_TYPE is stored as "env";
 # otherwise, it is stored as "mount".
-init_env() {
-    if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${DEPLOYMENT_MODE} " ]]; then
-        echo "${DEPLOYMENT_MODE}" > "${WORKING_DIR}/DEPLOYMENT_MODE"
+init_settings() {
+    if [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${PRODUCT} " ]]; then
+        echo "${PRODUCT}" > "${WORKING_DIR}/PRODUCT"
     else
-        echo "Error: feed mode option ${DEPLOYMENT_MODE} is not supported only ${DEPLOYMENT_MODE_OPTIONS[*]}."
-    exit 1
+        echo "Error: Product ${DEPLOYMENT_MODE} is not supported only ${PRODUCT_OPTIONS[*]}."
+        exit 1
+    fi
+    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+        init_settings_scan
+        init_settings_openvasd
+    elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+        init_settings_openvasd
+    fi
+}
+
+init_settings_scan() {
+    if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${DEPLOYMENT_MODE} " ]]; then
+        echo "${DEPLOYMENT_MODE}" > "${SETTINGS_DIR}/DEPLOYMENT_MODE"
+    else
+        echo "Error: Deployment mode ${DEPLOYMENT_MODE} is not supported only ${DEPLOYMENT_MODE_OPTIONS[*]}."
+        exit 1
     fi
     if [[ " ${FEED_MODE_OPTIONS[*]} " =~ " ${FEED_MODE} " ]]; then
-        echo "${FEED_MODE}" > "${WORKING_DIR}/FEED_MODE"
+        echo "${FEED_MODE}" > "${SETTINGS_DIR}/FEED_MODE"
     else
         echo "Error: feed mode option ${FEED_MODE} is not supported only ${FEED_MODE_OPTIONS[*]}."
         exit 1
     fi
     if [[ " ${CCERT_MODE_OPTIONS[*]} " =~ " ${CCERT_MODE} " ]]; then
-        echo "${CCERT_MODE}" > "${WORKING_DIR}/CCERT_MODE"
+        echo "${CCERT_MODE}" > "${SETTINGS_DIR}/CCERT_MODE"
     else
         echo "Error: feed mode option ${CCERT_MODE} is not supported only ${CCERT_MODE_OPTIONS[*]}."
         exit 1
@@ -1047,7 +1072,7 @@ init_env() {
     if [ "${FEED_MODE}" == 'mount' ] && [ -d "${FEED_PATH}" ]; then
         echo "Error: feed mode option mount is not supported currently!"
         exit 1
-        echo "${FEED_PATH}" > "${WORKING_DIR}/FEED_PATH"
+        echo "${FEED_PATH}" > "${SETTINGS_DIR}/FEED_PATH"
     elif [ "${FEED_MODE}" == 'mount' ]; then
         echo " Error: feed path ${FEED_PATH} does not exist!"
         exit 1
@@ -1055,24 +1080,21 @@ init_env() {
     if [ "${CCERT_MODE}" == 'mount' ] && [ -d "${CCERT_PATH}" ]; then
         echo "Error: ccert mode option mount is not supported currently!"
         exit 1
-        echo "${CCERT_PATH}" > "${WORKING_DIR}/CCERT_PATH"
+        echo "${CCERT_PATH}" > "${SETTINGS_DIR}/CCERT_PATH"
     elif [ "${CCERT_MODE}" == 'mount' ]; then
         echo " Error: ccert path ${CCERT_PATH} does not exist!"
         exit 1
     fi
     if [ "${CCERT_MODE}" == 'ca' ] || [ "${CCERT_MODE}" == 'cert' ]; then
-        echo 'env' > "${WORKING_DIR}/CCERT_TYPE"
+        echo 'env' > "${SETTINGS_DIR}/CCERT_TYPE"
     else
-        echo 'mount' > "${WORKING_DIR}/CCERT_TYPE"
+        echo 'mount' > "${SETTINGS_DIR}/CCERT_TYPE"
     fi
     init_feed_sync_hour
-    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-        init_env_openvasd
-    fi
 }
 
 # =============================================================================
-# load_env_openvasd()
+# load_settings_openvasd()
 # =============================================================================
 # Loads the OpenVASD environment configuration from the OPENVASD_CN file in the
 # working directory and exports the OpenVASD common name (CN) for use by
@@ -1088,19 +1110,19 @@ init_env() {
 #
 # Exits:
 #   1 if the OPENVASD_CN file is missing.
-load_env_openvasd() {
-    local working_dir="${1:-$WORKING_DIR}"
+load_settings_openvasd() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
 
-    if [ -f "${working_dir}/OPENVASD_CN" ]; then
-        export CN_OPENVASD="$(< "${working_dir}/OPENVASD_CN")"
+    if [ -f "${settings_dir}/OPENVASD_CN" ]; then
+        export CN_OPENVASD="$(< "${settings_dir}/OPENVASD_CN")"
     else
-        echo "Error: No openvasd cn found at ${working_dir}/OPENVASD_CN! Please run --init --deployment-mode openvasd!"
+        echo "Error: No openvasd cn found at ${settings_dir}/OPENVASD_CN! Please run --init --deployment-mode openvasd!"
         exit 1
     fi
 }
 
 # =============================================================================
-# load_env_scan()
+# load_settings_scan()
 # =============================================================================
 # Loads the scan environment configuration by reading the GVMD administrator
 # password from the GVMD_ADMIN_PASSWORD file in the working directory and
@@ -1116,19 +1138,19 @@ load_env_openvasd() {
 #
 # Exits:
 #   1 if the GVMD_ADMIN_PASSWORD file is missing.
-load_env_scan() {
-    local working_dir="${1:-$WORKING_DIR}"
+load_settings_scan() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
 
-    if [ -f "${working_dir}/GVMD_ADMIN_PASSWORD" ]; then
-        export GVMD_ADMIN_PASSWORD="$(< "${working_dir}/GVMD_ADMIN_PASSWORD")"
+    if [ -f "${settings_dir}/GVMD_ADMIN_PASSWORD" ]; then
+        export GVMD_ADMIN_PASSWORD="$(< "${settings_dir}/GVMD_ADMIN_PASSWORD")"
     else
-        echo "Error: No admin password found at ${working_dir}/GVMD_ADMIN_PASSWORD! Please run --init or --change-admin-password!"
+        echo "Error: No admin password found at ${settings_dir}/GVMD_ADMIN_PASSWORD! Please run --init or --change-admin-password!"
         exit 1
     fi
 }
 
 # =============================================================================
-# load_env()
+# load_settings()
 # =============================================================================
 # Loads the deployment environment configuration from files in WORKING_DIR and
 # exports the values required by subsequent deployment operations.
@@ -1146,53 +1168,53 @@ load_env_scan() {
 #
 # Exits:
 #   1 if a required configuration file is missing.
-load_env() {
-    if [ -f "${WORKING_DIR}/DEPLOYMENT_MODE" ]; then
-        export DEPLOYMENT_MODE="$(< "${WORKING_DIR}/DEPLOYMENT_MODE")"
+load_settings() {
+    if [ -f "${SETTINGS_DIR}/DEPLOYMENT_MODE" ]; then
+        export DEPLOYMENT_MODE="$(< "${SETTINGS_DIR}/DEPLOYMENT_MODE")"
     else
-        echo "Error: No deployment mode found at ${WORKING_DIR}/DEPLOYMENT_MODE! Please run --init!"
+        echo "Error: No deployment mode found at ${SETTINGS_DIR}/DEPLOYMENT_MODE! Please run --init!"
         exit 1
     fi
-    if [ -f "${WORKING_DIR}/FEED_MODE" ]; then
-        export FEED_MODE="$(< "${WORKING_DIR}/FEED_MODE")"
+    if [ -f "${SETTINGS_DIR}/FEED_MODE" ]; then
+        export FEED_MODE="$(< "${SETTINGS_DIR}/FEED_MODE")"
     else
-        echo "Error: No feed mode found at ${WORKING_DIR}/FEED_MODE! Please run --init!"
+        echo "Error: No feed mode found at ${SETTINGS_DIR}/FEED_MODE! Please run --init!"
         exit 1
     fi
-    if [ -f "${WORKING_DIR}/CCERT_MODE" ]; then
-        export CCERT_MODE="$(< "${WORKING_DIR}/CCERT_MODE")"
+    if [ -f "${SETTINGS_DIR}/CCERT_MODE" ]; then
+        export CCERT_MODE="$(< "${SETTINGS_DIR}/CCERT_MODE")"
     else
-        echo "Error: No ccert mode found at ${WORKING_DIR}/CCERT_MODE! Please run --init!"
+        echo "Error: No ccert mode found at ${SETTINGS_DIR}/CCERT_MODE! Please run --init!"
         exit 1
     fi
-    if [ "${FEED_MODE}" == 'mount' ] && [ -f "${WORKING_DIR}/FEED_PATH" ]; then
-        export CCERT_PATH="$(< "${WORKING_DIR}/FEED_PATH")"
+    if [ "${FEED_MODE}" == 'mount' ] && [ -f "${SETTINGS_DIR}/FEED_PATH" ]; then
+        export CCERT_PATH="$(< "${SETTINGS_DIR}/FEED_PATH")"
     elif [ "${CCERT_MODE}" == 'mount' ]; then
-        echo "Error: No feed path found at ${WORKING_DIR}/FEED_PATH! Please run --init!"
+        echo "Error: No feed path found at ${SETTINGS_DIR}/FEED_PATH! Please run --init!"
         exit 1
     fi
-    if [ "${CCERT_MODE}" == 'mount' ] && [ -f "${WORKING_DIR}/CCERT_PATH" ]; then
-        export CCERT_PATH="$(< "${WORKING_DIR}/CCERT_PATH")"
+    if [ "${CCERT_MODE}" == 'mount' ] && [ -f "${SETTINGS_DIR}/CCERT_PATH" ]; then
+        export CCERT_PATH="$(< "${SETTINGS_DIR}/CCERT_PATH")"
     elif [ "${CCERT_MODE}" == 'mount' ]; then
-        echo "Error: No ccert path found at ${WORKING_DIR}/CCERT_PATH! Please run --init!"
+        echo "Error: No ccert path found at ${SETTINGS_DIR}/CCERT_PATH! Please run --init!"
         exit 1
     fi
-    if [ -f "${WORKING_DIR}/CCERT_TYPE" ]; then
-        export CCERT_TYPE="$(< "${WORKING_DIR}/CCERT_TYPE")"
+    if [ -f "${SETTINGS_DIR}/CCERT_TYPE" ]; then
+        export CCERT_TYPE="$(< "${SETTINGS_DIR}/CCERT_TYPE")"
     else
-        echo "Error: No ccert type found at ${WORKING_DIR}/CCERT_TYPE! Please run --init!"
+        echo "Error: No ccert type found at ${SETTINGS_DIR}/CCERT_TYPE! Please run --init!"
         exit 1
     fi
-    if [ -f "${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR" ]; then
-        export GREENBONE_FEED_SYNC_JOB_HOUR="$(< "${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR")"
+    if [ -f "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR" ]; then
+        export GREENBONE_FEED_SYNC_JOB_HOUR="$(< "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR")"
     else
-        echo "Error: No FEED_SYNC_JOB_HOUR found at ${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR! Please run --init or --change-feed-sync-hour with --feed-sync-hour!"
+        echo "Error: No FEED_SYNC_JOB_HOUR found at ${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR! Please run --init or --change-feed-sync-hour with --feed-sync-hour!"
         exit 1
     fi
     if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-        load_env_scan
+        load_settings_scan
     elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-        load_env_openvasd
+        load_settings_openvasd
     fi
 }
 
@@ -1208,7 +1230,11 @@ init_base_folders() {
     echo "Info: Create TLS certificate folder..."
     mkdir -p "${CERT_DIR}"
     mkdir -p "${CERT_DIR_OCI}"
-    mkdir -p "${CERT_DIR_ENTERPRISE_CONTAINER}"
+    mkdir -p "${CERT_DIR_PRODUCT}"
+    mkdir -p "${ARTIFACT_DIR}"
+    mkdir -p "${IMAGE_DIR}"
+    mkdir -p "${SECRETS_DIR}"
+    mkdir -p "${SETTINGS_DIR}"
 }
 
 # =============================================================================
@@ -1220,21 +1246,69 @@ init_base_folders() {
 # corresponding public key. Both keys are stored in the Enterprise Container
 # certificate directory, replacing any existing files with the same names.
 init_jwt() {
-    echo "Info: Install Enterprise-Container JWT..."
+    echo "Info: Install JWT..."
     openssl genpkey \
         -algorithm EC \
         -outform PEM \
         -quiet \
-        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
+        -out "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
         -pkeyopt ec_paramgen_curve:"P-256" \
         -pkeyopt ec_param_enc:named_curve \
         >/dev/null 2>&1
     openssl ec \
-        -in "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" \
+        -in "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
         -pubout \
         -outform PEM \
-        -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem" \
+        -out "${CERT_DIR_PRODUCT}/ecdsa.public.pem" \
         >/dev/null 2>&1
+}
+
+gen_password() {
+    openssl rand -base64 48 \
+        | tr -dc 'A-Za-z0-9' \
+        | head -c 32
+}
+
+gen_fernet() {
+    openssl rand -base64 32 \
+        | tr '+/' '-_' \
+        | tr -d '\n'
+}
+
+gen_hex() {
+    openssl rand -hex 32
+}
+
+init_secrets_osi() {
+    # Keycloak
+    gen_password > "${SECRETS_DIR}/KEYCLAOK_ADMIN_PASSWORD"
+    gen_password > "${SECRETS_DIR}/KEYCLOAK_DB_PASSWORD"
+    gen_password > "${SECRETS_DIR}/KEYCLOAK_OPENSEARCH_CLIENT_SECRET"
+    gen_password > "${SECRETS_DIR}/KEYCLOAK_WST_CLIENT_PASSWORD"
+    gen_password > "${SECRETS_DIR}/KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD"
+    gen_password > "${SECRETS_DIR}/KEYCLOAK_NOTIFICATION_USER_PASSWORD"
+
+    # OpenSearch
+    gen_password > "${SECRETS_DIR}/OPENSEARCH_ADMIN_PASSWORD"
+
+    # Notification Service
+    gen_password > "${SECRETS_DIR}/NOTIFICATION_SERVICE_DB_PASSWORD"
+
+    # REPORT
+    gen_password > "${SECRETS_DIR}/ASSET_MANAGEMENT_DB_PASSWORD"
+    gen_password > "${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_PASSWORD"
+    gen_password > "${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_SALT"
+
+    # VIEW
+    gen_password > "${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_DB_PASSWORD"
+    gen_hex > "${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_ENCRYPTION_KEY"
+
+    # CONTROL
+    gen_password > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_DB_PASSWORD"
+    gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY"
+    gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY_REPORT_PUSH_KC_CLIENT"
+    gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SECRET_KEY"
+    gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY"
 }
 
 # =============================================================================
@@ -1263,7 +1337,7 @@ init_jwt() {
 #
 #   $4
 #     Enterprise container certificate directory.
-#     Defaults to CERT_DIR_ENTERPRISE_CONTAINER.
+#     Defaults to CERT_DIR_PRODUCT.
 #
 # Returns:
 #   None.
@@ -1275,10 +1349,10 @@ init_certs_openvasd() {
     local openvasd_client_ca="${1:-$OPENVASD_CLIENT_CA}"
     local openvasd_server_cert="${2:-$OPENVASD_SERVER_CERT}"
     local openvasd_server_key="${3:-$OPENVASD_SERVER_KEY}"
-    local cert_dir_enterprise_container="${4:-$CERT_DIR_ENTERPRISE_CONTAINER}"
+    local cert_dir_product="${4:-$CERT_DIR_PRODUCT}"
 
     local openvasd_cert_folder="${openvasd_cn//./_}"
-    local cert_dir_openvasd="${cert_dir_enterprise_container}/${openvasd_cert_folder}"
+    local cert_dir_openvasd="${cert_dir_product}/${openvasd_cert_folder}"
 
     mkdir -p "${cert_dir_openvasd}"
 
@@ -1302,8 +1376,28 @@ init_certs_openvasd() {
     fi
 }
 
+init_certs_osi() {
+    local metafeed_cert="${1:-$METAFEED_CERT}"
+    local metafeed_key="${2:-$METAFEED_KEY}"
+    local cert_dir_product="${3:-$CERT_DIR_PRODUCT}"
+
+    if [ -f "${metafeed_cert}" ]; then
+        install -m 0644 "${metafeed_cert}" "${cert_dir_product}/metafeed.crt"
+    else
+        echo "Error: Missing argument --osi-metafeed-cert !"
+        exit 1
+    fi
+    if [ -f "${metafeed_key}" ]; then
+        install -m 0600 "${metafeed_key}" "${cert_dir_product}/metafeed.key"
+    else
+        echo "Error: Missing argument --osi-metafeed-key !"
+        exit 1
+    fi
+
+}
+
 # =============================================================================
-# init_certs()
+# init_certs_scan()
 # =============================================================================
 # Creates the TLS certificates used by the Enterprise Container deployment.
 #
@@ -1312,32 +1406,34 @@ init_certs_openvasd() {
 # ingress server, it installs the configured certificate and private key when
 # both files are available; otherwise, it generates a self-signed server
 # certificate valid for 365 days. Existing output files may be replaced.
-init_certs() {
+init_certs_scan() {
     # Create Enterprise-Container CA certificate
     echo "Info: Install Enterprise-Container TLS certificates..."
-    openssl genrsa -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.key" 2048 2>/dev/null
-    openssl req -new -x509 -key "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.key" -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" -days 365 \
+    openssl genrsa -out "${CERT_DIR_PRODUCT}/ca.key" 2048 2>/dev/null
+    openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ca.key" -out "${CERT_DIR_PRODUCT}/ca.crt" -days 365 \
        -addext "basicConstraints=CA:TRUE" \
        -subj "/CN=enterprise-container-ca" 2>/dev/null
 
     # Create Enterprise-Container Client certificate
-    openssl genrsa -out "${CERT_DIR_ENTERPRISE_CONTAINER}/client.key" 2048 2>/dev/null
-    openssl req -new -key "${CERT_DIR_ENTERPRISE_CONTAINER}/client.key" -out "${CERT_DIR_ENTERPRISE_CONTAINER}/client.csr" \
+    openssl genrsa -out "${CERT_DIR_PRODUCT}/client.key" 2048 2>/dev/null
+    openssl req -new -key "${CERT_DIR_PRODUCT}/client.key" -out "${CERT_DIR_PRODUCT}/client.csr" \
         -subj "/CN=enterprise-container-client" 2>/dev/null
-    openssl x509 -req -in "${CERT_DIR_ENTERPRISE_CONTAINER}/client.csr" -out "${CERT_DIR_ENTERPRISE_CONTAINER}/client.crt" -days 365 \
-        -CA "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.crt" -CAkey "${CERT_DIR_ENTERPRISE_CONTAINER}/ca.key" \
+    openssl x509 -req -in "${CERT_DIR_PRODUCT}/client.csr" -out "${CERT_DIR_PRODUCT}/client.crt" -days 365 \
+        -CA "${CERT_DIR_PRODUCT}/ca.crt" -CAkey "${CERT_DIR_PRODUCT}/ca.key" \
         -extfile <(printf '%s\n' "basicConstraints=CA:FALSE" "extendedKeyUsage=clientAuth" "keyUsage=digitalSignature,keyEncipherment") 2>/dev/null
+}
 
-    # Create Enterprise-Container Ingress Server certificate
-    echo "Info: Install Enterprise-Container Ingress TLS certificates..."
+init_certs_ingress() {
+    # Create Ingress Server certificate
+    echo "Info: Install Ingress TLS certificates..."
     if [ -f "${INGRESS_TLS_SERVER_CERT}" ] && [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
         echo "Info: Using Ingress certs ${INGRESS_TLS_SERVER_CERT} and ${INGRESS_TLS_SERVER_KEY} ..."
-        install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt"
-        install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key"
+        install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
+        install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
     else
         echo "Info: Create self sign Ingress certs!"
-        openssl genrsa -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key" 2048 2>/dev/null
-        openssl req -new -x509 -key "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key" -out "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt" -days 365 \
+        openssl genrsa -out "${CERT_DIR_PRODUCT}/ingress_server.key" 2048 2>/dev/null
+        openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ingress_server.key" -out "${CERT_DIR_PRODUCT}/ingress_server.crt" -days 365 \
            -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
            -subj "/CN=openvas-enterprise-container" 2>/dev/null
     fi
@@ -1408,12 +1504,12 @@ install_license_file() {
 # source file does not exist, the function performs no action.
 install_feed_key(){
     if [ -f "${FEED_KEY}" ]; then
-        echo "Info: Install Enterprise-Container Feed Key..."
+        echo "Info: Install Feed Key..."
         if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
-            base64 -d "${FEED_KEY}" > "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
-            chmod 0600 "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+            base64 -d "${FEED_KEY}" > "${CERT_DIR_PRODUCT}/feed.key"
+            chmod 0600 "${CERT_DIR_PRODUCT}/feed.key"
         else
-            install -m 0600 "${FEED_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key"
+            install -m 0600 "${FEED_KEY}" "${CERT_DIR_PRODUCT}/feed.key"
         fi
     fi
 }
@@ -1456,7 +1552,7 @@ init() {
     fi
 
     init_base_folders
-    init_env
+    init_settings
 
     if [ "${LICENSE_FILE}" ]; then
         read_license_file
@@ -1469,7 +1565,8 @@ init() {
     if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         init_certs_openvasd
     else
-        init_certs
+        init_certs_scan
+        init_certs_ingress
     fi
 
     init_jwt
@@ -1498,8 +1595,8 @@ update_ingress_certs() {
         echo "Error: --ingress-server-key argument missing or file ${INGRESS_TLS_SERVER_KEY} not found! Required for --update-ingress-certs !"
         exit 1
     fi
-    install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt"
-    install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key"
+    install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
+    install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
 
     read -r -p "Info: We need to redeploy the compose stack, to activate the new Ingress certificates. (y/n)" response
     if [ "$response" == "y" ]; then
@@ -1510,29 +1607,29 @@ update_ingress_certs() {
 # =============================================================================
 # artifact_download()
 # =============================================================================
-# Downloads the latest OpenVAS Enterprise-Container artifact using `oras`, extracts it, and
+# Downloads the latest OpenVAS artifact using `oras`, extracts it, and
 # prepares it for deployment.
 artifact_download() {
     echo "🚀 Downloading product..."
 
     # Check certs exist
     if ! [ -f "${CERT_DIR_OCI}/client.crt" ]; then
-        echo "Error: No OCI TLS certificate found at ${CERT_DIR_ENTERPRISE_CONTAINER}/server.crt! Please run --init!"
+        echo "Error: No OCI TLS certificate found at ${CERT_DIR_PRODUCT}/server.crt! Please run --init!"
         exit 1
     fi
     if ! [ -f "${CERT_DIR_OCI}/client.key" ]; then
-        echo "Error: No OCI TLS certificate found at ${CERT_DIR_ENTERPRISE_CONTAINER}/server.crt! Please run --init!"
+        echo "Error: No OCI TLS certificate found at ${CERT_DIR_PRODUCT}/server.crt! Please run --init!"
         exit 1
     fi
 
     # Get latest version
     set +e
-    VERSION="$(oras repo tags --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PACKAGE_URL}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sed '/-/! s/$/_/' | sort -Vu | sed 's/_$//' | tail -1)"
+    VERSION="$(oras repo tags --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sed '/-/! s/$/_/' | sort -Vu | sed 's/_$//' | tail -1)"
     set -e
 
     # Check if VERSION exist
     if ! [ "${VERSION}" ]; then
-        echo "Error: No product release found in registry ${PACKAGE_URL}!"
+        echo "Error: No product release found in registry ${PRODUCT_URL}!"
         echo "For support, visit: https://www.greenbone.net/support/"
         exit 1
     fi
@@ -1548,9 +1645,9 @@ artifact_download() {
 
     # Download artifact
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        oras pull --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PACKAGE_URL}:${VERSION}"
-        tar  xzf "${PACKAGE}.tar.gz"
-        rm -f "${PACKAGE}.tar.gz"
+        oras pull --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}:${VERSION}"
+        tar  xzf "${PRODUCT}.tar.gz"
+        rm -f "${PRODUCT}.tar.gz"
     popd > /dev/null
 }
 
@@ -1558,7 +1655,7 @@ artifact_download() {
 # =============================================================================
 # get_latest_version()
 # =============================================================================
-# Gets the latest downloaded OpenVAS Enterprise-Container artifact version.
+# Gets the latest downloaded OpenVAS artifact version.
 get_latest_version() {
     if [ -d "${ARTIFACT_DIR}" ]; then
         set +e
@@ -1575,7 +1672,7 @@ get_latest_version() {
 }
 
 # =============================================================================
-# deploy_load_certs_openvasd()
+# load_certs_openvasd()
 # =============================================================================
 # Loads the OpenVASD TLS credentials for the configured instance and exports
 # them for use by the deployment environment.
@@ -1587,12 +1684,12 @@ get_latest_version() {
 #
 # Terminates the script when the common name or any required certificate file
 # is missing.
-deploy_load_certs_openvasd() {
+load_certs_openvasd() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
-    local cert_dir_enterprise_container="${2:-$CERT_DIR_ENTERPRISE_CONTAINER}"
+    local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
 
     local openvasd_cert_folder="${openvasd_cn//./_}"
-    local cert_dir_openvasd="${cert_dir_enterprise_container}/${openvasd_cert_folder}"
+    local cert_dir_openvasd="${cert_dir_product}/${openvasd_cert_folder}"
 
     if [ -f "${cert_dir_openvasd}/server.crt" ]; then
         export OPENVAS_SCANNER_TLS_CERT="$(< "${cert_dir_openvasd}/server.crt")"
@@ -1615,7 +1712,7 @@ deploy_load_certs_openvasd() {
 }
 
 # =============================================================================
-# deploy_load_certs_scan()
+# load_certs_scan()
 # =============================================================================
 # Loads the Enterprise Container ingress TLS credentials and feed key service
 # JWT keys, then exports them for use by the scan deployment.
@@ -1626,30 +1723,30 @@ deploy_load_certs_openvasd() {
 # variables.
 #
 # Terminates the script when any required certificate or key file is missing.
-deploy_load_certs_scan() {
-    if [ -f "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt" ]; then
-        export INGRESS_CERTIFICATE="$(< "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt")"
+load_certs_scan() {
+    if [ -f "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
+        export INGRESS_CERTIFICATE="$(< "${CERT_DIR_PRODUCT}/ingress_server.crt")"
     else
-        echo "Error: No enterprise-container Ingress TLS certificate found at ${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.crt! Please run --init!"
+        echo "Error: No enterprise-container Ingress TLS certificate found at ${CERT_DIR_PRODUCT}/ingress_server.crt! Please run --init!"
         exit 1
     fi
-    if [ -f "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key" ]; then
-        export INGRESS_PRIVATE_KEY="$(< "${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key")"
+    if [ -f "${CERT_DIR_PRODUCT}/ingress_server.key" ]; then
+        export INGRESS_PRIVATE_KEY="$(< "${CERT_DIR_PRODUCT}/ingress_server.key")"
     else
-        echo "Error: No enterprise-container Ingress TLS private key found at ${CERT_DIR_ENTERPRISE_CONTAINER}/ingress_server.key! Please run --init!"
+        echo "Error: No enterprise-container Ingress TLS private key found at ${CERT_DIR_PRODUCT}/ingress_server.key! Please run --init!"
         exit 1
     fi
 
-    if [ -f "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem" ]; then
-        export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_KEY="$(< "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem")"
+    if [ -f "${CERT_DIR_PRODUCT}/ecdsa.private.pem" ]; then
+        export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_KEY="$(< "${CERT_DIR_PRODUCT}/ecdsa.private.pem")"
     else
-        echo "Error: No enterprise-container feed key service ecdsa key found at ${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.private.pem! Please run --init!"
+        echo "Error: No enterprise-container feed key service ecdsa key found at ${CERT_DIR_PRODUCT}/ecdsa.private.pem! Please run --init!"
         exit 1
     fi
-    if [ -f "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem" ]; then
-        export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_PUBLIC_KEY="$(< "${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem")"
+    if [ -f "${CERT_DIR_PRODUCT}/ecdsa.public.pem" ]; then
+        export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_PUBLIC_KEY="$(< "${CERT_DIR_PRODUCT}/ecdsa.public.pem")"
     else
-        echo "Error: No enterprise-container feed key service public ecdsa key found at ${CERT_DIR_ENTERPRISE_CONTAINER}/ecdsa.public.pem! Please run --init!"
+        echo "Error: No enterprise-container feed key service public ecdsa key found at ${CERT_DIR_PRODUCT}/ecdsa.public.pem! Please run --init!"
         exit 1
     fi
 }
@@ -1670,25 +1767,25 @@ deploy_load_certs_scan() {
 # and waits for the services to become ready. Terminates the script when
 # required credentials are missing or the deployment fails.
 deploy() {
-    load_env
+    load_settings
 
-    echo "🚀 Starting OpenVAS Enterprise-Container ${DEPLOYMENT_MODE}..."
+    echo "🚀 Starting OpenVAS ${PRODUCT} ${DEPLOYMENT_MODE}..."
 
     get_latest_version
 
-    echo "Info: Using OpenVAS Enterprise-Container mode ${DEPLOYMENT_MODE} in version ${VERSION}."
+    echo "Info: Using OpenVAS ${PRODUCT} mode ${DEPLOYMENT_MODE} in version ${VERSION}."
 
     if [ "$FEED_MODE" == 'volume' ]; then
-        if [ -f "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key" ]; then
-            export FEED_SYNC_GSF_KEY="$(< "${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key")"
+        if [ -f "${CERT_DIR_PRODUCT}/feed.key" ]; then
+            export FEED_SYNC_GSF_KEY="$(< "${CERT_DIR_PRODUCT}/feed.key")"
         else
-            echo "Error: No Feed key found at ${CERT_DIR_ENTERPRISE_CONTAINER}/feed.key! Please run --init!"
+            echo "Error: No Feed key found at ${CERT_DIR_PRODUCT}/feed.key! Please run --init!"
             exit 1
         fi
     fi
 
     if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-        deploy_load_certs_openvasd
+        load_certs_openvasd
         # Todo: put me into file
         if [ "${OPENVASD_PORT}" ]; then
             export OPENVAS_SCANNER_HOST_LISTEN_PORT="${OPENVASD_PORT}"
@@ -1697,14 +1794,14 @@ deploy() {
             load_openvasd_images
         fi
     elif [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-        deploy_load_certs_scan
+        load_certs_scan
     fi
 
     # Run deployment
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
         docker compose --env-file settings.env down --remove-orphans 2>/dev/null || true
         if docker compose --env-file settings.env up -d --wait --wait-timeout 7200 --quiet-pull --remove-orphans ; then
-            echo "OpenVAS Enterprise-Container deployment successful!"
+            echo "OpenVAS ${PRODUCT} deployment successful!"
             echo "Service status: $0 --ps"
             echo "For support, visit: https://www.greenbone.net/support/"
         else
@@ -1727,9 +1824,9 @@ deploy() {
 # directory, removing orphaned containers and all associated volumes. This
 # operation permanently deletes container volumes and their stored data.
 compose_down_volumes() {
-    echo "🚀 Stopping OpenVAS Enterprise-Container and removing Docker volumes..."
+    echo "🚀 Stopping OpenVAS ${PRODUCT} and removing Docker volumes..."
 
-    load_env
+    load_settings
 
     get_latest_version
 
@@ -1739,7 +1836,7 @@ compose_down_volumes() {
         docker compose --env-file settings.env down --remove-orphans --volumes
     popd > /dev/null
 
-    echo "OpenVAS Enterprise-Container stopped and Docker volumes removed."
+    echo "OpenVAS ${PRODUCT} stopped and Docker volumes removed."
 }
 
 # =============================================================================
@@ -1752,9 +1849,9 @@ compose_down_volumes() {
 # directory, stopping and removing the deployment containers while preserving
 # associated Docker volumes and stored data.
 compose_down() {
-    echo "🚀 Stopping OpenVAS Enterprise-Container..."
+    echo "🚀 Stopping OpenVAS ${PRODUCT}..."
 
-    load_env
+    load_settings
 
     get_latest_version
 
@@ -1764,7 +1861,7 @@ compose_down() {
         docker compose --env-file settings.env down
     popd > /dev/null
 
-    echo "OpenVAS Enterprise-Container stopped."
+    echo "OpenVAS ${PRODUCT} stopped."
 }
 
 # =============================================================================
@@ -1777,9 +1874,9 @@ compose_down() {
 # deployment directory. If SERVICE_NAME is configured, only logs for the
 # specified container are displayed; otherwise, logs for all services are shown.
 compose_logs() {
-    echo "🚀 Print Enterprise-Container Logs..."
+    echo "🚀 Print ${PRODUCT} Logs..."
 
-    load_env
+    load_settings
 
     get_latest_version
 
@@ -1803,9 +1900,9 @@ compose_logs() {
 # version. Executes Docker Compose status retrieval from the corresponding
 # deployment directory and displays the state of all configured services.
 compose_ps() {
-    echo "🚀 Print Enterprise-Container Container..."
+    echo "🚀 Print ${PRODUCT} Container..."
 
-    load_env
+    load_settings
 
     get_latest_version
 
@@ -1816,14 +1913,31 @@ compose_ps() {
     popd > /dev/null
 }
 
+update_globals() {
+    if ! [ "${PRODUCT}" ]; then
+        if [ -f "${WORKING_DIR}/PRODUCT" ]; then
+            export PRODUCT="$(< "${WORKING_DIR}/PRODUCT")"
+        else
+            echo "Error: No product found at ${WORKING_DIR}/PRODUCT! Please run --init with --product and one of ${PRODUCT_OPTIONS[*]} !"
+            exit 1
+        fi
+    fi
+    PRODUCT_URL="packages.greenbone.net/openvas-${PRODUCT}${DEV_STAGE_URL_PREFIX}/${PRODUCT}"
+    CERT_DIR_PRODUCT="${CERT_DIR}/${PRODUCT}"
+    ARTIFACT_DIR="${WORKING_DIR}/${ARTIFACT_DIR_NAME}/${PRODUCT}"
+    IMAGE_DIR="${WORKING_DIR}/${IMAGE_DIR_NAME}/${PRODUCT}"
+    SECRETS_DIR="${WORKING_DIR}/${SECRETS_DIR_NAME}/${PRODUCT}"
+    SETTINGS_DIR="${WORKING_DIR}/${SETTINGS_DIR_NAME}/${PRODUCT}"
+}
+
 # =============================================================================
 # run()
 # =============================================================================
 # The run function orchestrates the execution of the script.
 run() {
-    #check_requirements
+    check_requirements
 
-    PACKAGE_URL="packages.greenbone.net/openvas-${PACKAGE}${DEV_STAGE_URL_PREFIX}/${PACKAGE}"
+    update_globals
 
     if [ "${MODE}" == 'init' ]; then
         init
@@ -1937,9 +2051,21 @@ parse_args() {
                 MODE='init'
                 shift 1
                 ;;
+            --product)
+                PRODUCT="$2"
+                shift 2
+                ;;
             --init-openvasd-tar)
                 MODE='init-openvasd-tar'
                 shift 1
+                ;;
+            --metafeed-cert)
+                METAFEED_CERT="$2"
+                shift 2
+                ;;
+            --metafeed-key)
+                METAFEED_KEY="$2"
+                shift 2
                 ;;
             --deployment-mode)
                 DEPLOYMENT_MODE="$2"
