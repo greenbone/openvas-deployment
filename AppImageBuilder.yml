@@ -1,0 +1,59 @@
+version: 1
+
+script:
+  - mkdir -p AppDir/usr/bin
+  - curl -LO "https://github.com/oras-project/oras/releases/download/v1.2.2/oras_1.2.2_linux_amd64.tar.gz"
+  - mkdir -p oras-install/
+  - tar -zxf oras_1.2.2_*.tar.gz -C oras-install/
+  - mv oras-install/oras AppDir/usr/bin
+  - rm -rf oras_1.2.2_*.tar.gz oras-install/
+  
+AppDir:
+  path: ./AppDir
+
+  app_info:
+    id: net.greenbone.openvas-deployment
+    name: openvas-deployment
+    icon: utilities-terminal
+    version: 0.0.6
+    exec: bin/bash
+    exec_args: "$APPDIR/usr/bin/enterprise-container.sh $@"
+
+  apt:
+    arch: amd64
+    sources:
+      - sourceline: 'deb [arch=amd64] http://deb.debian.org/debian bookworm main'
+        key_url: 'https://ftp-master.debian.org/keys/archive-key-12.asc'
+      - sourceline: 'deb [arch=amd64] http://deb.debian.org/debian bookworm-updates main'
+        key_url: 'https://ftp-master.debian.org/keys/archive-key-12.asc'
+      - sourceline: 'deb [arch=amd64] http://security.debian.org/debian-security bookworm-security main'
+        key_url: 'https://ftp-master.debian.org/keys/archive-key-12-security.asc'
+      - sourceline: 'deb [arch=amd64] https://download.docker.com/linux/debian bookworm stable'
+        key_url: 'https://download.docker.com/linux/debian/gpg'
+
+    include:
+      - dash
+      - make
+      - perl
+      - bash
+      - coreutils
+      - ca-certificates
+      - curl
+      - grep
+      - sed
+      - gawk
+      - less
+      - tar
+      - openssl
+      - docker-ce-cli
+      - docker-compose-plugin
+
+  runtime:
+    env:
+      APPDIR_LIBRARY_PATH: '$APPDIR/lib/x86_64-linux-gnu:$APPDIR/usr/lib/x86_64-linux-gnu:$APPDIR/lib:$APPDIR/usr/lib:$APPDIR/lib64:$APPDIR/usr/lib64:$APPDIR/usr/local/lib/x86_64-linux-gnu:$APPDIR/usr/local/lib:$LD_LIBRARY_PATH'
+      LD_LIBRARY_PATH: '$APPDIR/lib/x86_64-linux-gnu:$APPDIR/usr/lib/x86_64-linux-gnu:$APPDIR/lib:$APPDIR/usr/lib:$APPDIR/lib64:$APPDIR/usr/lib64:$APPDIR/usr/local/lib/x86_64-linux-gnu:$APPDIR/usr/local/lib:$LD_LIBRARY_PATH'
+      PATH: '$APPDIR/usr/bin:$APPDIR/usr/sbin:$APPDIR/bin:$APPDIR/sbin:$PATH'
+
+AppImage:
+  update-information: None
+  arch: x86_64

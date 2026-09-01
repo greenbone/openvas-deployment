@@ -14,9 +14,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         
+      - name: CI AppImage build
+        uses: ./.github/actions/appimage-builder
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: openvas-deployment-0.0.6-x86_64.AppImage
+          path: openvas-deployment-0.0.6-x86_64.AppImage
+          retention-days: 1
+
+      - name: Tree AppImage
+        run: |
+          mkdir extract && cd extract
+          ../openvas-deployment-0.0.6-x86_64.AppImage --appimage-extract
+          tree .
+        
       - name: Install
         run: |
-          sudo install -m 0755 AppDir/usr/bin/enterprise-container.sh /usr/bin/openvas-deployment
+          ls
+          sudo install -m 0755 openvas-deployment-0.0.6-x86_64.AppImage /usr/bin/openvas-deployment
           echo '${{ secrets.FEED_KEY }}' > gsf.key
           echo '${{ secrets.OCI_CERT }}' > oci-client.cert
           echo '${{ secrets.OCI_KEY }}' > oci-client.key
