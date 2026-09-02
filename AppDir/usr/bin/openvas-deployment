@@ -749,7 +749,7 @@ add_openvasd() {
 }
 
 # =============================================================================
-# change_admin_password()
+# change_admin_password_scan()
 # =============================================================================
 # Changes the Greenbone Vulnerability Manager (gvmd) administrator password.
 #
@@ -758,7 +758,7 @@ add_openvasd() {
 # then applied to the default "admin" account using the gvmd command inside
 # the container. If no password is provided, the function prints an error
 # message and exits with a non-zero status.
-change_admin_password() {
+change_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
         echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
     else
@@ -771,7 +771,7 @@ change_admin_password() {
 }
 
 # =============================================================================
-# init_admin_password()
+# init_admin_password_scan()
 # =============================================================================
 # Initializes the Greenbone Vulnerability Manager administrator password.
 #
@@ -780,7 +780,7 @@ change_admin_password() {
 # random 16-character alphanumeric password, stores it in the
 # GVMD_ADMIN_PASSWORD file, assigns it to GVMD_ADMIN_PASSWORD, and prints the
 # generated password.
-init_admin_password() {
+init_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
         echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
     else
@@ -1023,33 +1023,6 @@ init_settings_openvasd() {
     fi
 }
 
-# =============================================================================
-# init_settings()
-# =============================================================================
-# Validates the deployment, feed, and client-certificate configuration and
-# writes the selected values to the working directory.
-#
-# DEPLOYMENT_MODE, FEED_MODE, and CCERT_MODE must match their corresponding
-# supported-option arrays. Unsupported values terminate the script.
-#
-# Mount-based feed and client-certificate modes are currently rejected. For
-# client-certificate modes "ca" and "cert", CCERT_TYPE is stored as "env";
-# otherwise, it is stored as "mount".
-init_settings() {
-    if [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${PRODUCT} " ]]; then
-        echo "${PRODUCT}" > "${WORKING_DIR}/PRODUCT"
-    else
-        echo "Error: Product ${DEPLOYMENT_MODE} is not supported only ${PRODUCT_OPTIONS[*]}."
-        exit 1
-    fi
-    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-        init_settings_scan
-        init_settings_openvasd
-    elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-        init_settings_openvasd
-    fi
-}
-
 init_settings_scan() {
     if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${DEPLOYMENT_MODE} " ]]; then
         echo "${DEPLOYMENT_MODE}" > "${SETTINGS_DIR}/DEPLOYMENT_MODE"
@@ -1091,6 +1064,175 @@ init_settings_scan() {
         echo 'mount' > "${SETTINGS_DIR}/CCERT_TYPE"
     fi
     init_feed_sync_hour
+}
+
+# =============================================================================
+# init_settings()
+# =============================================================================
+# Validates the deployment, feed, and client-certificate configuration and
+# writes the selected values to the working directory.
+#
+# DEPLOYMENT_MODE, FEED_MODE, and CCERT_MODE must match their corresponding
+# supported-option arrays. Unsupported values terminate the script.
+#
+# Mount-based feed and client-certificate modes are currently rejected. For
+# client-certificate modes "ca" and "cert", CCERT_TYPE is stored as "env";
+# otherwise, it is stored as "mount".
+init_settings() {
+    local product="${1:-$PRODUCT}"
+
+    if [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${product} " ]]; then
+        echo "${product}" > "${WORKING_DIR}/PRODUCT"
+    else
+        echo "Error: Product ${product} is not supported only ${PRODUCT_OPTIONS[*]}."
+        exit 1
+    fi
+
+    if [ "${product}" == 'enterprise-container' ]; then
+        if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+            init_settings_scan
+            init_settings_openvasd
+        elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+            init_settings_openvasd
+        fi
+    fi
+}
+
+load_secrets_osi() {
+    echo 'Info: Load settings OSI'
+
+    # Keycloak
+    if [ -f "${SECRETS_DIR}/KEYCLAOK_ADMIN_PASSWORD" ]; then
+        export KEYCLAOK_ADMIN_PASSWORD="$(< "${SECRETS_DIR}/KEYCLAOK_ADMIN_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLAOK_ADMIN_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/KEYCLOAK_DB_PASSWORD" ]; then
+        export KEYCLOAK_DB_PASSWORD="$(< "${SECRETS_DIR}/KEYCLOAK_DB_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLOAK_DB_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/KEYCLOAK_OPENSEARCH_CLIENT_SECRET" ]; then
+        export KEYCLOAK_OPENSEARCH_CLIENT_SECRET="$(< "${SECRETS_DIR}/KEYCLOAK_OPENSEARCH_CLIENT_SECRET")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLOAK_OPENSEARCH_CLIENT_SECRET! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/KEYCLOAK_WST_CLIENT_PASSWORD" ]; then
+        export KEYCLOAK_WST_CLIENT_PASSWORD="$(< "${SECRETS_DIR}/KEYCLOAK_WST_CLIENT_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLOAK_WST_CLIENT_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD" ]; then
+        export KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD="$(< "${SECRETS_DIR}/KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/KEYCLOAK_NOTIFICATION_USER_PASSWORD" ]; then
+        export KEYCLOAK_NOTIFICATION_USER_PASSWORD="$(< "${SECRETS_DIR}/KEYCLOAK_NOTIFICATION_USER_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLOAK_NOTIFICATION_USER_PASSWORD! Please run --init!"
+        exit 1
+    fi
+
+    # OpenSearch
+    if [ -f "${SECRETS_DIR}/OPENSEARCH_ADMIN_PASSWORD" ]; then
+        export OPENSEARCH_ADMIN_PASSWORD="$(< "${SECRETS_DIR}/OPENSEARCH_ADMIN_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/OPENSEARCH_ADMIN_PASSWORD! Please run --init!"
+        exit 1
+    fi
+
+    # Notification Service
+    if [ -f "${SECRETS_DIR}/NOTIFICATION_SERVICE_DB_PASSWORD" ]; then
+        export NOTIFICATION_SERVICE_DB_PASSWORD="$(< "${SECRETS_DIR}/NOTIFICATION_SERVICE_DB_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/NOTIFICATION_SERVICE_DB_PASSWORD! Please run --init!"
+        exit 1
+    fi
+
+    # REPORT
+    if [ -f "${SECRETS_DIR}/ASSET_MANAGEMENT_DB_PASSWORD" ]; then
+        export ASSET_MANAGEMENT_DB_PASSWORD="$(< "${SECRETS_DIR}/ASSET_MANAGEMENT_DB_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/ASSET_MANAGEMENT_DB_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_PASSWORD" ]; then
+        export ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_PASSWORD="$(< "${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_SALT" ]; then
+        export ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_SALT="$(< "${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_SALT")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/ASSET_MANAGEMENT_TASK_REPORT_CRYPTO_V1_SALT! Please run --init!"
+        exit 1
+    fi
+
+    # VIEW
+    if [ -f "${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_DB_PASSWORD" ]; then
+        export VULNERABILITY_INTELLIGENCE_DB_PASSWORD="$(< "${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_DB_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_DB_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_ENCRYPTION_KEY" ]; then
+        export VULNERABILITY_INTELLIGENCE_ENCRYPTION_KEY="$(< "${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_ENCRYPTION_KEY")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/VULNERABILITY_INTELLIGENCE_ENCRYPTION_KEY! Please run --init!"
+        exit 1
+    fi
+
+    # CONTROL
+    if [ -f "${SECRETS_DIR}/MANAGEMENT_CONSOLE_DB_PASSWORD" ]; then
+        export MANAGEMENT_CONSOLE_DB_PASSWORD="$(< "${SECRETS_DIR}/MANAGEMENT_CONSOLE_DB_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/MANAGEMENT_CONSOLE_DB_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY" ]; then
+        export MANAGEMENT_CONSOLE_ENCRYPTION_KEY="$(< "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY_REPORT_PUSH_KC_CLIENT" ]; then
+        export MANAGEMENT_CONSOLE_ENCRYPTION_KEY_REPORT_PUSH_KC_CLIENT="$(< "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY_REPORT_PUSH_KC_CLIENT")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY_REPORT_PUSH_KC_CLIENT! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SECRET_KEY" ]; then
+        export MANAGEMENT_CONSOLE_SECRET_KEY="$(< "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SECRET_KEY")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/MANAGEMENT_CONSOLE_SECRET_KEY! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY" ]; then
+        export MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY="$(< "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY! Please run --init!"
+        exit 1
+    fi
+}
+load_secrets_ec() {
+    echo 'Info: Load settings EC'
+}
+
+load_secrets() {
+    local product="${1:-$PRODUCT}"
+
+    if [ "${product}" == 'enterprise-container' ]; then
+        load_secrets_ec
+    elif [ "${product}" == 'security-intelligence' ]; then
+        load_secrets_osi
+    fi
 }
 
 # =============================================================================
@@ -1168,7 +1310,9 @@ load_settings_scan() {
 #
 # Exits:
 #   1 if a required configuration file is missing.
-load_settings() {
+load_settings_ec() {
+    echo 'Info: Load settings EC'
+
     if [ -f "${SETTINGS_DIR}/DEPLOYMENT_MODE" ]; then
         export DEPLOYMENT_MODE="$(< "${SETTINGS_DIR}/DEPLOYMENT_MODE")"
     else
@@ -1215,6 +1359,20 @@ load_settings() {
         load_settings_scan
     elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         load_settings_openvasd
+    fi
+}
+
+load_settings_osi() {
+    echo 'Info: Load settings OSI'
+}
+
+load_settings() {
+    local product="${1:-$PRODUCT}"
+
+    if [ "${product}" == 'enterprise-container' ]; then
+        load_settings_ec
+    elif [ "${product}" == 'security-intelligence' ]; then
+        load_settings_osi
     fi
 }
 
@@ -1280,6 +1438,8 @@ gen_hex() {
 }
 
 init_secrets_osi() {
+    echo "Info: Init OSI secrets."
+
     # Keycloak
     gen_password > "${SECRETS_DIR}/KEYCLAOK_ADMIN_PASSWORD"
     gen_password > "${SECRETS_DIR}/KEYCLOAK_DB_PASSWORD"
@@ -1309,6 +1469,20 @@ init_secrets_osi() {
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY_REPORT_PUSH_KC_CLIENT"
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SECRET_KEY"
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY"
+}
+
+init_secrets_osi() {
+    echo "Info: Init EC secrets."
+}
+
+init_secrets() {
+    local product="${1:-$PRODUCT}"
+
+    if [ "${product}" == 'enterprise-container' ]; then
+        init_secrets_ec
+    elif [ "${product}" == 'security-intelligence' ]; then
+        init_secrets_osi
+    fi
 }
 
 # =============================================================================
@@ -1439,15 +1613,32 @@ init_certs_ingress() {
     fi
 }
 
+init_certs() {
+    local product="${1:-$PRODUCT}"
+    local deployment_mode="${2:-$DEPLOYMENT_MODE}"
+
+    if [ "${product}" == 'enterprise-container' ]; then
+        if [ "${deployment_mode}" == 'scan' ]; then
+            init_certs_scan
+            init_certs_ingress
+        elif [ "${deployment_mode}" == 'openvasd' ]; then
+            init_certs_openvasd
+        fi
+    elif [ "${product}" == 'security-intelligence' ]; then
+        init_certs_ingress
+        init_certs_osi
+    fi
+}
+
 # =============================================================================
-# install_oci_certs()
+# init_oci_certs()
 # =============================================================================
 # Installs the TLS client certificate and private key for OCI deployments.
 #
 # The function copies the configured OCI client certificate and private key
 # into the OCI certificate directory with permissions restricted to the file
 # owner. Existing files with the same names are replaced.
-install_oci_certs(){
+init_oci_certs(){
     if ! [ -f "${OCI_TLS_CLIENT_CERT}" ]; then
         echo "Error: --oci-client-cert argument missing or file ${OCI_TLS_CLIENT_CERT} not found!"
         exit 1
@@ -1463,7 +1654,7 @@ install_oci_certs(){
 }
 
 # =============================================================================
-# install_license_file()
+# init_license_file()
 # =============================================================================
 # Installs the license file and extracts its embedded OCI client credentials.
 #
@@ -1476,7 +1667,7 @@ install_oci_certs(){
 # certificate and private key to separate files, and updates the referenced
 # path variables. It exits with a non-zero status when the license file is
 # missing.
-install_license_file() {
+init_license_file() {
     local -n license_data="${1:-LICENSE_DATA}"
     local -n oci_tls_client_cert="${2:-OCI_TLS_CLIENT_CERT}"
     local -n oci_tls_client_key="${3:-OCI_TLS_CLIENT_KEY}"
@@ -1495,22 +1686,26 @@ install_license_file() {
 }
 
 # =============================================================================
-# install_feed_key()
+# init_feed_key()
 # =============================================================================
 # Installs the Enterprise Container feed key when the configured file exists.
 #
 # The function copies FEED_KEY into the Enterprise Container certificate
 # directory as feed.key with permissions restricted to the file owner. If the
 # source file does not exist, the function performs no action.
-install_feed_key(){
-    if [ -f "${FEED_KEY}" ]; then
-        echo "Info: Install Feed Key..."
-        if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
-            base64 -d "${FEED_KEY}" > "${CERT_DIR_PRODUCT}/feed.key"
-            chmod 0600 "${CERT_DIR_PRODUCT}/feed.key"
-        else
-            install -m 0600 "${FEED_KEY}" "${CERT_DIR_PRODUCT}/feed.key"
-        fi
+init_feed_key(){
+    if ! [ -f "${FEED_KEY}" ]; then
+        echo "Error: --feed-key argument missing!"
+        echo "Info: Feed Mount options are not implemented."
+        exit 1
+    fi
+
+    echo "Info: Install Feed Key..."
+    if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
+        base64 -d "${FEED_KEY}" > "${CERT_DIR_PRODUCT}/feed.key"
+        chmod 0600 "${CERT_DIR_PRODUCT}/feed.key"
+    else
+        install -m 0600 "${FEED_KEY}" "${CERT_DIR_PRODUCT}/feed.key"
     fi
 }
 
@@ -1529,7 +1724,7 @@ install_feed_key(){
 # Docker OCI access, and initializes the administrator password. It exits with
 # a non-zero status when required files are missing or the user cancels.
 init() {
-    echo "🚀 Init Enterprise Container Mode Scan..."
+    echo "🚀 Init OpenVAS ${PRODUCT} ${DEPLOYMENT_MODE}..."
 
     if [ -d "${WORKING_DIR}" ]; then
         if [ "${SKIP_INIT_IF_EXIST}" == "y" ]; then
@@ -1541,38 +1736,23 @@ init() {
             exit 1
         fi
     fi
-    if ! [ -f "${FEED_KEY}" ]; then
-        echo "Error: --feed-key argument missing!"
-        echo "Info: Feed Mount options are not implemented."
-        exit 1
-    fi
-    if ! [ "${INIT_DOCKER_OCI}" ]; then
-        echo "Info: Do you want to install dockerd OCI certs with sudo? Otherwise the commands are printed here."
-        read -r -p "Install? (y/n)" INIT_DOCKER_OCI
-    fi
 
     init_base_folders
-    init_settings
-
     if [ "${LICENSE_FILE}" ]; then
         read_license_file
-        install_license_file
+        init_license_file
     else
-        echo "Info: No --license-file set, try to use --oci-client-cert and --oci-client-key."
-        install_oci_certs
+        init_oci_certs
     fi
-
-    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-        init_certs_openvasd
-    else
-        init_certs_scan
-        init_certs_ingress
-    fi
-
-    init_jwt
-    install_feed_key
+    init_certs
+    init_settings
+    init_secrets
     init_docker_oci
-    init_admin_password
+    if [ "${PRODUCT}" == 'enterprise-container' ]; then
+        init_jwt
+        init_feed_key
+        init_admin_password_scan
+    fi
 
     echo "Init done!"
 }
@@ -1751,6 +1931,40 @@ load_certs_scan() {
     fi
 }
 
+load_certs_ec() {
+    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+        load_certs_openvasd
+        # Todo: put me into file
+        if [ "${OPENVASD_PORT}" ]; then
+            export OPENVAS_SCANNER_HOST_LISTEN_PORT="${OPENVASD_PORT}"
+        fi
+    elif [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+        load_certs_scan
+    fi
+}
+
+load_certs_osi() {
+    echo todo
+}
+
+load_certs() {
+    if [ "${PRODUCT}" == 'enterprise-container' ]; then
+        load_certs_ec
+    elif [ "${PRODUCT}" == 'security-intelligence' ]; then
+        load_certs_osi
+    fi
+}
+
+load_feed_key() {
+    if [ "$FEED_MODE" == 'volume' ]; then
+        if [ -f "${CERT_DIR_PRODUCT}/feed.key" ]; then
+            export FEED_SYNC_GSF_KEY="$(< "${CERT_DIR_PRODUCT}/feed.key")"
+        else
+            echo "Error: No Feed key found at ${CERT_DIR_PRODUCT}/feed.key! Please run --init!"
+            exit 1
+        fi
+    fi
+}
 # =============================================================================
 # deploy()
 # =============================================================================
@@ -1768,33 +1982,20 @@ load_certs_scan() {
 # required credentials are missing or the deployment fails.
 deploy() {
     load_settings
-
-    echo "🚀 Starting OpenVAS ${PRODUCT} ${DEPLOYMENT_MODE}..."
-
     get_latest_version
 
+    echo "🚀 Starting OpenVAS..."
     echo "Info: Using OpenVAS ${PRODUCT} mode ${DEPLOYMENT_MODE} in version ${VERSION}."
 
-    if [ "$FEED_MODE" == 'volume' ]; then
-        if [ -f "${CERT_DIR_PRODUCT}/feed.key" ]; then
-            export FEED_SYNC_GSF_KEY="$(< "${CERT_DIR_PRODUCT}/feed.key")"
-        else
-            echo "Error: No Feed key found at ${CERT_DIR_PRODUCT}/feed.key! Please run --init!"
-            exit 1
+    load_secrets
+    load_certs
+    if [ "${PRODUCT}" == 'enterprise-container' ]; then
+        load_feed_key
+        if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+            if [ "${OPENVASD_LOAD_IMAGES_FROM_TAR}" == 'y' ]; then
+                load_openvasd_images
+            fi
         fi
-    fi
-
-    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-        load_certs_openvasd
-        # Todo: put me into file
-        if [ "${OPENVASD_PORT}" ]; then
-            export OPENVAS_SCANNER_HOST_LISTEN_PORT="${OPENVASD_PORT}"
-        fi
-        if [ "${OPENVASD_LOAD_IMAGES_FROM_TAR}" == 'y' ]; then
-            load_openvasd_images
-        fi
-    elif [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-        load_certs_scan
     fi
 
     # Run deployment
@@ -1979,7 +2180,7 @@ run() {
         update_ingress_certs
     fi
     if [ "${MODE}" == 'change-admin-password' ]; then
-        change_admin_password
+        change_admin_password_scan
     fi
     if [ "${MODE}" == 'force-feed-sync' ]; then
         force_feed_sync
