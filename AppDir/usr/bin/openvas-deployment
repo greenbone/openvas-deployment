@@ -1017,10 +1017,10 @@ change_feed_sync_hour() {
 #   1 if the OpenVASD common name is missing.
 init_settings_openvasd() {
     local cn_openvasd="${1:-$CN_OPENVASD}"
-    local working_dir="${2:-$WORKING_DIR}"
+    local settings_dir="${2:-$SETTINGS_DIR}"
 
     if [ "${cn_openvasd}" ]; then
-        echo "${cn_openvasd}" > "${working_dir}/OPENVASD_CN"
+        echo "${cn_openvasd}" > "${settings_dir}/OPENVASD_CN"
     else
         echo "Error: --cn-openvasd argument missing!"
     exit 1
@@ -1070,6 +1070,15 @@ init_settings_scan() {
     init_feed_sync_hour
 }
 
+init_settings_ec() {
+    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+        init_settings_scan
+    elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+        init_settings_scan
+        init_settings_openvasd
+    fi
+}
+
 init_settings_osi() {
     local domain_name="${1:-$DOMAIN_NAME}"
     local settings_dir="${2:-$SETTINGS_DIR}"
@@ -1105,11 +1114,7 @@ init_settings() {
     fi
 
     if [ "${product}" == 'enterprise-container' ]; then
-        if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-            init_settings_scan
-        elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-            init_settings_openvasd
-        fi
+        init_settings_ec
     elif [ "${product}" == 'security-intelligence' ]; then
         init_settings_osi
     fi
