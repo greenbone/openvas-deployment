@@ -21,6 +21,9 @@ jobs:
           echo '${{ secrets.OCI_CERT }}' > oci-client.cert
           echo '${{ secrets.OCI_KEY }}' > oci-client.key
 
+      - name: CI OSI
+        run: bash regress/osi.sh
+
       - name: CI EC
         env:
           MHOSTS: yes

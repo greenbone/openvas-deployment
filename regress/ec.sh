@@ -6,15 +6,7 @@
 
 set -euo pipefail
 
-echo_task() {
-    printf '\n\033[1;34m────────────────────────────────────────\033[0m\n'
-    printf '\033[1;34m%s\033[0m\n' "$*"
-    printf '\033[1;34m────────────────────────────────────────\033[0m\n\n'
-}
-
-echo_error() {
-    printf '\033[1;31m%s\033[0m\n' "$*"
-}
+source regress/share.sh
 
 check_req() {
     if ! [ -f 'gsf.key' ]; then
@@ -27,20 +19,6 @@ check_req() {
         echo_error "No oci-client.key found"
         exit 1
     fi
-}
-
-clean() {
-    echo_task 'Test down volumes'
-    openvas-deployment --down-volumes
-}
-
-list() {
-    echo_task "Show docker container for $1"
-    openvas-deployment --ps
-    echo_task "Show docker logs for $1"
-    openvas-deployment --logs >/dev/null 2>&1
-    echo_task "List product folder for $1"
-    tree product
 }
 
 gvmd_add_openvasd_host_to_etc_hosts() {
