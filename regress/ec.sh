@@ -56,7 +56,9 @@ gvmd_add_openvasd_host_to_etc_hosts() {
 
 run() {
     echo_task 'Test Init'
-    openvas-deployment --init --init-docker-oci --feed-key gsf.key --oci-client-cert oci-client.cert --oci-client-key oci-client.key
+    openvas-deployment --init --init-docker-oci --feed-key gsf.key \
+        --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
+        --product enterprise-container --deployment-mode scan
     echo_task 'Test Update'
     openvas-deployment --update
     echo_task 'Test Run'
@@ -92,7 +94,8 @@ run_openvasd_cert_tar() {
         echo_task 'Test openvasd cert tar extract'
         tar xvf ../sensor1-test-test.tar
         echo_task 'Test Openvasd cert tar init'
-        openvas-deployment --init --init-docker-oci --deployment-mode openvasd \
+        openvas-deployment --init --init-docker-oci \
+            --product enterprise-container --deployment-mode openvasd \
             --cn-openvasd sensor1.test.test \
             --oci-client-cert ../oci-client.cert \
             --oci-client-key ../oci-client.key \
