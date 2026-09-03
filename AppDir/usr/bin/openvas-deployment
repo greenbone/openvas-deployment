@@ -70,6 +70,7 @@ SERVICE_NAME=''
 FEED_SYNC_FORCE_NO_LOG='n'
 METAFEED_CERT=''
 METAFEED_KEY=''
+DOMAIN_NAME=''
 
 # =============================================================================
 # show_help()
@@ -760,7 +761,7 @@ add_openvasd() {
 # message and exits with a non-zero status.
 change_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
+        echo "${GVMD_ADMIN_PASSWORD}" > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
     else
         echo 'Error: No admin password set. Please use --change-admin-password with --admin-password'
         exit 1
@@ -782,13 +783,13 @@ change_admin_password_scan() {
 # generated password.
 init_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
+        echo "${GVMD_ADMIN_PASSWORD}" > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
     else
         echo "Info: No admin password set. Create random."
         set +e
-        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${WORKING_DIR}/GVMD_ADMIN_PASSWORD"
+        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
         set -e
-        GVMD_ADMIN_PASSWORD="$(< "${WORKING_DIR}/GVMD_ADMIN_PASSWORD")"
+        GVMD_ADMIN_PASSWORD="$(< "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD")"
         echo "Your admin password is: ${GVMD_ADMIN_PASSWORD}"
     fi
 }
@@ -891,24 +892,27 @@ create_openvasd_tar() {
     local openvasd_cert_folder="${CN_OPENVASD//./_}"
     openvasd_cert_folder="${CERT_DIR_PRODUCT}/${openvasd_cert_folder}"
     local tmp_dir="$(mktemp -d)"
-    local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}"
+    local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}/${PRODUCT}"
     pushd "${tmp_dir}" > /dev/null || exit
+        mkdir -p "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}"
         mkdir -p "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}"
         mkdir -p "${STORE_DIR_NAME}/${ARTIFACT_DIR_NAME}"
         cp -r "${CERT_DIR_OCI}" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/"
         cp -r "${ARTIFACT_DIR}" "${STORE_DIR_NAME}/${ARTIFACT_DIR_NAME}/"
         cp -r "${openvasd_cert_folder}" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}/"
         cp "${CERT_DIR_PRODUCT}/feed.key" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}/"
-        echo 'openvasd' > "${STORE_DIR_NAME}/DEPLOYMENT_MODE"
-        echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${STORE_DIR_NAME}/GREENBONE_FEED_SYNC_JOB_HOUR"
-        echo "${CN_OPENVASD}" > "${STORE_DIR_NAME}/OPENVASD_CN"
-        echo "${FEED_MODE}" > "${STORE_DIR_NAME}/FEED_MODE"
-        echo "${CCERT_MODE}" > "${STORE_DIR_NAME}/CCERT_MODE"
-        echo "${FEED_PATH}" > "${STORE_DIR_NAME}/FEED_PATH"
-        echo "${CCERT_PATH}" > "${STORE_DIR_NAME}/CCERT_PATH"
-        echo "${CCERT_TYPE}" > "${STORE_DIR_NAME}/CCERT_TYPE"
-        cp "${0}" .
+        echo 'enterprise-container' > "${STORE_DIR_NAME}/PRODUCT"
+        echo 'openvasd' > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/DEPLOYMENT_MODE"
+        echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/GREENBONE_FEED_SYNC_JOB_HOUR"
+        echo "${CN_OPENVASD}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/OPENVASD_CN"
+        echo "${FEED_MODE}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/FEED_MODE"
+        echo "${CCERT_MODE}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/CCERT_MODE"
+        echo "${FEED_PATH}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/FEED_PATH"
+        echo "${CCERT_PATH}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/CCERT_PATH"
+        echo "${CCERT_TYPE}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/CCERT_TYPE"
     popd > /dev/null
+
+    cp "${0}" "${tmp_dir}"
 
     if [ "${OPENVASD_TAR_WITH_IMAGES}" == 'y' ]; then
         get_latest_version
@@ -967,7 +971,7 @@ force_feed_sync() {
 init_feed_sync_hour() {
     if [ "${GREENBONE_FEED_SYNC_JOB_HOUR}" ]; then
         if (( GREENBONE_FEED_SYNC_JOB_HOUR >= 0 && GREENBONE_FEED_SYNC_JOB_HOUR <= 23 )); then
-            echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${WORKING_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR"
+            echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR"
         else
             echo "Error: No feed sync hour ${GREENBONE_FEED_SYNC_JOB_HOUR} needs to be between 0 and 23. Please run --change-feed-sync-hour or --init with --feed-sync-hour."
             exit 1
@@ -1066,6 +1070,18 @@ init_settings_scan() {
     init_feed_sync_hour
 }
 
+init_settings_osi() {
+    local domain_name="${1:-$DOMAIN_NAME}"
+    local settings_dir="${2:-$SETTINGS_DIR}"
+
+    if [ "${domain_name}" ]; then
+        echo "${domain_name}" > "${SETTINGS_DIR}/DOMAIN_NAME"
+    else
+        echo "Error: Domain name not set! Run --init with --domain-name!"
+        exit 1
+    fi
+}
+
 # =============================================================================
 # init_settings()
 # =============================================================================
@@ -1091,10 +1107,11 @@ init_settings() {
     if [ "${product}" == 'enterprise-container' ]; then
         if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
             init_settings_scan
-            init_settings_openvasd
         elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
             init_settings_openvasd
         fi
+    elif [ "${product}" == 'security-intelligence' ]; then
+        init_settings_osi
     fi
 }
 
@@ -1136,6 +1153,12 @@ load_secrets_osi() {
         export KEYCLOAK_NOTIFICATION_USER_PASSWORD="$(< "${SECRETS_DIR}/KEYCLOAK_NOTIFICATION_USER_PASSWORD")"
     else
         echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLOAK_NOTIFICATION_USER_PASSWORD! Please run --init!"
+        exit 1
+    fi
+    if [ -f "${SECRETS_DIR}/KEYCLOAK_REPORT_USER_PASSWORD" ]; then
+        export KEYCLOAK_REPORT_USER_PASSWORD="$(< "${SECRETS_DIR}/KEYCLOAK_REPORT_USER_PASSWORD")"
+    else
+        echo "Error: No secret file found at ${SECRETS_DIR}/KEYCLOAK_REPORT_USER_PASSWORD! Please run --init!"
         exit 1
     fi
 
@@ -1364,6 +1387,13 @@ load_settings_ec() {
 
 load_settings_osi() {
     echo 'Info: Load settings OSI'
+
+    if [ -f "${SETTINGS_DIR}/DOMAIN_NAME" ]; then
+        export DOMAIN_NAME="$(< "${SETTINGS_DIR}/DOMAIN_NAME")"
+    else
+        echo "Error: No domain name found at ${SETTINGS_DIR}/DOMAIN_NAME! Please run --init!"
+        exit 1
+    fi
 }
 
 load_settings() {
@@ -1427,14 +1457,12 @@ gen_password() {
         | head -c 32
 }
 
-gen_fernet() {
-    openssl rand -base64 32 \
-        | tr '+/' '-_' \
-        | tr -d '\n'
+gen_hex() {
+    openssl rand -hex 64
 }
 
-gen_hex() {
-    openssl rand -hex 32
+gen_fernet() {
+    openssl rand -base64 32
 }
 
 init_secrets_osi() {
@@ -1447,6 +1475,7 @@ init_secrets_osi() {
     gen_password > "${SECRETS_DIR}/KEYCLOAK_WST_CLIENT_PASSWORD"
     gen_password > "${SECRETS_DIR}/KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD"
     gen_password > "${SECRETS_DIR}/KEYCLOAK_NOTIFICATION_USER_PASSWORD"
+    gen_password > "${SECRETS_DIR}/KEYCLOAK_REPORT_USER_PASSWORD"
 
     # OpenSearch
     gen_password > "${SECRETS_DIR}/OPENSEARCH_ADMIN_PASSWORD"
@@ -1471,7 +1500,7 @@ init_secrets_osi() {
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY"
 }
 
-init_secrets_osi() {
+init_secrets_ec() {
     echo "Info: Init EC secrets."
 }
 
@@ -1558,14 +1587,12 @@ init_certs_osi() {
     if [ -f "${metafeed_cert}" ]; then
         install -m 0644 "${metafeed_cert}" "${cert_dir_product}/metafeed.crt"
     else
-        echo "Error: Missing argument --osi-metafeed-cert !"
-        exit 1
+        echo "Warn: Missing argument --osi-metafeed-cert !"
     fi
     if [ -f "${metafeed_key}" ]; then
         install -m 0600 "${metafeed_key}" "${cert_dir_product}/metafeed.key"
     else
-        echo "Error: Missing argument --osi-metafeed-key !"
-        exit 1
+        echo "Warn: Missing argument --osi-metafeed-key !"
     fi
 
 }
@@ -1903,7 +1930,7 @@ load_certs_openvasd() {
 # variables.
 #
 # Terminates the script when any required certificate or key file is missing.
-load_certs_scan() {
+load_certs_ingress() {
     if [ -f "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
         export INGRESS_CERTIFICATE="$(< "${CERT_DIR_PRODUCT}/ingress_server.crt")"
     else
@@ -1916,7 +1943,9 @@ load_certs_scan() {
         echo "Error: No enterprise-container Ingress TLS private key found at ${CERT_DIR_PRODUCT}/ingress_server.key! Please run --init!"
         exit 1
     fi
+}
 
+load_certs_scan() {
     if [ -f "${CERT_DIR_PRODUCT}/ecdsa.private.pem" ]; then
         export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_KEY="$(< "${CERT_DIR_PRODUCT}/ecdsa.private.pem")"
     else
@@ -1940,11 +1969,26 @@ load_certs_ec() {
         fi
     elif [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
         load_certs_scan
+        load_certs_ingress
     fi
 }
 
 load_certs_osi() {
-    echo todo
+    local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
+
+    if [ -f "${cert_dir_product}/metafeed.crt" ]; then
+        export METAFEED_CLIENT_CERT="$(< "${cert_dir_product}/metafeed.crt")"
+    else
+        echo "Warn: No metafeed Ingress TLS certificate found at ${cert_dir_product}/metafeed.crt! Please run --init! Use empty now."
+        export METAFEED_CLIENT_CERT=''
+    fi
+    if [ -f "${cert_dir_product}/metafeed.key" ]; then
+        export METAFEED_CLIENT_KEY="$(< "${cert_dir_product}/metafeed.key")"
+    else
+        echo "Warn: No metafeed Ingress TLS certificate found at ${cert_dir_product}/metafeed.key! Please run --init! Use empty now."
+        export METAFEED_CLIENT_KEY=''
+    fi
+    load_certs_ingress
 }
 
 load_certs() {
@@ -2028,6 +2072,8 @@ compose_down_volumes() {
     echo "🚀 Stopping OpenVAS ${PRODUCT} and removing Docker volumes..."
 
     load_settings
+    load_secrets
+    load_certs
 
     get_latest_version
 
@@ -2053,6 +2099,8 @@ compose_down() {
     echo "🚀 Stopping OpenVAS ${PRODUCT}..."
 
     load_settings
+    load_secrets
+    load_certs
 
     get_latest_version
 
@@ -2078,6 +2126,8 @@ compose_logs() {
     echo "🚀 Print ${PRODUCT} Logs..."
 
     load_settings
+    load_secrets
+    load_certs
 
     get_latest_version
 
@@ -2104,13 +2154,15 @@ compose_ps() {
     echo "🚀 Print ${PRODUCT} Container..."
 
     load_settings
+    load_secrets
+    load_certs
 
     get_latest_version
 
     echo "Info: Using version ${VERSION}."
 
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        docker compose ps
+        docker compose ps -a
     popd > /dev/null
 }
 
@@ -2254,6 +2306,10 @@ parse_args() {
                 ;;
             --product)
                 PRODUCT="$2"
+                shift 2
+                ;;
+            --domain-name)
+                DOMAIN_NAME="$2"
                 shift 2
                 ;;
             --init-openvasd-tar)
