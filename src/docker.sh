@@ -1,12 +1,20 @@
 # =============================================================================
 # compose_down()
 # =============================================================================
-# Stops the configured OpenVAS Enterprise Container deployment.
+# Stops the currently deployed OpenVAS product compose stack.
 #
-# Loads the persisted environment and selects the latest downloaded product
-# version. Executes Docker Compose shutdown from the corresponding deployment
-# directory, stopping and removing the deployment containers while preserving
-# associated Docker volumes and stored data.
+# The function loads the deployment settings, secrets, and certificates,
+# determines the latest locally available product version, and runs Docker
+# Compose from the corresponding artifact directory to stop the deployment.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   Exits if changing to the artifact directory fails.
 compose_down() {
     echo "🚀 Stopping OpenVAS ${PRODUCT}..."
 
@@ -28,13 +36,22 @@ compose_down() {
 # =============================================================================
 # compose_down_volumes()
 # =============================================================================
-# Stops the configured OpenVAS Enterprise Container deployment and removes
+# Stops the currently deployed OpenVAS product compose stack and removes its
 # associated Docker volumes.
 #
-# Loads the persisted environment and selects the latest downloaded product
-# version. Executes Docker Compose shutdown from the corresponding deployment
-# directory, removing orphaned containers and all associated volumes. This
-# operation permanently deletes container volumes and their stored data.
+# The function loads the deployment settings, secrets, and certificates,
+# determines the latest locally available product version, and runs Docker
+# Compose from the corresponding artifact directory with orphan and volume
+# removal enabled.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   Exits if changing to the artifact directory fails.
 compose_down_volumes() {
     echo "🚀 Stopping OpenVAS ${PRODUCT} and removing Docker volumes..."
 
@@ -56,12 +73,23 @@ compose_down_volumes() {
 # =============================================================================
 # compose_logs()
 # =============================================================================
-# Prints logs from the configured OpenVAS Enterprise Container deployment.
+# Prints Docker Compose logs for the selected OpenVAS product deployment.
 #
-# Loads the persisted environment and selects the latest downloaded product
-# version. Executes Docker Compose log retrieval from the corresponding
-# deployment directory. If SERVICE_NAME is configured, only logs for the
-# specified container are displayed; otherwise, logs for all services are shown.
+# The function loads the deployment settings, secrets, and certificates,
+# determines the latest locally available product version, and prints logs
+# from the corresponding Docker Compose stack.
+#
+# If SERVICE_NAME is set, only logs for that service are shown. Otherwise,
+# logs for all services in the compose stack are printed.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   Exits if changing to the artifact directory fails.
 compose_logs() {
     echo "🚀 Print ${PRODUCT} Logs..."
 
@@ -85,11 +113,21 @@ compose_logs() {
 # =============================================================================
 # compose_ps()
 # =============================================================================
-# Prints the status of the configured OpenVAS Enterprise Container deployment.
+# Prints the status of containers for the selected OpenVAS product deployment.
 #
-# Loads the persisted environment and selects the latest downloaded product
-# version. Executes Docker Compose status retrieval from the corresponding
-# deployment directory and displays the state of all configured services.
+# The function loads the deployment settings, secrets, and certificates,
+# determines the latest locally available product version, and runs Docker
+# Compose from the corresponding artifact directory to list all containers,
+# including stopped containers.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   Exits if changing to the artifact directory fails.
 compose_ps() {
     echo "🚀 Print ${PRODUCT} Container..."
 
@@ -109,13 +147,21 @@ compose_ps() {
 # =============================================================================
 # init_docker_oci()
 # =============================================================================
-# Installs the OCI client TLS certificate and private key into the dockerd
-# certificate directory.
+# Installs the OCI TLS client certificate and private key for Docker daemon
+# access to the configured OCI registry.
 #
-# When INIT_DOCKER_OCI is set to "y", the function creates the destination
-# directory with sudo and installs the credentials with permissions set to
-# 0600. Otherwise, it prints the equivalent commands for manual execution in
-# a root shell.
+# If INIT_DOCKER_OCI is set to 'y', the function creates the Docker certificate
+# directory and installs the configured OCI client certificate and private key
+# using sudo and restrictive file permissions.
+#
+# Otherwise, the function prints the commands required to install the
+# certificates manually with root privileges.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_docker_oci() {
     if [ "${INIT_DOCKER_OCI}" == 'y' ]; then
         echo "Info: Install OCI TLS certificates into dockerd..."

@@ -1,9 +1,26 @@
 # =============================================================================
 # check_requirements()
 # =============================================================================
-# Checks if the required tools (docker, oras, openssl, etc.) are installed and 
-# if Docker and Docker Compose are running. If any are missing or not running, 
-# the script exits with an error.
+# Verifies that all required command-line tools and Docker services are
+# available before running deployment operations.
+#
+# The function checks for the presence of the external tools used by the
+# script. If a required tool is missing, it prints example installation
+# commands for several supported operating systems and terminates execution.
+#
+# It also verifies that Docker Compose is available through the Docker CLI and
+# that the Docker daemon is reachable.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if a required command-line tool is missing.
+#   1 if Docker Compose is not available.
+#   1 if the Docker daemon is not reachable.
 check_requirements() {
     echo "🚀 Checking system requirements..."
     

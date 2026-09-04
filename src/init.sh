@@ -1,17 +1,28 @@
 # =============================================================================
 # init()
 # =============================================================================
-# Initializes the Enterprise Container scan deployment.
+# Initializes the working environment for the selected OpenVAS product.
 #
-# The function validates the required OCI client certificate and key, warns
-# before overwriting an existing working directory, and prompts for confirmation
-# when the feed key is unavailable. It also determines
-# whether Docker OCI certificates should be installed with elevated privileges.
+# The function verifies whether WORKING_DIR already exists and optionally skips
+# initialization or asks for confirmation before overwriting existing setup
+# data. It then creates the required base directories and initializes product
+# credentials, certificates, settings, secrets, and Docker OCI configuration.
 #
-# After validation, the function creates the required directories, initializes
-# the environment, installs or generates certificates and keys, configures
-# Docker OCI access, and initializes the administrator password. It exits with
-# a non-zero status when required files are missing or the user cancels.
+# If LICENSE_FILE is provided, license-based initialization is used; otherwise,
+# OCI client certificates are initialized.
+#
+# For enterprise-container, the function additionally initializes JWT keys,
+# feed key configuration, and the scan administrator password.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   0 if WORKING_DIR exists and SKIP_INIT_IF_EXIST is set to 'y'.
+#   1 if WORKING_DIR exists and the user declines to continue.
 init() {
     echo "🚀 Init OpenVAS ${PRODUCT}..."
     if [ "${PRODUCT}" == 'enterprise-container' ]; then
@@ -52,11 +63,19 @@ init() {
 # =============================================================================
 # init_base_folders()
 # =============================================================================
-# Creates the directories used to store TLS certificates.
+# Creates the base directory structure required for product initialization.
 #
-# The function creates the standard certificate directory and the certificate
-# directories used by the OCI and enterprise container deployments. Existing
-# directories are left unchanged.
+# The function ensures that the common certificate directory, OCI certificate
+# directory, product-specific certificate directory, artifact directory, image
+# directory, secrets directory, and settings directory exist.
+#
+# Existing directories are left unchanged.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_base_folders() {
     echo "Info: Create TLS certificate folder..."
     mkdir -p "${CERT_DIR}"

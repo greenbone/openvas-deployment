@@ -1,8 +1,11 @@
 # =============================================================================
 # init_settings_openvasd()
 # =============================================================================
-# Initializes the OpenVASD environment configuration by storing the OpenVASD
-# common name (CN) in the working directory.
+# Initializes the OpenVASD-specific settings for an enterprise-container
+# deployment.
+#
+# The function validates that an OpenVASD common name (CN) is provided and
+# stores it in the settings directory for later use.
 #
 # Arguments:
 #   $1
@@ -10,14 +13,14 @@
 #     Defaults to CN_OPENVASD.
 #
 #   $2
-#     Working directory where the OPENVASD_CN file is created.
-#     Defaults to WORKING_DIR.
+#     Settings directory.
+#     Defaults to SETTINGS_DIR.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the OpenVASD common name is missing.
+#   1 if the OpenVASD common name is not provided.
 init_settings_openvasd() {
     local cn_openvasd="${1:-$CN_OPENVASD}"
     local settings_dir="${2:-$SETTINGS_DIR}"
@@ -33,20 +36,22 @@ init_settings_openvasd() {
 # =============================================================================
 # load_settings_openvasd()
 # =============================================================================
-# Loads the OpenVASD environment configuration from the OPENVASD_CN file in the
-# working directory and exports the OpenVASD common name (CN) for use by
-# subsequent deployment operations.
+# Loads the OpenVASD-specific settings for an enterprise-container deployment.
+#
+# The function reads the persisted OpenVASD common name (CN) from the settings
+# directory and exports it as CN_OPENVASD for use by subsequent OpenVASD
+# operations.
 #
 # Arguments:
 #   $1
-#     Working directory containing the OPENVASD_CN file.
-#     Defaults to WORKING_DIR.
+#     Settings directory.
+#     Defaults to SETTINGS_DIR.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the OPENVASD_CN file is missing.
+#   1 if the OpenVASD common name settings file is missing.
 load_settings_openvasd() {
     local settings_dir="${1:-$SETTINGS_DIR}"
 

@@ -1,3 +1,18 @@
+# =============================================================================
+# init_settings_ec()
+# =============================================================================
+# Initializes enterprise-container settings for the selected deployment mode.
+#
+# In scan mode, the function initializes the scan-specific settings.
+#
+# In openvasd mode, the function initializes the common scan settings first,
+# followed by the OpenVASD-specific settings.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_settings_ec() {
     if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
         init_settings_scan
@@ -7,6 +22,27 @@ init_settings_ec() {
     fi
 }
 
+# =============================================================================
+# load_settings_ec()
+# =============================================================================
+# Loads the settings required for an enterprise-container deployment.
+#
+# The function reads the persisted deployment, feed, CCERT, and feed
+# synchronization settings from SETTINGS_DIR and exports them for use by
+# subsequent deployment operations.
+#
+# Mount-specific paths are loaded when the corresponding mode is set to
+# 'mount'. After loading the common enterprise-container settings, the function
+# dispatches to the deployment-mode-specific settings loader.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if a required settings file is missing.
 load_settings_ec() {
     echo 'Info: Load settings EC'
 

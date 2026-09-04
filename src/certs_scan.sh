@@ -1,22 +1,27 @@
 # =============================================================================
 # init_certs_scan()
 # =============================================================================
-# Creates the TLS certificates used by the Enterprise Container deployment.
+# Generates the CA and client TLS certificates required for scan deployments.
 #
-# The function generates a 2048-bit RSA certificate authority and a client
-# certificate signed by that authority, each valid for 365 days. For the
-# ingress server, it installs the configured certificate and private key when
-# both files are available; otherwise, it generates a self-signed server
-# certificate valid for 365 days. Existing output files may be replaced.
+# The function creates a self-signed Enterprise-Container CA certificate and
+# private key, then generates a client certificate and private key signed by
+# that CA. The client certificate is configured for TLS client authentication.
+#
+# Generated certificates are valid for 365 days and are stored in
+# CERT_DIR_PRODUCT.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_certs_scan() {
-    # Create Enterprise-Container CA certificate
     echo "Info: Install Enterprise-Container TLS certificates..."
     openssl genrsa -out "${CERT_DIR_PRODUCT}/ca.key" 2048 2>/dev/null
     openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ca.key" -out "${CERT_DIR_PRODUCT}/ca.crt" -days 365 \
        -addext "basicConstraints=CA:TRUE" \
        -subj "/CN=enterprise-container-ca" 2>/dev/null
 
-    # Create Enterprise-Container Client certificate
     openssl genrsa -out "${CERT_DIR_PRODUCT}/client.key" 2048 2>/dev/null
     openssl req -new -key "${CERT_DIR_PRODUCT}/client.key" -out "${CERT_DIR_PRODUCT}/client.csr" \
         -subj "/CN=enterprise-container-client" 2>/dev/null
@@ -28,15 +33,22 @@ init_certs_scan() {
 # =============================================================================
 # load_certs_scan()
 # =============================================================================
-# Loads the Enterprise Container ingress TLS credentials and feed key service
-# JWT keys, then exports them for use by the scan deployment.
+# Loads the ECDSA key pair required by the feed key service for scan
+# deployments.
 #
-# Reads the ingress server certificate and private key into
-# INGRESS_CERTIFICATE and INGRESS_PRIVATE_KEY. It also loads the ECDSA private
-# and public keys into the corresponding feed key service JWT environment
-# variables.
+# The function reads the private and public ECDSA keys from CERT_DIR_PRODUCT
+# and exports their contents for use by the feed key service JWT
+# configuration.
 #
-# Terminates the script when any required certificate or key file is missing.
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the ECDSA private key is missing.
+#   1 if the ECDSA public key is missing.
 load_certs_scan() {
     if [ -f "${CERT_DIR_PRODUCT}/ecdsa.private.pem" ]; then
         export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_KEY="$(< "${CERT_DIR_PRODUCT}/ecdsa.private.pem")"

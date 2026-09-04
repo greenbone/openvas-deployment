@@ -1,3 +1,28 @@
+# =============================================================================
+# init_settings_scan()
+# =============================================================================
+# Validates and stores the settings required for scan deployments.
+#
+# The function verifies that DEPLOYMENT_MODE, FEED_MODE, and CCERT_MODE are
+# included in their respective supported option lists and persists the selected
+# values in SETTINGS_DIR.
+#
+# Mount-based feed and CCERT modes are currently rejected. Depending on
+# CCERT_MODE, the function stores the corresponding CCERT_TYPE and then
+# initializes the configured feed synchronization hour.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if DEPLOYMENT_MODE is not supported.
+#   1 if FEED_MODE is not supported.
+#   1 if CCERT_MODE is not supported.
+#   1 if FEED_MODE is set to 'mount'.
+#   1 if CCERT_MODE is set to 'mount'.
 init_settings_scan() {
     if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${DEPLOYMENT_MODE} " ]]; then
         echo "${DEPLOYMENT_MODE}" > "${SETTINGS_DIR}/DEPLOYMENT_MODE"
@@ -44,20 +69,22 @@ init_settings_scan() {
 # =============================================================================
 # load_settings_scan()
 # =============================================================================
-# Loads the scan environment configuration by reading the GVMD administrator
-# password from the GVMD_ADMIN_PASSWORD file in the working directory and
-# exporting it for use by subsequent scan operations.
+# Loads the administrator password required for scan deployments.
+#
+# The function reads the persisted gvmd administrator password from the
+# settings directory and exports it as GVMD_ADMIN_PASSWORD for use by
+# subsequent scan deployment operations.
 #
 # Arguments:
 #   $1
-#     Working directory containing the GVMD_ADMIN_PASSWORD file.
-#     Defaults to WORKING_DIR.
+#     Settings directory.
+#     Defaults to SETTINGS_DIR.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the GVMD_ADMIN_PASSWORD file is missing.
+#   1 if the administrator password settings file is missing.
 load_settings_scan() {
     local settings_dir="${1:-$SETTINGS_DIR}"
 

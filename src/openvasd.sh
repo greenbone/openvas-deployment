@@ -1,16 +1,26 @@
-
 # =============================================================================
 # add_openvasd()
 # =============================================================================
-# Registers an OpenVASD scanner in the GVMD container after verifying that the
-# OpenVASD endpoint is ready.
+# Registers an OpenVASD instance as a scanner in the gvmd container.
 #
-# The function requires the OpenVASD common name and port, derives the scanner
-# name and certificate directory from the common name, and checks the OpenVASD
-# readiness endpoint with the configured client certificate, client key, and CA
-# certificate. If the endpoint is ready, it copies the scanner credentials into
-# the GVMD container, sets read-only permissions, and creates the scanner entry
-# with `gvmd --create-scanner`.
+# The function validates the required OpenVASD common name and port, verifies
+# that the remote OpenVASD instance is ready using its TLS-protected readiness
+# endpoint, and aborts if the endpoint does not return HTTP status 200.
+#
+# If the instance is ready, the function copies the Enterprise-Container client
+# certificate, client private key, and CA certificate into the gvmd container,
+# adjusts their permissions, and invokes gvmd to create the OpenVASD scanner.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if CN_OPENVASD is not set.
+#   1 if OPENVASD_PORT is not set.
+#   1 if the OpenVASD readiness endpoint does not return HTTP status 200.
 add_openvasd() {
     if ! [ "${CN_OPENVASD}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --add-openvasd !"
@@ -65,10 +75,32 @@ add_openvasd() {
 # =============================================================================
 # create_openvasd_cert()
 # =============================================================================
-# Creates a server certificate, private key, and CA certificate bundle for an
-# OpenVASD scanner using the configured OpenVASD common name. Stores the generated
-# files in a certificate directory derived from the common name and prints the
-# target paths where the files should be copied on the remote OpenVASD machine.
+# Creates a TLS server certificate for a remote OpenVASD instance.
+#
+# The function validates the OpenVASD common name (CN), creates a dedicated
+# certificate directory derived from the CN, and generates a server private
+# key, certificate signing request, and server certificate signed by the
+# Enterprise-Container CA. The CA certificate is copied into the OpenVASD
+# certificate directory as well.
+#
+# After certificate generation, the function prints setup instructions for
+# deploying and registering the remote OpenVASD sensor using several supported
+# deployment methods.
+#
+# Arguments:
+#   $1
+#     OpenVASD common name (CN).
+#     Defaults to CN_OPENVASD.
+#
+#   $2
+#     Product certificate directory containing ca.crt and ca.key.
+#     Defaults to CERT_DIR_PRODUCT.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the OpenVASD common name is not provided.
 create_openvasd_cert() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
     local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
@@ -200,26 +232,28 @@ EOF
 # =============================================================================
 # create_openvasd_cert_tar()
 # =============================================================================
-# Creates a tar archive containing the OpenVASD certificate directory for the
-# configured OpenVASD common name (CN).
+# Creates a tar archive containing the TLS certificate files for an OpenVASD
+# instance.
 #
-# The certificate directory name is derived from the OpenVASD CN by replacing
-# dots with underscores.
+# The function derives the OpenVASD-specific certificate directory and archive
+# name from the provided common name (CN), verifies that the certificate
+# directory exists, and archives its contents into a tar file in the current
+# working directory.
 #
 # Arguments:
 #   $1
-#     OpenVASD common name (CN) used to identify the certificate directory.
+#     OpenVASD common name (CN).
 #     Defaults to CN_OPENVASD.
 #
 #   $2
-#     Base certificate directory containing the OpenVASD certificate folders.
+#     Product certificate directory.
 #     Defaults to CERT_DIR_PRODUCT.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the OpenVASD common name is missing.
+#   1 if the OpenVASD common name is not provided.
 #   1 if the OpenVASD certificate directory does not exist.
 create_openvasd_cert_tar() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
@@ -244,20 +278,29 @@ create_openvasd_cert_tar() {
 # =============================================================================
 # create_openvasd_tar()
 # =============================================================================
-# Creates a deployment archive for the OpenVASD instance identified by
-# CN_OPENVASD.
+# Creates a portable archive for deploying an OpenVASD sensor.
 #
-# Validates the required common name, loads the saved environment, and assembles
-# a temporary deployment tree containing the OCI credentials, product
-# artifacts, instance-specific certificates, feed key, deployment metadata,
-# and a copy of this script.
+# The function validates the OpenVASD common name, loads the current settings,
+# and assembles a temporary deployment directory containing the required
+# product artifacts, OCI certificates, OpenVASD certificates, feed key,
+# deployment settings, and the current script.
 #
-# When OPENVASD_TAR_WITH_IMAGES is set to "y", the archive also includes the
-# Docker images used by the latest downloaded product version. The feed key
-# service image is added only when FEED_MODE is set to "service".
+# If OPENVASD_TAR_WITH_IMAGES is set to 'y', the function also saves the
+# Docker images required by the OpenVASD deployment into the archive. The feed
+# key service image is included when FEED_MODE is set to 'service'.
 #
-# Writes the resulting gzip-compressed tar archive to the current directory.
-# The archive name is derived from CN_OPENVASD with periods replaced by hyphens.
+# The assembled directory is compressed into a gzip-compressed tar archive
+# named after the OpenVASD common name.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if CN_OPENVASD is not set.
+#   Exits if changing to a required temporary or artifact directory fails.
 create_openvasd_tar() {
     if ! [ "${CN_OPENVASD}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
@@ -316,9 +359,20 @@ create_openvasd_tar() {
 # =============================================================================
 # del_openvasd()
 # =============================================================================
-# Deletes the configured OpenVASD scanner from gvmd using the scanner UUID
-# provided by --openvasd-uuid. Fails if no UUID is configured, because gvmd
-# requires the scanner UUID to identify the OpenVASD scanner to remove.
+# Deletes an OpenVASD scanner from gvmd.
+#
+# The function verifies that an OpenVASD scanner UUID is provided and then
+# executes gvmd inside the configured gvmd container to remove the scanner
+# identified by that UUID.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if OPENVASD_UUID is not set.
 del_openvasd() {
     if ! [ "${OPENVASD_UUID}" ]; then
         echo "Error: --openvasd-uuid argument missing. Required for --del-openvasd !"
@@ -331,17 +385,34 @@ del_openvasd() {
 # =============================================================================
 # get_openvasds()
 # =============================================================================
-# Lists the scanners currently registered in gvmd. Runs gvmd inside the configured
-# gvmd container and prints the scanner entries returned by --get-scanners.
+# Lists the OpenVASD scanners configured in gvmd.
+#
+# The function executes gvmd inside the configured gvmd container using the
+# configured container user and prints the registered scanner entries.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   Writes the configured scanner list to standard output.
 get_openvasds() {
     docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd --get-scanners
 }
 
 # =============================================================================
-# init_openvasd()
+# init_openvasd_tar()
 # =============================================================================
-# Initializes the OpenVASD deployment by configuring the OCI client
-# certificates used by dockerd.
+# Initializes Docker OCI certificate configuration for an OpenVASD deployment
+# created from an archive.
+#
+# The function delegates OCI client certificate installation for Docker to
+# init_docker_oci.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_openvasd_tar() {
     init_docker_oci
 }
@@ -349,11 +420,17 @@ init_openvasd_tar() {
 # =============================================================================
 # load_openvasd_images()
 # =============================================================================
-# Loads the packaged OpenVASD Docker images from IMAGE_DIR.
+# Loads packaged Docker images required for an OpenVASD deployment.
 #
-# Each expected image archive is checked independently before being passed to
-# docker load. Missing archives are skipped and reported without terminating
-# the function.
+# The function checks IMAGE_DIR for known OpenVASD image archives and imports
+# each available archive into the local Docker image store using docker load.
+# Missing image archives are skipped with an informational message.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 load_openvasd_images() {
     if [ -f "${IMAGE_DIR}/openvas-openvasd.tar" ]; then
         docker load -i "${IMAGE_DIR}/openvas-openvasd.tar"

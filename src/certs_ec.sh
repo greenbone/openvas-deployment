@@ -1,3 +1,20 @@
+# =============================================================================
+# load_certs_ec()
+# =============================================================================
+# Loads the certificate configuration required for the selected
+# enterprise-container deployment mode.
+#
+# In openvasd mode, the function loads the OpenVASD certificates and, if
+# OPENVASD_PORT is set, exports it as OPENVAS_SCANNER_HOST_LISTEN_PORT.
+#
+# In scan mode, the function loads the scan and ingress certificate
+# configuration.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 load_certs_ec() {
     echo 'Info: Load certs EC'
 

@@ -1,45 +1,26 @@
 # =============================================================================
 # parse_args()
 # =============================================================================
-# Parses the command-line arguments and initializes the corresponding global
-# variables that control the script's behavior.
+# Parses command-line arguments and configures the requested operation and
+# related runtime options.
 #
-# If no arguments are provided, or if --help is specified, the help message is
-# displayed via show_help().
+# The function processes supported command-line flags sequentially, setting
+# MODE and other configuration variables according to the supplied arguments.
+# Options that require a value consume the following argument, while boolean
+# or mode-selection options consume only the current argument.
 #
-# Globals modified:
-#   MODE
-#   DEPLOYMENT_MODE
-#   OPENVASD_CLIENT_CA
-#   OPENVASD_SERVER_CERT
-#   OPENVASD_SERVER_KEY
-#   LICENSE_FILE
-#   OCI_TLS_CLIENT_CERT
-#   OCI_TLS_CLIENT_KEY
-#   INIT_DOCKER_OCI
-#   GREENBONE_FEED_SYNC_JOB_HOUR
-#   GVMD_ADMIN_PASSWORD
-#   INGRESS_TLS_SERVER_CERT
-#   INGRESS_TLS_SERVER_KEY
-#   FEED_KEY
-#   FEED_MODE
-#   CCERT_MODE
-#   FEED_PATH
-#   CCERT_PATH
-#   OPENVASD_TAR_WITH_IMAGES
-#   OPENVASD_LOAD_IMAGES_FROM_TAR
-#   CN_OPENVASD
-#   OPENVASD_UUID
-#   OPENVASD_PORT
-#   SERVICE_NAME
-#   DEV_STAGE_URL_PREFIX
-#   SKIP_INIT_IF_EXIST
+# If no arguments are provided, or if -h/--help is specified, show_help is
+# called.
 #
 # Arguments:
-#   All command-line arguments passed to the script ("$@").
+#   $@
+#     Command-line arguments to parse.
 #
 # Returns:
 #   None.
+#
+# Notes:
+#   Unknown arguments are silently ignored.
 parse_args() {
     if [ $# -eq 0 ]; then
         show_help
@@ -268,7 +249,24 @@ parse_args() {
 # =============================================================================
 # run()
 # =============================================================================
-# The run function orchestrates the execution of the script.
+# Executes the main operation selected by MODE.
+#
+# The function first verifies runtime requirements and updates global
+# configuration values. It then dispatches execution to the function
+# corresponding to the selected MODE.
+#
+# Supported operations include initialization, OpenVASD archive and
+# certificate handling, deployment lifecycle actions, feed synchronization,
+# certificate updates, password changes, log output, and service status.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Notes:
+#   If MODE is empty, show_help is called.
 run() {
     check_requirements
 
@@ -333,6 +331,24 @@ run() {
     fi
 }
 
+# =============================================================================
+# update_globals()
+# =============================================================================
+# Updates product-specific global paths and package URLs.
+#
+# If PRODUCT is not already set, the function reads it from the PRODUCT file
+# in WORKING_DIR and exports the value. It then derives the package URL and
+# product-specific certificate, artifact, image, secrets, and settings
+# directories.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if PRODUCT is not set and no PRODUCT file exists in WORKING_DIR.
 update_globals() {
     if ! [ "${PRODUCT}" ]; then
         if [ -f "${WORKING_DIR}/PRODUCT" ]; then

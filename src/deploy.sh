@@ -1,18 +1,29 @@
 # =============================================================================
 # deploy()
 # =============================================================================
-# Starts the configured OpenVAS Enterprise Container deployment.
+# Deploys the selected OpenVAS product using the latest downloaded artifacts.
 #
-# Loads the persisted environment, selects the latest downloaded product
-# version, and prepares deployment-specific credentials. For volume-based feed
-# operation, it exports the feed synchronization key. Depending on
-# DEPLOYMENT_MODE, it also loads either the OpenVASD TLS credentials or the scan
-# ingress and JWT credentials. Packaged OpenVASD images are loaded when
-# OPENVASD_LOAD_IMAGES_FROM_TAR is set to "y".
+# The function loads deployment settings, determines the latest available local
+# product version, and loads the required secrets and certificate data.
 #
-# Restarts the selected Docker Compose deployment, removes orphaned containers,
-# and waits for the services to become ready. Terminates the script when
-# required credentials are missing or the deployment fails.
+# For enterprise-container deployments, it also loads the feed key and may
+# import OpenVASD container images from a tar archive when running in openvasd
+# mode with OPENVASD_LOAD_IMAGES_FROM_TAR enabled.
+#
+# The function then changes to the selected artifact directory, stops any
+# existing compose stack, and starts the deployment with Docker Compose. It
+# waits for the services to become ready and reports whether deployment
+# completed successfully.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if changing to the artifact directory fails.
+#   1 if the Docker Compose deployment fails.
 deploy() {
     load_settings
     get_latest_version

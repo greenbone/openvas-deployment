@@ -1,3 +1,25 @@
+# =============================================================================
+# init_settings_osi()
+# =============================================================================
+# Initializes the domain setting required by the security-intelligence product.
+#
+# The function validates that a domain name is provided and stores it in the
+# product settings directory for later use by the OSI deployment.
+#
+# Arguments:
+#   $1
+#     Domain name.
+#     Defaults to DOMAIN_NAME.
+#
+#   $2
+#     Settings directory.
+#     Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the domain name is not provided.
 init_settings_osi() {
     local domain_name="${1:-$DOMAIN_NAME}"
     local settings_dir="${2:-$SETTINGS_DIR}"
@@ -10,6 +32,23 @@ init_settings_osi() {
     fi
 }
 
+# =============================================================================
+# load_settings_osi()
+# =============================================================================
+# Loads the domain setting required by the security-intelligence product.
+#
+# The function reads the persisted domain name from the product settings
+# directory and exports it as DOMAIN_NAME for use by subsequent OSI deployment
+# operations.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the domain name settings file is missing.
 load_settings_osi() {
     echo 'Info: Load settings OSI'
 

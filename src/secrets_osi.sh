@@ -1,3 +1,22 @@
+# =============================================================================
+# init_secrets_osi()
+# =============================================================================
+# Generates and stores the secrets required by the security-intelligence
+# product.
+#
+# The function creates random credentials and encryption values for Keycloak,
+# OpenSearch, the notification service, asset management, vulnerability
+# intelligence, and the management console.
+#
+# Password-style secrets are generated with gen_password, hexadecimal
+# encryption material with gen_hex, and Fernet-style values with gen_fernet.
+# Each generated value is written to a dedicated file in SECRETS_DIR.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_secrets_osi() {
     echo "Info: Init OSI secrets."
 
@@ -33,6 +52,27 @@ init_secrets_osi() {
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY"
 }
 
+# =============================================================================
+# load_secrets_osi()
+# =============================================================================
+# Loads the secrets required by the security-intelligence product.
+#
+# The function reads the previously initialized secret files from SECRETS_DIR
+# and exports their contents for use by Keycloak, OpenSearch, the notification
+# service, asset management, vulnerability intelligence, and the management
+# console.
+#
+# Each required secret file is validated before it is loaded. If any file is
+# missing, the function reports the missing secret and terminates execution.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if any required OSI secret file is missing from SECRETS_DIR.
 load_secrets_osi() {
     echo 'Info: Load secrets OSI'
 

@@ -1,8 +1,28 @@
 # =============================================================================
 # artifact_download()
 # =============================================================================
-# Downloads the latest OpenVAS artifact using `oras`, extracts it, and
-# prepares it for deployment.
+# Downloads and extracts the latest available product release from the OCI
+# registry.
+#
+# The function verifies that the required OCI client certificate and private
+# key are available, determines the latest version published for PRODUCT_URL,
+# and downloads the corresponding artifact using ORAS.
+#
+# If the latest version has already been downloaded and contains a compose.yaml
+# file, the function returns without downloading it again. Otherwise, it
+# creates a version-specific artifact directory, pulls the product archive,
+# extracts its contents, and removes the downloaded archive.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   0 if the latest product version is already available locally.
+#
+# Exits:
+#   1 if a required OCI client certificate or key is missing.
+#   1 if no product release can be found in the configured OCI registry.
+#   Exits if changing to the artifact directory fails.
 artifact_download() {
     echo "🚀 Downloading product..."
 
@@ -48,7 +68,21 @@ artifact_download() {
 # =============================================================================
 # get_latest_version()
 # =============================================================================
-# Gets the latest downloaded OpenVAS artifact version.
+# Determines the latest locally downloaded product version.
+#
+# The function scans ARTIFACT_DIR for version directories matching a semantic
+# version pattern, sorts the discovered versions, and stores the latest version
+# in VERSION.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if ARTIFACT_DIR does not exist.
+#   1 if no downloaded product version can be found in ARTIFACT_DIR.
 get_latest_version() {
     if [ -d "${ARTIFACT_DIR}" ]; then
         set +e

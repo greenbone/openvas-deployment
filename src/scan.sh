@@ -1,13 +1,20 @@
 # =============================================================================
 # change_admin_password_scan()
 # =============================================================================
-# Changes the Greenbone Vulnerability Manager (gvmd) administrator password.
+# Changes the gvmd administrator password for a scan deployment.
 #
-# Verifies that GVMD_ADMIN_PASSWORD is set before updating the password. The
-# password is written to the ADMIN_PASSWORD file in the working directory and
-# then applied to the default "admin" account using the gvmd command inside
-# the container. If no password is provided, the function prints an error
-# message and exits with a non-zero status.
+# The function verifies that GVMD_ADMIN_PASSWORD is set, stores the password in
+# the product settings directory, and then updates the password of the admin
+# user by executing gvmd inside the configured gvmd container.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if GVMD_ADMIN_PASSWORD is not set.
 change_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
         echo "${GVMD_ADMIN_PASSWORD}" > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
@@ -23,10 +30,16 @@ change_admin_password_scan() {
 # =============================================================================
 # change_feed_sync_hour()
 # =============================================================================
-# Updates the configured feed sync job hour and restarts the feed-sync service.
+# Updates the configured feed synchronization hour and triggers a feed sync.
 #
-# The new feed sync hour is initialized and validated before triggering a
-# feed-sync restart to apply the updated schedule configuration.
+# The function initializes the feed synchronization schedule using
+# init_feed_sync_hour and then immediately starts a forced feed synchronization.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 change_feed_sync_hour() {
     init_feed_sync_hour
 
@@ -36,12 +49,24 @@ change_feed_sync_hour() {
 # =============================================================================
 # force_feed_sync()
 # =============================================================================
-# Restarts the feed-sync container for the currently selected deployment.
+# Restarts the feed synchronization service for the latest product deployment.
 #
-# The latest version is resolved and the deployment environment is loaded
-# before restarting the feed-sync service with Docker Compose. After the
-# restart, the user is prompted whether to follow the container logs in
-# real time.
+# The function determines the latest locally available product version, loads
+# the current settings, and restarts the feed-sync service in the corresponding
+# Docker Compose stack.
+#
+# Unless FEED_SYNC_FORCE_NO_LOG is set to 'n', the function does not prompt for
+# log output. When it is set to 'n', the user is asked whether to follow the
+# feed-sync container logs after the restart.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   Exits if changing to the artifact directory fails.
 force_feed_sync() {
     get_latest_version
 
@@ -61,13 +86,20 @@ force_feed_sync() {
 # =============================================================================
 # init_admin_password_scan()
 # =============================================================================
-# Initializes the Greenbone Vulnerability Manager administrator password.
+# Initializes the gvmd administrator password for a scan deployment.
 #
-# When GVMD_ADMIN_PASSWORD is set, the function writes it to the
-# ADMIN_PASSWORD file in the working directory. Otherwise, it generates a
-# random 16-character alphanumeric password, stores it in the
-# GVMD_ADMIN_PASSWORD file, assigns it to GVMD_ADMIN_PASSWORD, and prints the
-# generated password.
+# If GVMD_ADMIN_PASSWORD is already set, the function stores the configured
+# password in SETTINGS_DIR.
+#
+# Otherwise, the function generates a random 16-character alphanumeric
+# password, stores it in SETTINGS_DIR/GVMD_ADMIN_PASSWORD, loads it into
+# GVMD_ADMIN_PASSWORD, and prints the generated password.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
         echo "${GVMD_ADMIN_PASSWORD}" > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
@@ -84,11 +116,21 @@ init_admin_password_scan() {
 # =============================================================================
 # init_feed_sync_hour()
 # =============================================================================
-# Initializes the configured feed sync job hour.
+# Validates and stores the configured feed synchronization hour.
 #
-# The configured hour is validated to ensure it is within the supported range
-# from 1 to 24. A valid value is stored in the working directory for later use.
-# Missing or invalid values are reported and terminate the function.
+# The function verifies that GREENBONE_FEED_SYNC_JOB_HOUR is set and contains
+# a value between 0 and 23. If valid, the value is written to the product
+# settings directory for use by the feed synchronization schedule.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if GREENBONE_FEED_SYNC_JOB_HOUR is not set.
+#   1 if GREENBONE_FEED_SYNC_JOB_HOUR is outside the range 0 through 23.
 init_feed_sync_hour() {
     if [ "${GREENBONE_FEED_SYNC_JOB_HOUR}" ]; then
         if (( GREENBONE_FEED_SYNC_JOB_HOUR >= 0 && GREENBONE_FEED_SYNC_JOB_HOUR <= 23 )); then
@@ -106,11 +148,22 @@ init_feed_sync_hour() {
 # =============================================================================
 # init_feed_key()
 # =============================================================================
-# Installs the Enterprise Container feed key when the configured file exists.
+# Validates and installs the feed key for the selected product.
 #
-# The function copies FEED_KEY into the Enterprise Container certificate
-# directory as feed.key with permissions restricted to the file owner. If the
-# source file does not exist, the function performs no action.
+# The function verifies that FEED_KEY references an existing file. If the file
+# contains valid Base64-encoded data, its decoded contents are written to
+# CERT_DIR_PRODUCT/feed.key. Otherwise, the file is copied directly.
+#
+# The installed feed key is stored with restrictive file permissions.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if FEED_KEY is not set to an existing file.
 init_feed_key(){
     if ! [ -f "${FEED_KEY}" ]; then
         echo "Error: --feed-key argument missing!"
@@ -130,11 +183,17 @@ init_feed_key(){
 # =============================================================================
 # init_jwt()
 # =============================================================================
-# Generates the ECDSA key pair used for Enterprise Container JWT signing.
+# Generates the ECDSA key pair used for JWT signing and verification.
 #
-# The function creates a P-256 private key in PEM format and derives the
-# corresponding public key. Both keys are stored in the Enterprise Container
-# certificate directory, replacing any existing files with the same names.
+# The function creates a private EC key using the P-256 curve and stores it in
+# CERT_DIR_PRODUCT. It then derives and writes the corresponding public key in
+# PEM format.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_jwt() {
     echo "Info: Install JWT..."
     openssl genpkey \
@@ -153,6 +212,23 @@ init_jwt() {
         >/dev/null 2>&1
 }
 
+# =============================================================================
+# load_feed_key()
+# =============================================================================
+# Loads the feed key for volume-based feed synchronization.
+#
+# If FEED_MODE is set to 'volume', the function reads the feed key from the
+# product certificate directory and exports its contents for use by the feed
+# synchronization service.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if FEED_MODE is 'volume' and the feed key file is missing.
 load_feed_key() {
     if [ "$FEED_MODE" == 'volume' ]; then
         if [ -f "${CERT_DIR_PRODUCT}/feed.key" ]; then

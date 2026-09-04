@@ -1,3 +1,27 @@
+# =============================================================================
+# init_certs()
+# =============================================================================
+# Initializes the required certificate sets for the selected product and
+# deployment mode.
+#
+# For the enterprise-container product, the function initializes scan and
+# ingress certificates when running in scan mode, or OpenVASD certificates
+# when running in openvasd mode.
+#
+# For the security-intelligence product, the function initializes ingress and
+# OSI certificates.
+#
+# Arguments:
+#   $1
+#     Product name.
+#     Defaults to PRODUCT.
+#
+#   $2
+#     Deployment mode.
+#     Defaults to DEPLOYMENT_MODE.
+#
+# Returns:
+#   None.
 init_certs() {
     local product="${1:-$PRODUCT}"
     local deployment_mode="${2:-$DEPLOYMENT_MODE}"
@@ -15,8 +39,26 @@ init_certs() {
     fi
 }
 
+# =============================================================================
+# init_certs_ingress()
+# =============================================================================
+# Initializes the TLS certificate and private key used by the ingress service.
+#
+# If both INGRESS_TLS_SERVER_CERT and INGRESS_TLS_SERVER_KEY point to existing
+# files, the function installs them into CERT_DIR_PRODUCT with restrictive file
+# permissions.
+#
+# If either file is missing, the function generates a self-signed RSA
+# certificate and private key for the ingress service. The generated
+# certificate is valid for 365 days and uses the common name
+# "openvas-enterprise-container".
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 init_certs_ingress() {
-    # Create Ingress Server certificate
     echo "Info: Install Ingress TLS certificates..."
     if [ -f "${INGRESS_TLS_SERVER_CERT}" ] && [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
         echo "Info: Using Ingress certs ${INGRESS_TLS_SERVER_CERT} and ${INGRESS_TLS_SERVER_KEY} ..."
@@ -34,11 +76,21 @@ init_certs_ingress() {
 # =============================================================================
 # init_oci_certs()
 # =============================================================================
-# Installs the TLS client certificate and private key for OCI deployments.
+# Validates and installs the OCI TLS client certificate and private key.
 #
-# The function copies the configured OCI client certificate and private key
-# into the OCI certificate directory with permissions restricted to the file
-# owner. Existing files with the same names are replaced.
+# The function verifies that both the configured OCI client certificate and
+# private key exist, then installs them into CERT_DIR_OCI using restrictive
+# file permissions.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if OCI_TLS_CLIENT_CERT is not set to an existing file.
+#   1 if OCI_TLS_CLIENT_KEY is not set to an existing file.
 init_oci_certs(){
     if ! [ -f "${OCI_TLS_CLIENT_CERT}" ]; then
         echo "Error: --oci-client-cert argument missing or file ${OCI_TLS_CLIENT_CERT} not found!"
@@ -54,6 +106,22 @@ init_oci_certs(){
     install -m 0600 "${OCI_TLS_CLIENT_KEY}" "${CERT_DIR_OCI}/client.key"
 }
 
+# =============================================================================
+# load_certs()
+# =============================================================================
+# Loads the certificate configuration required for the selected product.
+#
+# The function dispatches certificate loading to the product-specific helper
+# based on PRODUCT.
+#
+# For enterprise-container, load_certs_ec is called. For security-intelligence,
+# load_certs_osi is called.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
 load_certs() {
     if [ "${PRODUCT}" == 'enterprise-container' ]; then
         load_certs_ec
@@ -62,6 +130,25 @@ load_certs() {
     fi
 }
 
+# =============================================================================
+# load_certs_ingress()
+# =============================================================================
+# Loads the ingress TLS certificate and private key from the product
+# certificate directory.
+#
+# The function reads the ingress server certificate and private key from
+# CERT_DIR_PRODUCT and exports their contents for use by subsequent deployment
+# operations.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the ingress TLS certificate is missing.
+#   1 if the ingress TLS private key is missing.
 load_certs_ingress() {
     if [ -f "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
         export INGRESS_CERTIFICATE="$(< "${CERT_DIR_PRODUCT}/ingress_server.crt")"
@@ -80,12 +167,25 @@ load_certs_ingress() {
 # =============================================================================
 # update_ingress_certs()
 # =============================================================================
-# Installs updated ingress server TLS credentials for the Enterprise Container.
+# Updates the ingress TLS certificate and private key.
 #
-# The function requires both the ingress TLS certificate and key to exist,
-# installs them into the OCI certificate directory with restricted permissions,
-# and prompts whether to redeploy the compose stack so the new certificates are
-# activated.
+# The function validates the provided ingress server certificate and private
+# key, then installs them into CERT_DIR_PRODUCT using restrictive file
+# permissions.
+#
+# After installing the certificates, the function prompts the user to redeploy
+# the compose stack so the new certificates become active. If confirmed,
+# deploy is called.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if INGRESS_TLS_SERVER_CERT is not set to an existing file.
+#   1 if INGRESS_TLS_SERVER_KEY is not set to an existing file.
 update_ingress_certs() {
     if ! [ -f "${INGRESS_TLS_SERVER_CERT}" ]; then
         echo "Error: --ingress-server-cert argument missing or file ${INGRESS_TLS_SERVER_CERT} not found! Required for --update-ingress-certs !"

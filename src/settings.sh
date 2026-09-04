@@ -1,15 +1,26 @@
 # =============================================================================
 # init_settings()
 # =============================================================================
-# Validates the deployment, feed, and client-certificate configuration and
-# writes the selected values to the working directory.
+# Validates the selected product and initializes its product-specific settings.
 #
-# DEPLOYMENT_MODE, FEED_MODE, and CCERT_MODE must match their corresponding
-# supported-option arrays. Unsupported values terminate the script.
+# The function verifies that the provided product is included in
+# PRODUCT_OPTIONS. If supported, the product name is stored in WORKING_DIR and
+# initialization is dispatched to the corresponding product-specific settings
+# function.
 #
-# Mount-based feed and client-certificate modes are currently rejected. For
-# client-certificate modes "ca" and "cert", CCERT_TYPE is stored as "env";
-# otherwise, it is stored as "mount".
+# For enterprise-container, init_settings_ec is called. For
+# security-intelligence, init_settings_osi is called.
+#
+# Arguments:
+#   $1
+#     Product name.
+#     Defaults to PRODUCT.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the selected product is not included in PRODUCT_OPTIONS.
 init_settings() {
     local product="${1:-$PRODUCT}"
 
@@ -27,6 +38,24 @@ init_settings() {
     fi
 }
 
+# =============================================================================
+# load_settings()
+# =============================================================================
+# Loads product-specific settings for the selected OpenVAS product.
+#
+# The function dispatches settings loading to the corresponding
+# product-specific helper based on the provided product name.
+#
+# For enterprise-container, load_settings_ec is called. For
+# security-intelligence, load_settings_osi is called.
+#
+# Arguments:
+#   $1
+#     Product name.
+#     Defaults to PRODUCT.
+#
+# Returns:
+#   None.
 load_settings() {
     local product="${1:-$PRODUCT}"
 

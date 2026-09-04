@@ -4,10 +4,10 @@
 # Initializes the certificate directory for an OpenVASD instance and installs
 # the required TLS certificates and keys.
 #
-# The function creates a dedicated certificate folder based on the OpenVASD
-# common name (CN), then copies the provided server certificate, server key,
-# and client CA certificate into the target directory with appropriate file
-# permissions.
+# The function derives a dedicated certificate folder from the OpenVASD common
+# name (CN), creates the directory, and installs the provided server
+# certificate, server private key, and client CA certificate with appropriate
+# file permissions.
 #
 # Arguments:
 #   $1
@@ -23,14 +23,15 @@
 #     Defaults to OPENVASD_SERVER_KEY.
 #
 #   $4
-#     Enterprise container certificate directory.
+#     Product certificate directory.
 #     Defaults to CERT_DIR_PRODUCT.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if any required certificate or key file is missing.
+#   1 if the OpenVASD server certificate, server key, or client CA certificate
+#   is missing.
 init_certs_openvasd() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
     local openvasd_client_ca="${1:-$OPENVASD_CLIENT_CA}"
@@ -66,16 +67,28 @@ init_certs_openvasd() {
 # =============================================================================
 # load_certs_openvasd()
 # =============================================================================
-# Loads the OpenVASD TLS credentials for the configured instance and exports
-# them for use by the deployment environment.
+# Loads the TLS certificate, private key, and client CA certificate for an
+# OpenVASD instance.
 #
-# Reads the OpenVASD common name from WORKING_DIR, derives the corresponding
-# certificate directory, and loads the server certificate, server private key,
-# and trusted client CA certificate into OPENVAS_SCANNER_TLS_CERT,
-# OPENVAS_SCANNER_TLS_KEY, and OPENVAS_TLS_CLIENT_CA.
+# The function derives the OpenVASD-specific certificate directory from the
+# configured common name (CN), reads the required certificate files, and
+# exports their contents for use by the OpenVAS scanner service.
 #
-# Terminates the script when the common name or any required certificate file
-# is missing.
+# Arguments:
+#   $1
+#     OpenVASD common name (CN).
+#     Defaults to CN_OPENVASD.
+#
+#   $2
+#     Product certificate directory.
+#     Defaults to CERT_DIR_PRODUCT.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the OpenVASD server certificate, server private key, or client CA
+#   certificate is missing.
 load_certs_openvasd() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
     local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
