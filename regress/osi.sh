@@ -32,5 +32,7 @@ run() {
 
 check_req
 run
+gen_certs_ingress
+update_ingress_certs
 list 'security-intelligence'
 clean 'security-intelligence'

@@ -140,6 +140,8 @@ run
 change_admin_pw
 change_feed_sync_hour
 change_force_feed_sync
+gen_certs_ingress
+update_ingress_certs
 run_openvasd_cert_tar
 run_openvasd_tar
 list 'Openvasd scan'
