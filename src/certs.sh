@@ -178,7 +178,9 @@ load_certs_ingress() {
 # deploy is called.
 #
 # Arguments:
-#   None.
+#   $1
+#     Update ingress cert redeploy stack.
+#     Defaults to UPDATE_INGRESS_CERT_REDEPLOY.
 #
 # Returns:
 #   None.
@@ -187,6 +189,8 @@ load_certs_ingress() {
 #   1 if INGRESS_TLS_SERVER_CERT is not set to an existing file.
 #   1 if INGRESS_TLS_SERVER_KEY is not set to an existing file.
 update_ingress_certs() {
+    local update_ingress_cert_redeploy="${1:-$UPDATE_INGRESS_CERT_REDEPLOY}"
+
     if ! [ -f "${INGRESS_TLS_SERVER_CERT}" ]; then
         echo "Error: --ingress-server-cert argument missing or file ${INGRESS_TLS_SERVER_CERT} not found! Required for --update-ingress-certs !"
         exit 1
@@ -198,8 +202,10 @@ update_ingress_certs() {
     install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
     install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
 
-    read -r -p "Info: We need to redeploy the compose stack, to activate the new Ingress certificates. (y/n)" response
-    if [ "$response" == "y" ]; then
+    if ! [ "${update_ingress_cert_redeploy}" ]; then
+        read -r -p "Info: We need to redeploy the compose stack, to activate the new Ingress certificates. (y/n)" update_ingress_cert_redeploy
+    fi
+    if [ "${update_ingress_cert_redeploy}" == "y" ]; then
         deploy
     fi
 }

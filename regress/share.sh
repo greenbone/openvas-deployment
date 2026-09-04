@@ -24,7 +24,7 @@ list() {
 
 update_ingress_certs() {
     echo_task 'Test update ingress certs'
-    openvas-deployment --update-ingress-certs \
+    openvas-deployment --update-ingress-certs --update-ingress-cert-redeploy \
         --ingress-server-cert ./test_ingress_server.crt \
         --ingress-server-key ./test_ingress_server.key
 }

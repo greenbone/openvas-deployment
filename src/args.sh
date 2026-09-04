@@ -124,6 +124,14 @@ parse_args() {
                 INGRESS_TLS_SERVER_KEY="$2"
                 shift 2
                 ;;
+            --update-ingress-cert-redeploy)
+                UPDATE_INGRESS_CERT_REDEPLOY='y'
+                shift 1
+                ;;
+            --skip--update-ingress-cert-redeploy)
+                UPDATE_INGRESS_CERT_REDEPLOY='n'
+                shift 1
+                ;;
             --feed-key)
                 FEED_KEY="$2"
                 shift 2
