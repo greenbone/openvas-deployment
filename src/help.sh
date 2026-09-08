@@ -6,6 +6,8 @@ show_help() {
     less << EOF
 OpenVAS Deployment
 
+Support for enterprise-container and security-intelligence
+
 Requires compose version 5.3.1 and higher!
 
 Info:
@@ -26,11 +28,14 @@ Actions:
                                  --create-openvasd-tar
 
   --change-admin-password        Change the gvmd administrator password
+                                 Only enterprise-container
 
   --change-feed-sync-hour        Set the daily hour for scheduled feed
                                  synchronization (0-23)
+                                 Only enterprise-container
 
   --force-feed-sync              Restart feed synchronization immediately
+                                 Only enterprise-container
 
   --update                       Download and install the latest product version
 
@@ -48,49 +53,80 @@ Actions:
   --update-ingress-certs         Replace ingress TLS certificate and key
 
   --create-openvasd-certs        Create TLS certificates for an OpenVASD scanner
+                                 Only enterprise-container
 
   --create-openvasd-cert-tar     Create an OpenVASD certificate archive
+                                 Only enterprise-container
 
   --create-openvasd-tar          Create an OpenVASD deployment archive
+                                 Only enterprise-container
 
   --get-openvasds                List OpenVASD scanners registered in gvmd
+                                 Only enterprise-container
 
   --add-openvasd                 Register an OpenVASD scanner in gvmd
+                                 Only enterprise-container
 
   --del-openvasd                 Remove an OpenVASD scanner from gvmd
+                                 Only enterprise-container
 
 
 Deployment options:
+  --product PRODUCT              Product to deploy:
+                                   enterprise-container | security-intelligence
+
+  --domain-name NAME             Domain name for the deployment
+                                 Only security-intelligence
+
+  --metafeed-cert FILE           Metafeed client certificate
+                                 Only security-intelligence
+
+  --metafeed-key FILE            Metafeed client private key
+                                 Only security-intelligence
+
   --deployment-mode MODE         Deployment mode:
                                    scan | openvasd
                                  Default: ${DEPLOYMENT_MODE}
+                                 Only enterprise-container
 
   --openvasd-client-ca FILE      OpenVASD client CA certificate used for
                                  --init --deployment-mode openvasd
+                                 Only enterprise-container
 
   --openvasd-server-cert FILE    OpenVASD server certificate used for
                                  --init --deployment-mode openvasd
+                                 Only enterprise-container
 
   --openvasd-server-key FILE     OpenVASD server private key used for
                                  --init --deployment-mode openvasd
+                                 Only enterprise-container
 
   --feed-mode MODE               Feed mode:
                                    volume | service | mount
                                  Default: ${FEED_MODE}
+                                 Only enterprise-container
 
   --feed-key FILE                Feed key file used with volume or service mode
+                                 Only enterprise-container
 
   --feed-path PATH               Host feed directory used with mount mode
+                                 Only enterprise-container
 
   --feed-sync-hour HOUR          Scheduled feed synchronization hour (0-23)
                                  Default: ${GREENBONE_FEED_SYNC_JOB_HOUR}
+                                 Only enterprise-container
+
+  --feed-sync-force-no-log       Force feed synchronization without logging
+                                 Only enterprise-container
 
   --ccert-mode MODE              Client certificate mode:
                                    ca | cert | mount
                                  Default: ${CCERT_MODE}
+                                 Only enterprise-container
 
   --ccert-path PATH              Host client certificate directory used with
                                  mount mode
+                                 Only enterprise-container
 
   --skip-init-if-exist           Exit with status 0 if already initialized
 
@@ -98,6 +134,7 @@ Deployment options:
 Administrator options:
   --admin-password PASSWORD      Administrator password used during
                                  initialization or password changes
+                                 Only enterprise-container
 
 
 OCI client certificate options:
@@ -118,6 +155,13 @@ Ingress certificate options:
   --ingress-server-cert FILE     Ingress server certificate
 
   --ingress-server-key FILE      Ingress server private key
+
+  --update-ingress-cert-redeploy
+                                 Redeploy after updating ingress certificates
+
+  --skip--update-ingress-cert-redeploy
+                                 Do not redeploy after updating ingress
+                                 certificates
 
 
 OpenVASD options:
@@ -156,31 +200,42 @@ Help:
 
 Examples:
 
-Initialize a scan deployment using a Docker volume for feeds:
+Initialize a security-intelligence deployment using a Docker volume for feeds:
   $0 --init \\
+    --product security-intelligence \\
+    --oci-client-cert /path/to/product.crt \\
+    --oci-client-key /path/to/product.key \\
+    --domain-name osi.example.com
+
+Initialize a enterprise-container scan deployment using a Docker volume for feeds:
+  $0 --init \\
+    --product enterprise-container \\
     --oci-client-cert /path/to/product.crt \\
     --oci-client-key /path/to/product.key \\
     --feed-key /path/to/prod-feed.key
 
 
-Initialize a scan deployment with a predefined administrator password:
+Initialize a enterprise-container scan deployment with a predefined administrator password:
   $0 --init \\
+    --product enterprise-container \\
     --admin-password 'secure-password' \\
     --oci-client-cert /path/to/product.crt \\
     --oci-client-key /path/to/product.key \\
     --feed-key /path/to/prod-feed.key
 
 
-Initialize a deployment with scheduled feed synchronization:
+Initialize a enterprise-container deployment with scheduled feed synchronization:
   $0 --init \\
+    --product enterprise-container \\
     --feed-sync-hour 3 \\
     --oci-client-cert /path/to/product.crt \\
     --oci-client-key /path/to/product.key \\
     --feed-key /path/to/prod-feed.key
 
 
-Initialize with custom ingress certificates:
+Initialize a enterprise-container with custom ingress certificates:
   $0 --init \\
+    --product enterprise-container \\
     --oci-client-cert /path/to/product.crt \\
     --oci-client-key /path/to/product.key \\
     --feed-key /path/to/prod-feed.key \\
