@@ -6,15 +6,7 @@
 
 set -euo pipefail
 
-echo_task() {
-    printf '\n\033[1;34m────────────────────────────────────────\033[0m\n'
-    printf '\033[1;34m%s\033[0m\n' "$*"
-    printf '\033[1;34m────────────────────────────────────────\033[0m\n\n'
-}
-
-echo_error() {
-    printf '\033[1;31m%s\033[0m\n' "$*"
-}
+source regress/share.sh
 
 check_req() {
     if ! [ -f 'gsf.key' ]; then
@@ -27,20 +19,6 @@ check_req() {
         echo_error "No oci-client.key found"
         exit 1
     fi
-}
-
-clean() {
-    echo_task 'Test down volumes'
-    openvas-deployment --down-volumes
-}
-
-list() {
-    echo_task "Show docker container for $1"
-    openvas-deployment --ps
-    echo_task "Show docker logs for $1"
-    openvas-deployment --logs >/dev/null 2>&1
-    echo_task "List product folder for $1"
-    tree product
 }
 
 gvmd_add_openvasd_host_to_etc_hosts() {
@@ -56,7 +34,9 @@ gvmd_add_openvasd_host_to_etc_hosts() {
 
 run() {
     echo_task 'Test Init'
-    openvas-deployment --init --init-docker-oci --feed-key gsf.key --oci-client-cert oci-client.cert --oci-client-key oci-client.key
+    openvas-deployment --init --init-docker-oci --feed-key gsf.key \
+        --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
+        --product enterprise-container --deployment-mode scan
     echo_task 'Test Update'
     openvas-deployment --update
     echo_task 'Test Run'
@@ -92,7 +72,8 @@ run_openvasd_cert_tar() {
         echo_task 'Test openvasd cert tar extract'
         tar xvf ../sensor1-test-test.tar
         echo_task 'Test Openvasd cert tar init'
-        openvas-deployment --init --init-docker-oci --deployment-mode openvasd \
+        openvas-deployment --init --init-docker-oci \
+            --product enterprise-container --deployment-mode openvasd \
             --cn-openvasd sensor1.test.test \
             --oci-client-cert ../oci-client.cert \
             --oci-client-key ../oci-client.key \
@@ -159,6 +140,8 @@ run
 change_admin_pw
 change_feed_sync_hour
 change_force_feed_sync
+gen_certs_ingress
+update_ingress_certs
 run_openvasd_cert_tar
 run_openvasd_tar
 list 'Openvasd scan'
