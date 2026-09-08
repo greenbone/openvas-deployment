@@ -54,26 +54,38 @@ add_openvasd() {
         exit 1
     fi
 
-    docker cp "${CERT_DIR_PRODUCT}/client.key" "${GVMD_CONTAINER}:/tmp/client.key"
-    docker cp "${CERT_DIR_PRODUCT}/client.crt" "${GVMD_CONTAINER}:/tmp/client.crt"
-    docker cp "${CERT_DIR_PRODUCT}/ca.crt" "${GVMD_CONTAINER}:/tmp/ca.crt"
+    docker exec -u "0" "${GVMD_CONTAINER}" install -d -m 0700 \
+        -o "${GVMD_CONTAINER_UID}" \
+        "/tmp/openvasd_crt"
 
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.key"
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.crt"
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/ca.crt"
+    docker cp "${CERT_DIR_PRODUCT}/client.key" "${GVMD_CONTAINER}:/tmp/openvasd_crt/client.key"
+    docker cp "${CERT_DIR_PRODUCT}/client.crt" "${GVMD_CONTAINER}:/tmp/openvasd_crt/client.crt"
+    docker cp "${CERT_DIR_PRODUCT}/ca.crt" "${GVMD_CONTAINER}:/tmp/openvasd_crt/ca.crt"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" \
+        chown "${GVMD_CONTAINER_UID}:" \
+        "/tmp/openvasd_crt/client.key" \
+        "/tmp/openvasd_crt/client.crt" \
+        "/tmp/openvasd_crt/ca.crt"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" \
+        chmod 0600 "/tmp/openvasd_crt/client.key"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" \
+        chmod 0644 \
+        "/tmp/openvasd_crt/client.crt" \
+        "/tmp/openvasd_crt/ca.crt"
 
     docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd \
         --create-scanner="${OPENVASD_NAME}" \
         --scanner-host="${CN_OPENVASD}" \
         --scanner-port="${OPENVASD_PORT}" \
         --scanner-type="OPENVASD" \
-        --scanner-ca-pub="/tmp/ca.crt" \
-        --scanner-key-pub="/tmp/client.crt" \
-        --scanner-key-priv="/tmp/client.key"
+        --scanner-ca-pub="/tmp/openvasd_crt/ca.crt" \
+        --scanner-key-pub="/tmp/openvasd_crt/client.crt" \
+        --scanner-key-priv="/tmp/openvasd_crt/client.key"
 
-    docker exec -u "0" "${GVMD_CONTAINER}" rm -f "/tmp/client.key"
-    docker exec -u "0" "${GVMD_CONTAINER}" rm -f "/tmp/client.crt"
-    docker exec -u "0" "${GVMD_CONTAINER}" rm -f "/tmp/ca.crt"
+    docker exec -u "0" "${GVMD_CONTAINER}" rm -rf "/tmp/openvasd_crt"
 }
 
 # =============================================================================
