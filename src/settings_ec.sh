@@ -65,7 +65,7 @@ load_settings_ec() {
         exit 1
     fi
     if [ "${FEED_MODE}" == 'mount' ] && [ -f "${SETTINGS_DIR}/FEED_PATH" ]; then
-        export CCERT_PATH="$(< "${SETTINGS_DIR}/FEED_PATH")"
+        export FEED_PATH="$(< "${SETTINGS_DIR}/FEED_PATH")"
     elif [ "${CCERT_MODE}" == 'mount' ]; then
         echo "Error: No feed path found at ${SETTINGS_DIR}/FEED_PATH! Please run --init!"
         exit 1
