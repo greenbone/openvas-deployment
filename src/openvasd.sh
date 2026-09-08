@@ -70,6 +70,10 @@ add_openvasd() {
         --scanner-ca-pub="/tmp/ca.crt" \
         --scanner-key-pub="/tmp/client.crt" \
         --scanner-key-priv="/tmp/client.key"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" rm -f "/tmp/client.key"
+    docker exec -u "0" "${GVMD_CONTAINER}" rm -f "/tmp/client.crt"
+    docker exec -u "0" "${GVMD_CONTAINER}" rm -f "/tmp/ca.crt"
 }
 
 # =============================================================================
@@ -273,6 +277,7 @@ create_openvasd_cert_tar() {
         exit 1
     fi
     tar cf "${openvasd_name}.tar" -C "${openvasd_folder}" .
+    chmod 0600 "${openvasd_name}.tar"
 }
 
 # =============================================================================
@@ -354,6 +359,8 @@ create_openvasd_tar() {
         popd > /dev/null
     fi
     tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .
+    chmod 0600 "${openvasd_name}.tar.gz"
+    rm -rf "${tmp_dir}"
 }
 
 # =============================================================================
@@ -447,14 +454,16 @@ load_openvasd_images() {
     else
         echo "Info: Image ${IMAGE_DIR}/openvas-feed-sync.tar not found. Skip!"
     fi
-    if [ -f "${IMAGE_DIR}/openvas-feed-sync.tar" ]; then
-        docker load -i "${IMAGE_DIR}/openvas-feed-sync.tar"
-    else
-        echo "Info: Image ${IMAGE_DIR}/openvas-feed-sync.tar not found. Skip!"
-    fi
     if [ -f "${IMAGE_DIR}/openvas-redis.tar" ]; then
         docker load -i "${IMAGE_DIR}/openvas-redis.tar"
     else
         echo "Info: Image ${IMAGE_DIR}/openvas-redis.tar not found. Skip!"
+    fi
+    if [ "${FEED_MODE}" == 'service' ]; then
+        if [ -f "${IMAGE_DIR}/openvas-feed-key-service.tar" ]; then
+            docker load -i "${IMAGE_DIR}/openvas-feed-key-service.tar"
+        else
+            echo "Info: Image ${IMAGE_DIR}/openvas-feed-key-service.tar not found. Skip!"
+        fi
     fi
 }
