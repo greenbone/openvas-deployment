@@ -128,7 +128,7 @@ parse_args() {
                 UPDATE_INGRESS_CERT_REDEPLOY='y'
                 shift 1
                 ;;
-            --skip--update-ingress-cert-redeploy)
+            --skip-update-ingress-cert-redeploy)
                 UPDATE_INGRESS_CERT_REDEPLOY='n'
                 shift 1
                 ;;
@@ -248,7 +248,8 @@ parse_args() {
                 show_help
                 ;;
             *)
-                shift
+                echo "Error: Unknown argument: $1" >&2
+                exit 2
                 ;;
         esac
     done

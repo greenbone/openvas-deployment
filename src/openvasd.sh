@@ -63,7 +63,7 @@ add_openvasd() {
     docker cp "${CERT_DIR_PRODUCT}/ca.crt" "${GVMD_CONTAINER}:/tmp/openvasd_crt/ca.crt"
 
     docker exec -u "0" "${GVMD_CONTAINER}" \
-        chown "${GVMD_CONTAINER_UID}:" \
+        chown "${GVMD_CONTAINER_UID}" \
         "/tmp/openvasd_crt/client.key" \
         "/tmp/openvasd_crt/client.crt" \
         "/tmp/openvasd_crt/ca.crt"
@@ -330,6 +330,7 @@ create_openvasd_tar() {
     local openvasd_cert_folder="${CN_OPENVASD//./_}"
     openvasd_cert_folder="${CERT_DIR_PRODUCT}/${openvasd_cert_folder}"
     local tmp_dir="$(mktemp -d)"
+    chmod 0700 "${tmp_dir}"
     local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}/${PRODUCT}"
     pushd "${tmp_dir}" > /dev/null || exit
         mkdir -p "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}"
