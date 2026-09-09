@@ -1,23 +1,71 @@
 # =============================================================================
 # init_settings_ec()
 # =============================================================================
-# Initializes enterprise-container settings for the selected deployment mode.
+# Validates and stores the settings required for scan deployments.
 #
-# In scan mode, the function initializes the scan-specific settings.
+# The function verifies that DEPLOYMENT_MODE, FEED_MODE, and CCERT_MODE are
+# included in their respective supported option lists and persists the selected
+# values in SETTINGS_DIR.
 #
-# In openvasd mode, the function initializes the common scan settings first,
-# followed by the OpenVASD-specific settings.
+# Mount-based feed and CCERT modes are currently rejected. Depending on
+# CCERT_MODE, the function stores the corresponding CCERT_TYPE and then
+# initializes the configured feed synchronization hour.
 #
 # Arguments:
 #   None.
 #
 # Returns:
 #   None.
+#
+# Exits:
+#   1 if DEPLOYMENT_MODE is not supported.
+#   1 if FEED_MODE is not supported.
+#   1 if CCERT_MODE is not supported.
+#   1 if FEED_MODE is set to 'mount'.
+#   1 if CCERT_MODE is set to 'mount'.
 init_settings_ec() {
-    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-        init_settings_scan
-    elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
-        init_settings_scan
+    if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${DEPLOYMENT_MODE} " ]]; then
+        echo "${DEPLOYMENT_MODE}" > "${SETTINGS_DIR}/DEPLOYMENT_MODE"
+    else
+        echo "Error: Deployment mode ${DEPLOYMENT_MODE} is not supported only ${DEPLOYMENT_MODE_OPTIONS[*]}."
+        exit 1
+    fi
+    if [[ " ${FEED_MODE_OPTIONS[*]} " =~ " ${FEED_MODE} " ]]; then
+        echo "${FEED_MODE}" > "${SETTINGS_DIR}/FEED_MODE"
+    else
+        echo "Error: feed mode option ${FEED_MODE} is not supported only ${FEED_MODE_OPTIONS[*]}."
+        exit 1
+    fi
+    if [[ " ${CCERT_MODE_OPTIONS[*]} " =~ " ${CCERT_MODE} " ]]; then
+        echo "${CCERT_MODE}" > "${SETTINGS_DIR}/CCERT_MODE"
+    else
+        echo "Error: feed mode option ${CCERT_MODE} is not supported only ${CCERT_MODE_OPTIONS[*]}."
+        exit 1
+    fi
+    if [ "${FEED_MODE}" == 'mount' ] && [ -d "${FEED_PATH}" ]; then
+        echo "Error: feed mode option mount is not supported currently!"
+        exit 1
+        echo "${FEED_PATH}" > "${SETTINGS_DIR}/FEED_PATH"
+    elif [ "${FEED_MODE}" == 'mount' ]; then
+        echo " Error: feed path ${FEED_PATH} does not exist!"
+        exit 1
+    fi
+    if [ "${CCERT_MODE}" == 'mount' ] && [ -d "${CCERT_PATH}" ]; then
+        echo "Error: ccert mode option mount is not supported currently!"
+        exit 1
+        echo "${CCERT_PATH}" > "${SETTINGS_DIR}/CCERT_PATH"
+    elif [ "${CCERT_MODE}" == 'mount' ]; then
+        echo " Error: ccert path ${CCERT_PATH} does not exist!"
+        exit 1
+    fi
+    if [ "${CCERT_MODE}" == 'ca' ] || [ "${CCERT_MODE}" == 'cert' ]; then
+        echo 'env' > "${SETTINGS_DIR}/CCERT_TYPE"
+    else
+        echo 'mount' > "${SETTINGS_DIR}/CCERT_TYPE"
+    fi
+    init_feed_sync_hour
+
+    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         init_settings_openvasd
     fi
 }
@@ -65,8 +113,8 @@ load_settings_ec() {
         exit 1
     fi
     if [ "${FEED_MODE}" == 'mount' ] && [ -f "${SETTINGS_DIR}/FEED_PATH" ]; then
-        export CCERT_PATH="$(< "${SETTINGS_DIR}/FEED_PATH")"
-    elif [ "${CCERT_MODE}" == 'mount' ]; then
+        export FEED_PATH="$(< "${SETTINGS_DIR}/FEED_PATH")"
+    elif [ "${FEED_MODE}" == 'mount' ]; then
         echo "Error: No feed path found at ${SETTINGS_DIR}/FEED_PATH! Please run --init!"
         exit 1
     fi
@@ -88,9 +136,8 @@ load_settings_ec() {
         echo "Error: No FEED_SYNC_JOB_HOUR found at ${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR! Please run --init or --change-feed-sync-hour with --feed-sync-hour!"
         exit 1
     fi
-    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
-        load_settings_scan
-    elif [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
+
+    if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         load_settings_openvasd
     fi
 }

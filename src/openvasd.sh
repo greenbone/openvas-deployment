@@ -54,22 +54,38 @@ add_openvasd() {
         exit 1
     fi
 
-    docker cp "${CERT_DIR_PRODUCT}/client.key" "${GVMD_CONTAINER}:/tmp/client.key"
-    docker cp "${CERT_DIR_PRODUCT}/client.crt" "${GVMD_CONTAINER}:/tmp/client.crt"
-    docker cp "${CERT_DIR_PRODUCT}/ca.crt" "${GVMD_CONTAINER}:/tmp/ca.crt"
+    docker exec -u "0" "${GVMD_CONTAINER}" install -d -m 0700 \
+        -o "${GVMD_CONTAINER_UID}" \
+        "/tmp/openvasd_crt"
 
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.key"
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/client.crt"
-    docker exec -u "0" "${GVMD_CONTAINER}" chmod 0644 "/tmp/ca.crt"
+    docker cp "${CERT_DIR_PRODUCT}/client.key" "${GVMD_CONTAINER}:/tmp/openvasd_crt/client.key"
+    docker cp "${CERT_DIR_PRODUCT}/client.crt" "${GVMD_CONTAINER}:/tmp/openvasd_crt/client.crt"
+    docker cp "${CERT_DIR_PRODUCT}/ca.crt" "${GVMD_CONTAINER}:/tmp/openvasd_crt/ca.crt"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" \
+        chown "${GVMD_CONTAINER_UID}" \
+        "/tmp/openvasd_crt/client.key" \
+        "/tmp/openvasd_crt/client.crt" \
+        "/tmp/openvasd_crt/ca.crt"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" \
+        chmod 0600 "/tmp/openvasd_crt/client.key"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" \
+        chmod 0644 \
+        "/tmp/openvasd_crt/client.crt" \
+        "/tmp/openvasd_crt/ca.crt"
 
     docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd \
         --create-scanner="${OPENVASD_NAME}" \
         --scanner-host="${CN_OPENVASD}" \
         --scanner-port="${OPENVASD_PORT}" \
         --scanner-type="OPENVASD" \
-        --scanner-ca-pub="/tmp/ca.crt" \
-        --scanner-key-pub="/tmp/client.crt" \
-        --scanner-key-priv="/tmp/client.key"
+        --scanner-ca-pub="/tmp/openvasd_crt/ca.crt" \
+        --scanner-key-pub="/tmp/openvasd_crt/client.crt" \
+        --scanner-key-priv="/tmp/openvasd_crt/client.key"
+
+    docker exec -u "0" "${GVMD_CONTAINER}" rm -rf "/tmp/openvasd_crt"
 }
 
 # =============================================================================
@@ -272,7 +288,9 @@ create_openvasd_cert_tar() {
         echo "Error: ${openvasd_folder} does not exist!"
         exit 1
     fi
-    tar cf "${openvasd_name}.tar" -C "${openvasd_folder}" .
+
+    rm -f "${openvasd_name}.tar"
+    (umask 077; tar cf "${openvasd_name}.tar" -C "${openvasd_folder}" .)
 }
 
 # =============================================================================
@@ -313,6 +331,7 @@ create_openvasd_tar() {
     local openvasd_cert_folder="${CN_OPENVASD//./_}"
     openvasd_cert_folder="${CERT_DIR_PRODUCT}/${openvasd_cert_folder}"
     local tmp_dir="$(mktemp -d)"
+    chmod 0700 "${tmp_dir}"
     local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}/${PRODUCT}"
     pushd "${tmp_dir}" > /dev/null || exit
         mkdir -p "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}"
@@ -353,7 +372,10 @@ create_openvasd_tar() {
         fi
         popd > /dev/null
     fi
-    tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .
+
+    rm -f "${openvasd_name}.tar.gz"
+    (umask 077; tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .)
+    rm -rf "${tmp_dir}"
 }
 
 # =============================================================================
@@ -447,14 +469,16 @@ load_openvasd_images() {
     else
         echo "Info: Image ${IMAGE_DIR}/openvas-feed-sync.tar not found. Skip!"
     fi
-    if [ -f "${IMAGE_DIR}/openvas-feed-sync.tar" ]; then
-        docker load -i "${IMAGE_DIR}/openvas-feed-sync.tar"
-    else
-        echo "Info: Image ${IMAGE_DIR}/openvas-feed-sync.tar not found. Skip!"
-    fi
     if [ -f "${IMAGE_DIR}/openvas-redis.tar" ]; then
         docker load -i "${IMAGE_DIR}/openvas-redis.tar"
     else
         echo "Info: Image ${IMAGE_DIR}/openvas-redis.tar not found. Skip!"
+    fi
+    if [ "${FEED_MODE}" == 'service' ]; then
+        if [ -f "${IMAGE_DIR}/openvas-feed-key-service.tar" ]; then
+            docker load -i "${IMAGE_DIR}/openvas-feed-key-service.tar"
+        else
+            echo "Info: Image ${IMAGE_DIR}/openvas-feed-key-service.tar not found. Skip!"
+        fi
     fi
 }

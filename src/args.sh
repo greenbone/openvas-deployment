@@ -20,7 +20,8 @@
 #   None.
 #
 # Notes:
-#   Unknown arguments are silently ignored.
+#   Unknown arguments are output,
+#     and the process terminates with exit code 2.
 parse_args() {
     if [ $# -eq 0 ]; then
         show_help
@@ -128,7 +129,7 @@ parse_args() {
                 UPDATE_INGRESS_CERT_REDEPLOY='y'
                 shift 1
                 ;;
-            --skip--update-ingress-cert-redeploy)
+            --skip-update-ingress-cert-redeploy)
                 UPDATE_INGRESS_CERT_REDEPLOY='n'
                 shift 1
                 ;;
@@ -248,7 +249,8 @@ parse_args() {
                 show_help
                 ;;
             *)
-                shift
+                echo "Error: Unknown argument: $1" >&2
+                exit 2
                 ;;
         esac
     done

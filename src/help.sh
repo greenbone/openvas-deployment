@@ -11,6 +11,7 @@ Support for enterprise-container and security-intelligence
 Requires compose version 5.3.1 and higher!
 
 Info:
+  There are several examples further down.
   You can move up and down with arrow keys. Press q to quit.
 
 
@@ -159,7 +160,7 @@ Ingress certificate options:
   --update-ingress-cert-redeploy
                                  Redeploy after updating ingress certificates
 
-  --skip--update-ingress-cert-redeploy
+  --skip-update-ingress-cert-redeploy
                                  Do not redeploy after updating ingress
                                  certificates
 
@@ -200,14 +201,14 @@ Help:
 
 Examples:
 
-Initialize a security-intelligence deployment using a Docker volume for feeds:
+Initialize a security-intelligence deployment:
   $0 --init \\
     --product security-intelligence \\
     --oci-client-cert /path/to/product.crt \\
     --oci-client-key /path/to/product.key \\
     --domain-name osi.example.com
 
-Initialize a enterprise-container scan deployment using a Docker volume for feeds:
+Initialize a enterprise-container scan deployment:
   $0 --init \\
     --product enterprise-container \\
     --oci-client-cert /path/to/product.crt \\

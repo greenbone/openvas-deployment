@@ -20,7 +20,8 @@ check_req() {
 
 run() {
     echo_task 'Test Init'
-    openvas-deployment --init --oci-client-cert oci-client.cert \
+    openvas-deployment --init --init-docker-oci \
+        --oci-client-cert oci-client.cert \
         --oci-client-key oci-client.key \
         --product security-intelligence \
         --domain-name test.test.test

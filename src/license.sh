@@ -42,8 +42,10 @@ init_license_file() {
     install -m 0600 "${LICENSE_FILE}" "${CERT_DIR_OCI}/license.toml"
 
     echo "${license_data[license.certificate.cert]}" > "${CERT_DIR_OCI}/client.crt"
+    chmod 0640 "${CERT_DIR_OCI}/client.crt"
     oci_tls_client_cert="${CERT_DIR_OCI}/client.crt"
     echo "${license_data[license.certificate.key]}" > "${CERT_DIR_OCI}/client.key"
+    chmod 0600 "${CERT_DIR_OCI}/client.key"
     oci_tls_client_key="${CERT_DIR_OCI}/client.key"
 }
 

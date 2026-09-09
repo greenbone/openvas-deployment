@@ -21,11 +21,11 @@ SOURCES := \
 	src/secrets.sh \
 	src/secrets_ec.sh \
 	src/secrets_osi.sh \
+	src/secrets_scan.sh \
 	src/settings.sh \
 	src/settings_ec.sh \
 	src/settings_openvasd.sh \
 	src/settings_osi.sh \
-	src/settings_scan.sh \
 	src/main.sh
 
 .PHONY: all clean
