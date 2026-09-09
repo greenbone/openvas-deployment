@@ -50,6 +50,8 @@ init_secrets_osi() {
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_ENCRYPTION_KEY_REPORT_PUSH_KC_CLIENT"
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SECRET_KEY"
     gen_fernet > "${SECRETS_DIR}/MANAGEMENT_CONSOLE_SUPPORT_PACKAGE_DOWNLOAD_URL_KEY"
+
+    chmod 0600 "${SECRETS_DIR}"/*
 }
 
 # =============================================================================

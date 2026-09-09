@@ -159,7 +159,7 @@ Ingress certificate options:
   --update-ingress-cert-redeploy
                                  Redeploy after updating ingress certificates
 
-  --skip--update-ingress-cert-redeploy
+  --skip-update-ingress-cert-redeploy
                                  Do not redeploy after updating ingress
                                  certificates
 

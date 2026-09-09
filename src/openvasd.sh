@@ -288,8 +288,9 @@ create_openvasd_cert_tar() {
         echo "Error: ${openvasd_folder} does not exist!"
         exit 1
     fi
-    tar cf "${openvasd_name}.tar" -C "${openvasd_folder}" .
-    chmod 0600 "${openvasd_name}.tar"
+
+    rm -f "${openvasd_name}.tar"
+    (umask 077; tar cf "${openvasd_name}.tar" -C "${openvasd_folder}" .)
 }
 
 # =============================================================================
@@ -371,8 +372,9 @@ create_openvasd_tar() {
         fi
         popd > /dev/null
     fi
-    tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .
-    chmod 0600 "${openvasd_name}.tar.gz"
+
+    rm -f "${openvasd_name}.tar.gz"
+    (umask 077; tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .)
     rm -rf "${tmp_dir}"
 }
 

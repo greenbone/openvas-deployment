@@ -30,4 +30,8 @@ init_secrets_ec() {
 #   None.
 load_secrets_ec() {
     echo 'Info: Load secrets EC'
+
+    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+        load_secrets_scan
+    fi
 }

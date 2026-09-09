@@ -182,7 +182,7 @@ chmod 0600 /path/to/license-file
 | `--ingress-server-cert FILE` | Ingress server certificate. |
 | `--ingress-server-key FILE`  | Ingress server private key. |
 | `--update-ingress-cert-redeploy` | Redeploy after updating ingress certificates. |
-| `--skip--update-ingress-cert-redeploy` | Do not redeploy after updating ingress certificates. |
+| `--skip-update-ingress-cert-redeploy` | Do not redeploy after updating ingress certificates. |
 
 ## OpenVASD options
 

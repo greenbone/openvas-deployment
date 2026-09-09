@@ -17,7 +17,7 @@
 #   1 if GVMD_ADMIN_PASSWORD is not set.
 change_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
+        echo "${GVMD_ADMIN_PASSWORD}" > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
     else
         echo 'Error: No admin password set. Please use --change-admin-password with --admin-password'
         exit 1
@@ -71,6 +71,7 @@ force_feed_sync() {
     get_latest_version
 
     load_settings
+    load_secrets
 
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
         docker compose restart feed-sync
@@ -102,13 +103,13 @@ force_feed_sync() {
 #   None.
 init_admin_password_scan() {
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
+        echo "${GVMD_ADMIN_PASSWORD}" > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
     else
         echo "Info: No admin password set. Create random."
         set +e
-        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD"
+        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
         set -e
-        GVMD_ADMIN_PASSWORD="$(< "${SETTINGS_DIR}/GVMD_ADMIN_PASSWORD")"
+        GVMD_ADMIN_PASSWORD="$(< "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD")"
         echo "Your admin password is: ${GVMD_ADMIN_PASSWORD}"
     fi
 }

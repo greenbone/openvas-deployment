@@ -20,7 +20,8 @@
 #   None.
 #
 # Notes:
-#   Unknown arguments are silently ignored.
+#   Unknown arguments are output,
+#     and the process terminates with exit code 2.
 parse_args() {
     if [ $# -eq 0 ]; then
         show_help
