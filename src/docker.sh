@@ -150,12 +150,15 @@ compose_ps() {
 # Installs the OCI TLS client certificate and private key for Docker daemon
 # access to the configured OCI registry.
 #
-# If INIT_DOCKER_OCI is set to 'y', the function creates the Docker certificate
-# directory and installs the configured OCI client certificate and private key
-# using sudo and restrictive file permissions.
+# If INIT_DOCKER_OCI is unset, prompts whether the certificates should be
+# installed automatically using sudo.
 #
-# Otherwise, the function prints the commands required to install the
-# certificates manually with root privileges.
+# If INIT_DOCKER_OCI is set to 'y', creates the Docker certificate directory
+# and installs the configured OCI client certificate and private key as
+# client.cert and client.key with mode 0600.
+#
+# For any other value, prints the equivalent commands for manual execution
+# with root privileges.
 #
 # Arguments:
 #   None.
@@ -163,6 +166,11 @@ compose_ps() {
 # Returns:
 #   None.
 init_docker_oci() {
+    if ! [ "${INIT_DOCKER_OCI}" ]; then
+        echo "Info: Do you want to install dockerd OCI certs with sudo? Otherwise the commands are printed here."
+        read -r -p "Install? (y/n)" INIT_DOCKER_OCI
+    fi
+
     if [ "${INIT_DOCKER_OCI}" == 'y' ]; then
         echo "Info: Install OCI TLS certificates into dockerd..."
         sudo mkdir -p "${DOCKER_CERTS}"
