@@ -116,6 +116,8 @@ run_openvasd_tar() {
     pushd sensor2_test_test > /dev/null || exit
         echo_task 'Test openvasd extract'
         tar xzvf ../sensor2-test-test.tar.gz
+        echo_task 'Test Openvasd tar init'
+        openvas-deployment --init-openvasd-tar --init-docker-oci
         echo_task 'Test openvasd run'
         export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.0.192/26'
         export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:4::/64'
