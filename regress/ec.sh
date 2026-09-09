@@ -157,7 +157,7 @@ run_openvasd_tar_with_images() {
         export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.1.192/26'
         export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:5::/64'
         openvas-deployment --run --openvasd-load-images-from-tar --openvasd-port '3337'
-        if ! ss -ltn | grep -q ':2337 '; then
+        if ! ss -ltn | grep -q ':3337 '; then
             echo_error 'Error openvasd sensor setup port test failed!'
             exit 1
         fi
