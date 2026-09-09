@@ -181,5 +181,6 @@ gen_certs_ingress
 update_ingress_certs
 run_openvasd_cert_tar
 run_openvasd_tar
+run_openvasd_tar_with_images
 list 'Openvasd scan'
 clean 'Openvasd scan'
