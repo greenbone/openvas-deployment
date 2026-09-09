@@ -85,4 +85,6 @@ init_base_folders() {
     mkdir -p "${IMAGE_DIR}"
     mkdir -p "${SECRETS_DIR}"
     mkdir -p "${SETTINGS_DIR}"
+    chmod 0700 "${CERT_DIR}" "${CERT_DIR_OCI}" "${CERT_DIR_PRODUCT}" \
+        "${ARTIFACT_DIR}" "${SECRETS_DIR}" "${SETTINGS_DIR}"
 }
