@@ -77,7 +77,7 @@ init() {
 # Returns:
 #   None.
 init_base_folders() {
-    echo "Info: Create TLS certificate folder..."
+    echo "Info: Init ${STORE_DIR_NAME} folder"
     mkdir -p "${CERT_DIR}"
     mkdir -p "${CERT_DIR_OCI}"
     mkdir -p "${CERT_DIR_PRODUCT}"

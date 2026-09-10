@@ -12,7 +12,7 @@
 # Returns:
 #   None.
 init_secrets_ec() {
-    echo "Info: Init EC secrets."
+    echo "Info: Init secrets EC"
 }
 
 # =============================================================================

@@ -3,9 +3,17 @@
 # =============================================================================
 # Initializes the metafeed TLS certificate and private key used by OSI.
 #
-# If the provided metafeed certificate or private key exists, the function
-# installs it into the product certificate directory with appropriate file
-# permissions. Missing files produce warnings but do not terminate execution.
+# The function first installs the explicitly configured metafeed certificate
+# and private key, if both files exist. Otherwise, it falls back to the OCI
+# client certificate and private key, if both are available.
+#
+# The selected certificate and key are installed into the product certificate
+# directory as metafeed.crt and metafeed.key with appropriate file permissions.
+# If neither certificate/key pair is complete, a warning is emitted and
+# execution continues.
+#
+# After handling the OSI metafeed certificate and key, the function initializes
+# the ingress certificates by calling init_certs_ingress.
 #
 # Arguments:
 #   $1
@@ -17,6 +25,10 @@
 #     Defaults to METAFEED_KEY.
 #
 #   $3
+#     OCI certificate directory containing client.crt and client.key.
+#     Defaults to CERT_DIR_OCI.
+#
+#   $4
 #     Product certificate directory.
 #     Defaults to CERT_DIR_PRODUCT.
 #
@@ -25,18 +37,21 @@
 init_certs_osi() {
     local metafeed_cert="${1:-$METAFEED_CERT}"
     local metafeed_key="${2:-$METAFEED_KEY}"
-    local cert_dir_product="${3:-$CERT_DIR_PRODUCT}"
+    local cert_dir_oci="${3:-$CERT_DIR_OCI}"
+    local cert_dir_product="${4:-$CERT_DIR_PRODUCT}"
 
-    if [ -f "${metafeed_cert}" ]; then
+    echo 'Info: Init certs OSI'
+
+    if [ -f "${metafeed_cert}" ] && [ -f "${metafeed_key}" ]; then
         install -m 0644 "${metafeed_cert}" "${cert_dir_product}/metafeed.crt"
-    else
-        echo "Warn: Missing argument --osi-metafeed-cert !"
-    fi
-    if [ -f "${metafeed_key}" ]; then
         install -m 0600 "${metafeed_key}" "${cert_dir_product}/metafeed.key"
+    elif [ -f "${cert_dir_oci}/client.crt" ] && [ -f "${cert_dir_oci}/client.key" ]; then
+        install -m 0644 "${cert_dir_oci}/client.crt" "${cert_dir_product}/metafeed.crt"
+        install -m 0600 "${cert_dir_oci}/client.key" "${cert_dir_product}/metafeed.key"
     else
-        echo "Warn: Missing argument --osi-metafeed-key !"
+        echo "Warn: Metafeed certificate and key not found. Provide both --metafeed-cert and --metafeed-key, or install client.crt and client.key in ${cert_dir_oci}."
     fi
+    init_certs_ingress
 }
 
 # =============================================================================

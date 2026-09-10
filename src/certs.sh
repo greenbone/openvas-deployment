@@ -16,25 +16,14 @@
 #     Product name.
 #     Defaults to PRODUCT.
 #
-#   $2
-#     Deployment mode.
-#     Defaults to DEPLOYMENT_MODE.
-#
 # Returns:
 #   None.
 init_certs() {
     local product="${1:-$PRODUCT}"
-    local deployment_mode="${2:-$DEPLOYMENT_MODE}"
 
     if [ "${product}" == 'enterprise-container' ]; then
-        if [ "${deployment_mode}" == 'scan' ]; then
-            init_certs_scan
-            init_certs_ingress
-        elif [ "${deployment_mode}" == 'openvasd' ]; then
-            init_certs_openvasd
-        fi
+        init_certs_ec
     elif [ "${product}" == 'security-intelligence' ]; then
-        init_certs_ingress
         init_certs_osi
     fi
 }
