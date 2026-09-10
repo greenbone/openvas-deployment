@@ -40,6 +40,8 @@ init_certs_osi() {
     local cert_dir_oci="${3:-$CERT_DIR_OCI}"
     local cert_dir_product="${4:-$CERT_DIR_PRODUCT}"
 
+    echo 'Info: Init certs OSI'
+
     if [ -f "${metafeed_cert}" ] && [ -f "${metafeed_key}" ]; then
         install -m 0644 "${metafeed_cert}" "${cert_dir_product}/metafeed.crt"
         install -m 0600 "${metafeed_key}" "${cert_dir_product}/metafeed.key"

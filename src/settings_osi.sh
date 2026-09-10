@@ -24,6 +24,8 @@ init_settings_osi() {
     local domain_name="${1:-$DOMAIN_NAME}"
     local settings_dir="${2:-$SETTINGS_DIR}"
 
+    echo 'Info: Init settings OSI'
+
     if [ "${domain_name}" ]; then
         echo "${domain_name}" > "${SETTINGS_DIR}/DOMAIN_NAME"
     else

@@ -24,6 +24,8 @@
 #   1 if FEED_MODE is set to 'mount'.
 #   1 if CCERT_MODE is set to 'mount'.
 init_settings_ec() {
+    echo 'Info: Init settings EC'
+
     if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${DEPLOYMENT_MODE} " ]]; then
         echo "${DEPLOYMENT_MODE}" > "${SETTINGS_DIR}/DEPLOYMENT_MODE"
     else

@@ -18,7 +18,7 @@
 # Returns:
 #   None.
 init_secrets_osi() {
-    echo "Info: Init OSI secrets."
+    echo "Info: Init secrets OSI"
 
     # Keycloak
     gen_password > "${SECRETS_DIR}/KEYCLAOK_ADMIN_PASSWORD"
