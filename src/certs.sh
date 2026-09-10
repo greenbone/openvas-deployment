@@ -16,15 +16,10 @@
 #     Product name.
 #     Defaults to PRODUCT.
 #
-#   $2
-#     Deployment mode.
-#     Defaults to DEPLOYMENT_MODE.
-#
 # Returns:
 #   None.
 init_certs() {
     local product="${1:-$PRODUCT}"
-    local deployment_mode="${2:-$DEPLOYMENT_MODE}"
 
     if [ "${product}" == 'enterprise-container' ]; then
         init_certs_ec
