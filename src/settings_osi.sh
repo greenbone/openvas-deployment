@@ -27,7 +27,7 @@ init_settings_osi() {
     echo 'Info: Init settings OSI'
 
     if [ "${domain_name}" ]; then
-        echo "${domain_name}" > "${SETTINGS_DIR}/DOMAIN_NAME"
+        echo "${domain_name}" > "${settings_dir}/DOMAIN_NAME"
     else
         echo "Error: Domain name not set! Run --init with --domain-name!"
         exit 1
