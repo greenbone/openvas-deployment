@@ -117,7 +117,7 @@ Use one action per invocation.
 | Action                    | Description                                                                                |
 | ------------------------- | ------------------------------------------------------------------------------------------ |
 | `--init`                  | Initialize the deployment, certificates, secrets, and deployment settings under `./product`. If `./product` already exists, confirmation is requested unless `--skip-init-if-exist` is used. |
-| `--init-openvasd-tar`     | Install Docker OCI client credentials for an extracted OpenVASD deployment archive. Use the OCI certificate and key contained in the archive with `--oci-client-cert` and `--oci-client-key`. |
+| `--init-openvasd-tar`     | Install Docker OCI client credentials for an extracted OpenVASD deployment archive.        |
 | `--create-openvasd-cert-tar` | Create an OpenVASD certificate archive in the current directory. Requires `--cn-openvasd`. Only enterprise-container. |
 | `--change-admin-password` | Change the `gvmd` administrator password. Requires `--admin-password` and a running enterprise-container scan deployment. Only enterprise-container. |
 | `--change-feed-sync-hour` | Change the daily scheduled feed synchronization hour and immediately restart feed synchronization. Requires `--feed-sync-hour`. Only enterprise-container. |
