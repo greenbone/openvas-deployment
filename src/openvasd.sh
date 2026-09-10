@@ -355,6 +355,8 @@ create_openvasd_tar() {
     cp "${0}" "${tmp_dir}"
 
     if [ "${OPENVASD_TAR_WITH_IMAGES}" == 'y' ]; then
+        load_secrets
+        load_certs
         get_latest_version
         mkdir -p "${tmp_images}"
         pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit

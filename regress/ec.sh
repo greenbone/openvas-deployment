@@ -116,6 +116,8 @@ run_openvasd_tar() {
     pushd sensor2_test_test > /dev/null || exit
         echo_task 'Test openvasd extract'
         tar xzvf ../sensor2-test-test.tar.gz
+        echo_task 'Test Openvasd tar init'
+        openvas-deployment --init-openvasd-tar --init-docker-oci
         echo_task 'Test openvasd run'
         export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.0.192/26'
         export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:4::/64'
@@ -135,6 +137,41 @@ run_openvasd_tar() {
     popd > /dev/null
 }
 
+run_openvasd_tar_with_images() {
+    echo_task 'Test openvasd gen'
+    openvas-deployment --create-openvasd-certs --cn-openvasd sensor3.test.test
+    echo_task 'Test openvasd tar with images'
+    openvas-deployment --create-openvasd-tar --openvasd-tar-with-images --cn-openvasd sensor3.test.test
+    ls
+    if ! [ -f 'sensor3-test-test.tar.gz' ]; then
+        echo_error 'Error openvasd tar gen failed!'
+        exit 1
+    fi
+    mkdir sensor3_test_test
+    pushd sensor3_test_test > /dev/null || exit
+        echo_task 'Test openvasd extract'
+        tar xzvf ../sensor3-test-test.tar.gz
+        echo_task 'Test Openvasd tar init'
+        openvas-deployment --init-openvasd-tar --init-docker-oci
+        echo_task 'Test openvasd run with load images from tar'
+        export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.1.192/26'
+        export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:5::/64'
+        openvas-deployment --run --openvasd-load-images-from-tar --openvasd-port '3337'
+        if ! ss -ltn | grep -q ':3337 '; then
+            echo_error 'Error openvasd sensor setup port test failed!'
+            exit 1
+        fi
+    popd > /dev/null
+    echo_task 'Test add openvasd to gvmd'
+    gvmd_add_openvasd_host_to_etc_hosts 'sensor3.test.test' '100.104.1.193'
+    openvas-deployment --add-openvasd --cn-openvasd sensor3.test.test --openvasd-port 3337
+    echo_task 'Cleanup Openvasd tar'
+    pushd sensor3_test_test > /dev/null || exit
+        list 'Openvasd tar'
+        clean 'Openvasd tar'
+    popd > /dev/null
+}
+
 check_req
 run
 change_admin_pw
@@ -144,5 +181,6 @@ gen_certs_ingress
 update_ingress_certs
 run_openvasd_cert_tar
 run_openvasd_tar
+run_openvasd_tar_with_images
 list 'Openvasd scan'
 clean 'Openvasd scan'
