@@ -49,7 +49,7 @@ init_certs_osi() {
         install -m 0644 "${cert_dir_oci}/client.crt" "${cert_dir_product}/metafeed.crt"
         install -m 0600 "${cert_dir_oci}/client.key" "${cert_dir_product}/metafeed.key"
     else
-        echo "Warn: Metafeed certificate and key not found. Provide both --osi-metafeed-cert and --osi-metafeed-key, or install client.crt and client.key in ${cert_dir_oci}."
+        echo "Warn: Metafeed certificate and key not found. Provide both --metafeed-cert and --metafeed-key, or install client.crt and client.key in ${cert_dir_oci}."
     fi
     init_certs_ingress
 }
