@@ -61,4 +61,9 @@ load_settings_openvasd() {
         echo "Error: No openvasd cn found at ${settings_dir}/OPENVASD_CN! Please run --init --deployment-mode openvasd!"
         exit 1
     fi
+
+    # Todo: put me into file
+    if [ "${OPENVASD_PORT}" ]; then
+        export OPENVAS_SCANNER_HOST_LISTEN_PORT="${OPENVASD_PORT}"
+    fi
 }
