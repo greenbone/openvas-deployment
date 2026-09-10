@@ -27,12 +27,7 @@ init_certs() {
     local deployment_mode="${2:-$DEPLOYMENT_MODE}"
 
     if [ "${product}" == 'enterprise-container' ]; then
-        if [ "${deployment_mode}" == 'scan' ]; then
-            init_certs_scan
-            init_certs_ingress
-        elif [ "${deployment_mode}" == 'openvasd' ]; then
-            init_certs_openvasd
-        fi
+        init_certs_ec
     elif [ "${product}" == 'security-intelligence' ]; then
         init_certs_osi
     fi

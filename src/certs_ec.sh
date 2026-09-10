@@ -1,4 +1,35 @@
 # =============================================================================
+# init_certs_ec()
+# =============================================================================
+# Initializes certificates for the EC deployment according to the selected
+# deployment mode.
+#
+# In scan mode, the function initializes both scan-related and ingress
+# certificates. In openvasd mode, it initializes the certificates required by
+# openvasd. Other deployment modes do not trigger certificate initialization.
+#
+# Arguments:
+#   $1
+#     Deployment mode that determines which certificate initialization
+#     functions are called.
+#     Defaults to DEPLOYMENT_MODE.
+#
+# Returns:
+#   None.
+init_certs_ec() {
+    local deployment_mode="${1:-$DEPLOYMENT_MODE}"
+
+    echo 'Info: Init certs EC'
+
+    if [ "${deployment_mode}" == 'scan' ]; then
+        init_certs_scan
+        init_certs_ingress
+    elif [ "${deployment_mode}" == 'openvasd' ]; then
+        init_certs_openvasd
+    fi
+}
+
+# =============================================================================
 # load_certs_ec()
 # =============================================================================
 # Loads the certificate configuration required for the selected
