@@ -34,7 +34,6 @@ init_certs() {
             init_certs_openvasd
         fi
     elif [ "${product}" == 'security-intelligence' ]; then
-        init_certs_ingress
         init_certs_osi
     fi
 }
