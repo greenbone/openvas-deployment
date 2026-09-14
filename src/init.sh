@@ -52,7 +52,6 @@ init() {
     init_secrets
     init_docker_oci
     if [ "${PRODUCT}" == 'enterprise-container' ]; then
-        init_feed_key
         if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
             init_jwt
             init_admin_password_scan

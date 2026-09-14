@@ -192,9 +192,9 @@ update_ingress_certs() {
     install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
 
     if ! [ "${update_ingress_cert_redeploy}" ]; then
-        read -r -p "Info: We need to redeploy the compose stack, to activate the new Ingress certificates. (y/n)" update_ingress_cert_redeploy
+        read -r -p "Info: Redeploy the ingress container, to activate the new Ingress certificates? (y/n)" update_ingress_cert_redeploy
     fi
     if [ "${update_ingress_cert_redeploy}" == "y" ]; then
-        deploy
+        compose_recreate_container 'ingress'
     fi
 }

@@ -38,7 +38,6 @@ deploy() {
     load_certs
 
     if [ "${PRODUCT}" == 'enterprise-container' ]; then
-        load_feed_key
         if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
             if [ "${OPENVASD_LOAD_IMAGES_FROM_TAR}" == 'y' ]; then
                 load_openvasd_images
