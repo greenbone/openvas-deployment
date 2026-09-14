@@ -161,6 +161,7 @@ Extract the archive.
 
 Initialize the remote OpenVASD deployment:
   ${0} --init --deployment-mode openvasd \\
+    --product enterprise-container \\
     --cn-openvasd ${openvasd_cn} \\
     --oci-client-cert oci.crt \\
     --oci-client-key oci.key \\
