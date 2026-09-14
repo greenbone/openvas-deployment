@@ -17,10 +17,8 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 - [Deployment options](#deployment-options)
 - [Log options](#log-options)
 - [Administrator options](#administrator-options)
-- [OCI client certificate options](#oci-client-certificate-options)
-- [Ingress certificate options](#ingress-certificate-options)
 - [OpenVASD options](#openvasd-options)
-- [Development options](#development-options)
+- [Update options](#update-options)
 - [Examples](#examples)
 - [Security considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
@@ -114,132 +112,113 @@ openvas-deployment --down
 
 Use one action per invocation.
 
-| Action                    | Description                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------------ |
+| Action                    | Description                                                                                                                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--init`                  | Initialize the deployment, certificates, secrets, and deployment settings under `./product`. If `./product` already exists, confirmation is requested unless `--skip-init-if-exist` is used. |
-| `--init-openvasd-tar`     | Install Docker OCI client credentials for an extracted OpenVASD deployment archive.        |
-| `--create-openvasd-cert-tar` | Create an OpenVASD certificate archive in the current directory. Requires `--cn-openvasd`. Only enterprise-container. |
-| `--change-admin-password` | Change the `gvmd` administrator password. Requires `--admin-password` and a running enterprise-container scan deployment. Only enterprise-container. |
-| `--change-feed-sync-hour` | Change the daily scheduled feed synchronization hour and immediately restart feed synchronization. Requires `--feed-sync-hour`. Only enterprise-container. |
-| `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
-| `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
-| `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
-| `--logs`                  | Show deployment logs. Optionally restrict the output to one service with `--service-name`. |
-| `--ps`                    | Show the deployment status, including stopped containers.                                  |
-| `--down`                  | Stop the deployment.                                                                       |
-| `--down-volumes`          | Stop the deployment and remove its Docker volumes and orphaned containers.                 |
-| `--update-ingress-certs`  | Replace the ingress TLS certificate and private key. Requires both ingress certificate options. |
-| `--create-openvasd-certs` | Create TLS certificates for an OpenVASD scanner using the enterprise-container scan CA. Requires `--cn-openvasd`. Only enterprise-container. |
-| `--create-openvasd-tar`   | Create a portable OpenVASD deployment archive in the current directory. Requires `--cn-openvasd`. Only enterprise-container. |
-| `--get-openvasds`         | List OpenVASD scanners registered in `gvmd`. Requires the enterprise-container scan `gvmd` container to be running. Only enterprise-container. |
-| `--add-openvasd`          | Register an OpenVASD scanner in `gvmd`. Requires `--cn-openvasd`, `--openvasd-port`, and a reachable ready scanner. Only enterprise-container. |
-| `--del-openvasd`          | Remove an OpenVASD scanner from `gvmd`. Requires `--openvasd-uuid`. Only enterprise-container. |
-| `-h`, `--help`            | Display the command-line help.                                                             |
+| `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed.                                |
+| `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version.                                                                                             |
+| `--logs`                  | Show deployment logs. Optionally restrict the output to one service with `--service-name`.                                                                                                   |
+| `--ps`                    | Show the deployment status, including stopped containers.                                                                                                                                    |
+| `--down`                  | Stop the deployment.                                                                                                                                                                         |
+| `--down-volumes`          | Stop the deployment and remove its Docker volumes and orphaned containers.                                                                                                                   |
+| `--update-ingress-certs`  | Replace the ingress TLS certificate and private key. Requires both ingress certificate options.                                                                                              |
+| `-h`, `--help`            | Display the command-line help.                                                                                                                                                               |
+
+### Actions enterprise-container only
+
+Use one action per invocation.
+
+| Action                       | Description                                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `--change-admin-password`    | Change the `gvmd` administrator password. Requires `--admin-password` and a running enterprise-container scan deployment.       |
+| `--change-feed-sync-hour`    | Change the daily scheduled feed synchronization hour and immediately restart feed synchronization. Requires `--feed-sync-hour`. |
+| `--force-feed-sync`          | Restart feed synchronization immediately.                                                                                       |
+| `--create-openvasd-certs`    | Create TLS certificates for an OpenVASD scanner using the enterprise-container scan CA. Requires `--cn-openvasd`.               |
+| `--create-openvasd-cert-tar` | Create an OpenVASD certificate archive in the current directory. Requires `--cn-openvasd`.                                      |
+| `--create-openvasd-tar`      | Create a portable OpenVASD deployment archive in the current directory. Requires .                                              |
+| `--init-openvasd-tar`        | Install Docker OCI client credentials for an extracted OpenVASD deployment archive. Created with `--create-openvasd-tar`        |
+| `--get-openvasds`            | List OpenVASD scanners registered in `gvmd`. Requires the enterprise-container scan `gvmd` container to be running.             |
+| `--add-openvasd`             | Register an OpenVASD scanner in `gvmd`. Requires `--cn-openvasd`, `--openvasd-port`, and a reachable ready scanner.             |
+| `--del-openvasd`             | Remove an OpenVASD scanner from `gvmd`. Requires `--openvasd-uuid`. |
 
 ## Deployment options
 
-| Option                   | Description                                                                  |
-| ------------------------ | ---------------------------------------------------------------------------- |
-| `--product PRODUCT`       | Product to deploy: `enterprise-container` or `security-intelligence`. Required for `--init`; stored in `./product/PRODUCT` for later commands. |
+| Option                                | Description                                                                  |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--product PRODUCT`                   | Product to deploy: `enterprise-container` or `security-intelligence`. Required for `--init`; stored in `./product/PRODUCT` for later commands.              |
+| `--skip-init-if-exist`                | With `--init`, exit with status 0 without changing the existing `./product` directory if it already exists.                                                 |
+| `--license-file FILE`                 | License file containing the OCI registry client certificate and private key. With `--init`, this is used instead of separate OCI certificate and key files. |
+| `--oci-client-cert FILE`              | OCI registry client certificate. Required with `--init` when `--license-file` is not used.                                                                  |
+| `--oci-client-key FILE`               | OCI registry client private key. Required with `--init` when `--license-file` is not used.                                                                  |
+| `--init-docker-oci`                   | Install OCI credentials into `/etc/docker/certs.d/packages.greenbone.net` using `sudo`.                                                                     |
+| `--skip-docker-oci`                   | Do not install OCI credentials automatically; print the required root commands instead.                                                                     |
+| `--ingress-server-cert FILE`          | Ingress server certificate. During `--init`, provide this together with `--ingress-server-key`; otherwise a self-signed certificate pair is generated.      |
+| `--ingress-server-key FILE`           | Ingress server private key. During `--init`, provide this together with `--ingress-server-cert`; otherwise a self-signed certificate pair is generated.     |
+| `--update-ingress-cert-redeploy`      | With `--update-ingress-certs`, redeploy immediately after replacing the certificates.                                                                       |
+| `--skip-update-ingress-cert-redeploy` | With `--update-ingress-certs`, replace the certificates without redeploying.                                                                                |
+
+- The OCI credentials can be supplied either through a license file or as separate certificate and key files. If neither `--init-docker-oci` nor `--skip-docker-oci` is supplied during initialization, the utility asks whether to install the Docker OCI credentials with `sudo`.
+
+- If custom ingress certificates are not supplied during initialization, the utility generates a self-signed RSA certificate and key valid for 365 days. With `--update-ingress-certs`, both certificate files must exist. If neither redeploy option is supplied, the utility asks whether the compose stack should be redeployed.
+
+### Deployment options security-intelligence only
+
+| Option                    | Description                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------- |
 | `--domain-name NAME`      | Domain name for the deployment. Required for security-intelligence initialization. |
-| `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
-| `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
-| `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
-| `--openvasd-client-ca FILE` | OpenVASD client CA certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
-| `--openvasd-server-cert FILE` | OpenVASD server certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
-| `--openvasd-server-key FILE` | OpenVASD server private key required for `--init --deployment-mode openvasd`. Only enterprise-container. |
-| `--feed-mode MODE`       | Feed mode: `volume`, `service`, or `mount`. Default: `volume`. `mount` is currently rejected during initialization. Only enterprise-container. |
-| `--feed-key FILE`        | Feed key file. Required for enterprise-container initialization. Base64-encoded keys are decoded before storage; other files are copied as-is. |
-| `--feed-path PATH`       | Host feed directory for feed mode `mount`. The `mount` mode is currently not supported. Only enterprise-container. |
-| `--feed-sync-hour HOUR`  | Daily scheduled feed synchronization hour from `0` to `23`. Default: `3`. Only enterprise-container. |
-| `--ccert-mode MODE`      | Client certificate mode: `ca`, `cert`, or `mount`. Default: `ca`. `mount` is currently rejected during initialization. Only enterprise-container. |
-| `--ccert-path PATH`      | Host client-certificate directory for client certificate mode `mount`. The `mount` mode is currently not supported. Only enterprise-container. |
-| `--feed-sync-force-no-log` | With `--force-feed-sync` or `--change-feed-sync-hour`, do not prompt to follow the `feed-sync` service logs. Only enterprise-container. |
-| `--skip-init-if-exist`   | With `--init`, exit with status 0 without changing the existing `./product` directory if it already exists. |
+| `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence.                    |
+| `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence.                    |
 
-The active runtime defaults are shown by:
+### Deployment options enterprise-container only
 
-```bash
-openvas-deployment --help
-```
+| Option                        | Description                                                                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--deployment-mode MODE`      | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`.                                                                   |
+| `--openvasd-client-ca FILE`   | OpenVASD client CA certificate required for `--init --deployment-mode openvasd`.                                                               |
+| `--openvasd-server-cert FILE` | OpenVASD server certificate required for `--init --deployment-mode openvasd`.                                                                  |
+| `--openvasd-server-key FILE`  | OpenVASD server private key required for `--init --deployment-mode openvasd`.                                                                  |
+| `--feed-mode MODE`            | Feed mode: `volume`, `service`, or `mount`. Default: `volume`. `mount` is currently rejected during initialization.                            |
+| `--feed-key FILE`             | Feed key file. Required for enterprise-container initialization. Base64-encoded keys are decoded before storage; other files are copied as-is. |
+| `--feed-path PATH`            | Host feed directory for feed mode `mount`. The `mount` mode is currently not supported.                                                        |
+| `--feed-sync-hour HOUR`       | Daily scheduled feed synchronization hour from `0` to `23`. Default: `3`.                                                                      |
+| `--ccert-mode MODE`           | Client certificate mode: `ca`, `cert`, or `mount`. Default: `ca`. `mount` is currently rejected during initialization.                         |
+| `--ccert-path PATH`           | Host client-certificate directory for client certificate mode `mount`. The `mount` mode is currently not supported.                            |
+| `--feed-sync-force-no-log`    | With `--force-feed-sync` or `--change-feed-sync-hour`, do not prompt to follow the `feed-sync` service logs.                                   |
 
 ## Log options
 
-| Option                   | Description                                                   |
-| ------------------------ | ------------------------------------------------------------- |
+| Option                   | Description                                                       |
+| ------------------------ | ----------------------------------------------------------------- |
 | `--service-name SERVICE` | Restrict `--logs` output to the specified Docker Compose service. |
-
-Show all deployment logs:
-
-```bash
-openvas-deployment --logs
-```
-
-Show logs for one service:
-
-```bash
-openvas-deployment --logs \
-  --service-name SERVICE
-```
 
 ## Administrator options
 
-| Option                      | Description                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------ |
+| Option                      | Description                                                                                                                                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--admin-password PASSWORD` | Administrator password used during enterprise-container scan initialization or with `--change-admin-password`. If omitted during initialization, a random 16-character alphanumeric password is generated and printed. |
 
-Avoid exposing passwords in shell history. Where practical, use an interactive shell with history disabled temporarily or another protected invocation mechanism.
-
-## OCI client certificate options
-
-| Option                   | Description                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| `--license-file FILE`    | License file containing the OCI registry client certificate and private key. With `--init`, this is used instead of separate OCI certificate and key files. |
-| `--oci-client-cert FILE` | OCI registry client certificate. Required with `--init` when `--license-file` is not used. |
-| `--oci-client-key FILE`  | OCI registry client private key. Required with `--init` when `--license-file` is not used. |
-| `--init-docker-oci`      | Install OCI credentials into `/etc/docker/certs.d/packages.greenbone.net` using `sudo`. |
-| `--skip-docker-oci`      | Do not install OCI credentials automatically; print the required root commands instead. |
-
-The OCI credentials can be supplied either through a license file or as separate certificate and key files. If neither `--init-docker-oci` nor `--skip-docker-oci` is supplied during initialization, the utility asks whether to install the Docker OCI credentials with `sudo`.
-
-Protect private keys and license files with restrictive permissions:
-
-```bash
-chmod 0600 /path/to/product.key
-chmod 0600 /path/to/license-file
-```
-
-## Ingress certificate options
-
-| Option                       | Description                 |
-| ---------------------------- | --------------------------- |
-| `--ingress-server-cert FILE` | Ingress server certificate. During `--init`, provide this together with `--ingress-server-key`; otherwise a self-signed certificate pair is generated. |
-| `--ingress-server-key FILE`  | Ingress server private key. During `--init`, provide this together with `--ingress-server-cert`; otherwise a self-signed certificate pair is generated. |
-| `--update-ingress-cert-redeploy` | With `--update-ingress-certs`, redeploy immediately after replacing the certificates. |
-| `--skip-update-ingress-cert-redeploy` | With `--update-ingress-certs`, replace the certificates without redeploying. |
-
-If custom ingress certificates are not supplied during initialization, the utility generates a self-signed RSA certificate and key valid for 365 days. With `--update-ingress-certs`, both certificate files must exist. If neither redeploy option is supplied, the utility asks whether the compose stack should be redeployed.
+- Avoid exposing passwords in shell history. Where practical, use an interactive shell with history disabled temporarily or another protected invocation mechanism.
 
 ## OpenVASD options
 
-| Option                            | Description                                                         |
-| --------------------------------- | ------------------------------------------------------------------- |
-| `--cn-openvasd NAME`              | OpenVASD common name and scanner hostname. Required for OpenVASD initialization, certificate/archive creation, and scanner registration. |
+| Option                            | Description                                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--cn-openvasd NAME`              | OpenVASD common name and scanner hostname. Required for OpenVASD initialization, certificate/archive creation, and scanner registration.         |
 | `--openvasd-port PORT`            | OpenVASD scanner or exposed host port. Default for the OpenVASD deployment is `443`; the port must be supplied explicitly with `--add-openvasd`. |
-| `--openvasd-uuid UUID`            | Scanner UUID returned by `--get-openvasds`. Required with `--del-openvasd`. |
-| `--openvasd-tar-with-images`      | With `--create-openvasd-tar`, include locally available Docker images in the archive. Disabled by default. |
-| `--openvasd-load-images-from-tar` | With `--run`, load packaged Docker images before deploying an OpenVASD archive. Disabled by default; missing packaged images are skipped. |
+| `--openvasd-uuid UUID`            | Scanner UUID returned by `--get-openvasds`. Required with `--del-openvasd`.                                                                      |
+| `--openvasd-tar-with-images`      | With `--create-openvasd-tar`, include locally available Docker images in the archive. Disabled by default.                                       |
+| `--openvasd-load-images-from-tar` | With `--run`, load packaged Docker images before deploying an OpenVASD archive. Disabled by default; missing packaged images are skipped.        |
 
-`--create-openvasd-cert-tar` writes `<cn-with-dots-replaced-by-hyphens>.tar`. `--create-openvasd-tar` writes `<cn-with-dots-replaced-by-hyphens>.tar.gz` and includes the OpenVASD deployment settings, certificates, feed key, downloaded product artifacts, OCI credentials, and the deployment executable. Use `--openvasd-tar-with-images` when the target host should also receive the required Docker images.
+- `--create-openvasd-cert-tar` writes `<cn-with-dots-replaced-by-hyphens>.tar`. `--create-openvasd-tar` writes `<cn-with-dots-replaced-by-hyphens>.tar.gz` and includes the OpenVASD deployment settings, certificates, feed key, downloaded product artifacts, OCI credentials, and the deployment executable. Use `--openvasd-tar-with-images` when the target host should also receive the required Docker images.
 
-## Development options
+## Update options
 
-| Option | Description |
-| --- | --- |
-| `--dev` | Use development stage URL prefix `-dev/dev` for the current registry operation, typically with `--update`. |
-| `--integration` | Use development stage URL prefix `-dev/integration` for the current registry operation, typically with `--update`. |
-| `--testing` | Use development stage URL prefix `-dev/testing` for the current registry operation, typically with `--update`. |
-| `--staging` | Use development stage URL prefix `-dev/staging` for the current registry operation, typically with `--update`. |
+| Option          | Description                                                                                                   |
+| --------------- | --------------------------------------------------------------------------------------------------------------|
+| `--dev`         | Use development stage URL prefix `-dev/dev` for the current registry operation, used with `--update`.         |
+| `--integration` | Use development stage URL prefix `-dev/integration` for the current registry operation, used with `--update`. |
+| `--testing`     | Use development stage URL prefix `-dev/testing` for the current registry operation, used with `--update`.     |
+| `--staging`     | Use development stage URL prefix `-dev/staging` for the current registry operation, used with `--update`.     |
 
 ## Examples
 
