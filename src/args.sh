@@ -286,13 +286,28 @@ run() {
         init
     fi
     if [ "${MODE}" == 'init-openvasd-tar' ]; then
-        init_openvasd_tar
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            init_openvasd_tar
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'create-openvasd-tar' ]; then
-        create_openvasd_tar
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            create_openvasd_tar
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'create-openvasd-cert-tar' ]; then
-        create_openvasd_cert_tar
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            create_openvasd_cert_tar
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'update' ]; then
         artifact_download
@@ -306,29 +321,56 @@ run() {
     if [ "${MODE}" == 'down-volumes' ]; then
         compose_down_volumes
     fi
-    if [ "${MODE}" == 'create-openvasd-cert' ]; then
-        create_openvasd_cert
-    fi
     if [ "${MODE}" == 'get-openvasds' ]; then
-        get_openvasds
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            get_openvasds
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'add-openvasd' ]; then
-        add_openvasd
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            add_openvasd
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'del-openvasd' ]; then
-        del_openvasd
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            del_openvasd
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'update-ingress-certs' ]; then
         update_ingress_certs
     fi
     if [ "${MODE}" == 'change-admin-password' ]; then
-        change_admin_password_scan
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_admin_password_scan
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'force-feed-sync' ]; then
-        force_feed_sync
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            force_feed_sync
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'change-feed-sync-hour' ]; then
-        change_feed_sync_hour
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_feed_sync_hour
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'logs' ]; then
         compose_logs
