@@ -72,9 +72,11 @@ force_feed_sync() {
 
     load_settings
     load_secrets
+    load_certs
+    load_feed_key
 
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        docker compose restart feed-sync
+        docker compose up -d --force-recreate feed-sync
         if [ "${FEED_SYNC_FORCE_NO_LOG}" == 'n' ]; then
             read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" response
             if [ "$response" == "y" ]; then
