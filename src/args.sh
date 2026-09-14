@@ -321,6 +321,14 @@ run() {
     if [ "${MODE}" == 'down-volumes' ]; then
         compose_down_volumes
     fi
+    if [ "${MODE}" == 'create-openvasd-cert' ]; then
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            create_openvasd_cert
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
+    fi
     if [ "${MODE}" == 'get-openvasds' ]; then
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             get_openvasds
