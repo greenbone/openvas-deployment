@@ -186,7 +186,7 @@ Create an OpenVASD deployment archive for an external sensor:
 
   ${0} --create-openvasd-tar --cn-openvasd ${openvasd_cn}
 
-Include Docker images in the archive (no --init-openvasd-tar required):
+Or include Docker images in the archive (no --init-openvasd-tar required):
 
   ${0} --create-openvasd-tar \\
     --cn-openvasd ${openvasd_cn} \\
