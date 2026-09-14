@@ -161,6 +161,7 @@ Extract the archive.
 
 Initialize the remote OpenVASD deployment:
   ${0} --init --deployment-mode openvasd \\
+    --product enterprise-container \\
     --cn-openvasd ${openvasd_cn} \\
     --oci-client-cert oci.crt \\
     --oci-client-key oci.key \\
@@ -186,7 +187,7 @@ Create an OpenVASD deployment archive for an external sensor:
 
   ${0} --create-openvasd-tar --cn-openvasd ${openvasd_cn}
 
-Include Docker images in the archive (no --init-openvasd required):
+Or include Docker images in the archive (no --init-openvasd-tar required):
 
   ${0} --create-openvasd-tar \\
     --cn-openvasd ${openvasd_cn} \\
@@ -199,12 +200,10 @@ Deploy the sensor from an archive:
 2. Extract the archive.
 3. Initialize and start the sensor:
 
-  ${0} --init-openvasd
+  ${0} --init-openvasd-tar
   ${0} --run
 
-
-Load packaged Docker images before starting the sensor
-(no --init-openvasd required):
+Or load Docker images from the archive (no --init-openvasd-tar required):
 
   ${0} --run --openvasd-load-images-from-tar
 

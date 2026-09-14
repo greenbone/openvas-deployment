@@ -301,6 +301,7 @@ Copy the following files to the new host:
 
 Initialize the remote OpenVASD deployment:
   $0 --init --deployment-mode openvasd \\
+    --product enterprise-container \\
     --cn-openvasd sensor.example.com \\
     --oci-client-cert oci.crt \\
     --oci-client-key oci.key \\
