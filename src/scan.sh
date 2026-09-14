@@ -68,22 +68,12 @@ change_feed_sync_hour() {
 # Exits:
 #   Exits if changing to the artifact directory fails.
 force_feed_sync() {
-    get_latest_version
+    local feed_sync_force_no_log="${1:-$FEED_SYNC_FORCE_NO_LOG}"
 
-    load_settings
-    load_secrets
-    load_certs
-    load_feed_key
-
-    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        docker compose up -d --force-recreate feed-sync
-        if [ "${FEED_SYNC_FORCE_NO_LOG}" == 'n' ]; then
-            read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" response
-            if [ "$response" == "y" ]; then
-                docker compose logs -f feed-sync
-            fi
-        fi
-    popd > /dev/null
+    if ! [ "${feed_sync_force_no_log}" ]; then
+        read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" feed_sync_force_no_log
+    fi
+    compose_recreate_container 'feed-sync' "${feed_sync_force_no_log}"
 }
 
 # =============================================================================
@@ -149,41 +139,6 @@ init_feed_sync_hour() {
 }
 
 # =============================================================================
-# init_feed_key()
-# =============================================================================
-# Validates and installs the feed key for the selected product.
-#
-# The function verifies that FEED_KEY references an existing file. If the file
-# contains valid Base64-encoded data, its decoded contents are written to
-# CERT_DIR_PRODUCT/feed.key. Otherwise, the file is copied directly.
-#
-# The installed feed key is stored with restrictive file permissions.
-#
-# Arguments:
-#   None.
-#
-# Returns:
-#   None.
-#
-# Exits:
-#   1 if FEED_KEY is not set to an existing file.
-init_feed_key(){
-    if ! [ -f "${FEED_KEY}" ]; then
-        echo "Error: --feed-key argument missing!"
-        echo "Info: Feed Mount options are not implemented."
-        exit 1
-    fi
-
-    echo "Info: Install Feed Key..."
-    if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
-        base64 -d "${FEED_KEY}" > "${CERT_DIR_PRODUCT}/feed.key"
-        chmod 0600 "${CERT_DIR_PRODUCT}/feed.key"
-    else
-        install -m 0600 "${FEED_KEY}" "${CERT_DIR_PRODUCT}/feed.key"
-    fi
-}
-
-# =============================================================================
 # init_jwt()
 # =============================================================================
 # Generates the ECDSA key pair used for JWT signing and verification.
@@ -213,32 +168,4 @@ init_jwt() {
         -outform PEM \
         -out "${CERT_DIR_PRODUCT}/ecdsa.public.pem" \
         >/dev/null 2>&1
-}
-
-# =============================================================================
-# load_feed_key()
-# =============================================================================
-# Loads the feed key for volume-based feed synchronization.
-#
-# If FEED_MODE is set to 'volume', the function reads the feed key from the
-# product certificate directory and exports its contents for use by the feed
-# synchronization service.
-#
-# Arguments:
-#   None.
-#
-# Returns:
-#   None.
-#
-# Exits:
-#   1 if FEED_MODE is 'volume' and the feed key file is missing.
-load_feed_key() {
-    if [ "$FEED_MODE" == 'volume' ]; then
-        if [ -f "${CERT_DIR_PRODUCT}/feed.key" ]; then
-            export FEED_SYNC_GSF_KEY="$(< "${CERT_DIR_PRODUCT}/feed.key")"
-        else
-            echo "Error: No Feed key found at ${CERT_DIR_PRODUCT}/feed.key! Please run --init!"
-            exit 1
-        fi
-    fi
 }
