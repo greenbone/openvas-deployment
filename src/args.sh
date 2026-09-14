@@ -259,15 +259,13 @@ parse_args() {
 # =============================================================================
 # run()
 # =============================================================================
-# Executes the main operation selected by MODE.
+# Executes the operation selected by MODE.
 #
-# The function first verifies runtime requirements and updates global
-# configuration values. It then dispatches execution to the function
-# corresponding to the selected MODE.
+# The function verifies runtime requirements, updates global configuration,
+# and dispatches execution to the handler associated with MODE.
 #
-# Supported operations include initialization, OpenVASD archive and
-# certificate handling, deployment lifecycle actions, feed synchronization,
-# certificate updates, password changes, log output, and service status.
+# The OpenVASD management, administrator password, and feed synchronization
+# modes are supported only for the enterprise-container product.
 #
 # Arguments:
 #   None.
@@ -276,7 +274,8 @@ parse_args() {
 #   None.
 #
 # Notes:
-#   If MODE is empty, show_help is called.
+#   If MODE is empty, show_help is called. Unsupported product-specific modes
+#   print an informational message and terminate with exit status 1.
 run() {
     check_requirements
 
