@@ -144,6 +144,24 @@ compose_ps() {
     popd > /dev/null
 }
 
+compose_recreate_container() {
+    local container="${1:?Error: container argument is required}"
+    local log="${2:-n}"
+
+    get_latest_version
+
+    load_settings
+    load_secrets
+    load_certs
+
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        docker compose up -d --force-recreate "${container}"
+        if [ "${log}" == "y" ]; then
+            docker compose logs -f "${container}"
+        fi
+    popd > /dev/null
+}
+
 # =============================================================================
 # init_docker_oci()
 # =============================================================================
