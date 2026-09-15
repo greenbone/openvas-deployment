@@ -28,6 +28,40 @@ init_certs_scan() {
     openssl x509 -req -in "${CERT_DIR_PRODUCT}/client.csr" -out "${CERT_DIR_PRODUCT}/client.crt" -days 365 \
         -CA "${CERT_DIR_PRODUCT}/ca.crt" -CAkey "${CERT_DIR_PRODUCT}/ca.key" \
         -extfile <(printf '%s\n' "basicConstraints=CA:FALSE" "extendedKeyUsage=clientAuth" "keyUsage=digitalSignature,keyEncipherment") 2>/dev/null
+
+    init_jwt
+}
+
+# =============================================================================
+# init_jwt()
+# =============================================================================
+# Generates the ECDSA key pair used for JWT signing and verification.
+#
+# The function creates a private EC key using the P-256 curve and stores it in
+# CERT_DIR_PRODUCT. It then derives and writes the corresponding public key in
+# PEM format.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+init_jwt() {
+    echo "Info: Install JWT..."
+    openssl genpkey \
+        -algorithm EC \
+        -outform PEM \
+        -quiet \
+        -out "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
+        -pkeyopt ec_paramgen_curve:"P-256" \
+        -pkeyopt ec_param_enc:named_curve \
+        >/dev/null 2>&1
+    openssl ec \
+        -in "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
+        -pubout \
+        -outform PEM \
+        -out "${CERT_DIR_PRODUCT}/ecdsa.public.pem" \
+        >/dev/null 2>&1
 }
 
 # =============================================================================

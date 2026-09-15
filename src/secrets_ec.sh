@@ -13,6 +13,10 @@
 #   None.
 init_secrets_ec() {
     echo "Info: Init secrets EC"
+
+    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+        init_secrets_scan
+    fi
 }
 
 # =============================================================================

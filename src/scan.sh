@@ -77,36 +77,6 @@ force_feed_sync() {
 }
 
 # =============================================================================
-# init_admin_password_scan()
-# =============================================================================
-# Initializes the gvmd administrator password for a scan deployment.
-#
-# If GVMD_ADMIN_PASSWORD is already set, the function stores the configured
-# password in SETTINGS_DIR.
-#
-# Otherwise, the function generates a random 16-character alphanumeric
-# password, stores it in SETTINGS_DIR/GVMD_ADMIN_PASSWORD, loads it into
-# GVMD_ADMIN_PASSWORD, and prints the generated password.
-#
-# Arguments:
-#   None.
-#
-# Returns:
-#   None.
-init_admin_password_scan() {
-    if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
-    else
-        echo "Info: No admin password set. Create random."
-        set +e
-        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
-        set -e
-        GVMD_ADMIN_PASSWORD="$(< "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD")"
-        echo "Your admin password is: ${GVMD_ADMIN_PASSWORD}"
-    fi
-}
-
-# =============================================================================
 # init_feed_sync_hour()
 # =============================================================================
 # Validates and stores the configured feed synchronization hour.
@@ -136,36 +106,4 @@ init_feed_sync_hour() {
         echo "Error: No feed sync hour set. Please run --change-feed-sync-hour or --init with --feed-sync-hour."
         exit 1
     fi
-}
-
-# =============================================================================
-# init_jwt()
-# =============================================================================
-# Generates the ECDSA key pair used for JWT signing and verification.
-#
-# The function creates a private EC key using the P-256 curve and stores it in
-# CERT_DIR_PRODUCT. It then derives and writes the corresponding public key in
-# PEM format.
-#
-# Arguments:
-#   None.
-#
-# Returns:
-#   None.
-init_jwt() {
-    echo "Info: Install JWT..."
-    openssl genpkey \
-        -algorithm EC \
-        -outform PEM \
-        -quiet \
-        -out "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
-        -pkeyopt ec_paramgen_curve:"P-256" \
-        -pkeyopt ec_param_enc:named_curve \
-        >/dev/null 2>&1
-    openssl ec \
-        -in "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
-        -pubout \
-        -outform PEM \
-        -out "${CERT_DIR_PRODUCT}/ecdsa.public.pem" \
-        >/dev/null 2>&1
 }
