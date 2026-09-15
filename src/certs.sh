@@ -158,25 +158,25 @@ load_certs_ingress() {
 # =============================================================================
 # Updates the ingress TLS certificate and private key.
 #
-# The function validates the provided ingress server certificate and private
-# key, then installs them into CERT_DIR_PRODUCT using restrictive file
-# permissions.
+# The function validates the configured ingress server certificate and private
+# key, then installs them into CERT_DIR_PRODUCT with restrictive permissions.
 #
-# After installing the certificates, the function prompts the user to redeploy
-# the compose stack so the new certificates become active. If confirmed,
-# deploy is called.
+# The first argument controls whether the ingress container is recreated after
+# the certificates are installed and defaults to UPDATE_INGRESS_CERT_REDEPLOY.
+# If neither value is set, the user is prompted whether to recreate the ingress
+# container. The container is recreated only when the resulting value is "y".
 #
 # Arguments:
 #   $1
-#     Update ingress cert redeploy stack.
+#     Optional ingress container redeploy setting.
 #     Defaults to UPDATE_INGRESS_CERT_REDEPLOY.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if INGRESS_TLS_SERVER_CERT is not set to an existing file.
-#   1 if INGRESS_TLS_SERVER_KEY is not set to an existing file.
+#   1 if INGRESS_TLS_SERVER_CERT does not reference an existing file.
+#   1 if INGRESS_TLS_SERVER_KEY does not reference an existing file.
 update_ingress_certs() {
     local update_ingress_cert_redeploy="${1:-$UPDATE_INGRESS_CERT_REDEPLOY}"
 
