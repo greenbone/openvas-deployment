@@ -56,7 +56,6 @@ init_feed_key(){
         exit 1
     fi
 
-    echo "Info: Install Feed Key..."
     if base64 -d "${FEED_KEY}" >/dev/null 2>&1; then
         base64 -d "${FEED_KEY}" > "${CERT_DIR_PRODUCT}/feed.key"
         chmod 0600 "${CERT_DIR_PRODUCT}/feed.key"
