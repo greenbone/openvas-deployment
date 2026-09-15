@@ -1,22 +1,19 @@
 # =============================================================================
-# init_certs_scan()
+# init_ca_gvmd_openvasd_auth()
 # =============================================================================
-# Generates the CA and client TLS certificates required for scan deployments.
+# Creates the certificate authority and client certificates used for
+# authentication between gvmd and openvasd.
 #
-# The function creates a self-signed Enterprise-Container CA certificate and
-# private key, then generates a client certificate and private key signed by
-# that CA. The client certificate is configured for TLS client authentication.
-#
-# Generated certificates are valid for 365 days and are stored in
-# CERT_DIR_PRODUCT.
+# The function generates a self-signed CA certificate and a client certificate
+# signed by that CA. The generated certificates and private keys are stored in
+# CERT_DIR_PRODUCT and are valid for 365 days.
 #
 # Arguments:
 #   None.
 #
 # Returns:
 #   None.
-init_certs_scan() {
-    echo "Info: Install Enterprise-Container TLS certificates..."
+init_ca_gvmd_openvasd_auth() {
     openssl genrsa -out "${CERT_DIR_PRODUCT}/ca.key" 2048 2>/dev/null
     openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ca.key" -out "${CERT_DIR_PRODUCT}/ca.crt" -days 365 \
        -addext "basicConstraints=CA:TRUE" \
@@ -28,7 +25,23 @@ init_certs_scan() {
     openssl x509 -req -in "${CERT_DIR_PRODUCT}/client.csr" -out "${CERT_DIR_PRODUCT}/client.crt" -days 365 \
         -CA "${CERT_DIR_PRODUCT}/ca.crt" -CAkey "${CERT_DIR_PRODUCT}/ca.key" \
         -extfile <(printf '%s\n' "basicConstraints=CA:FALSE" "extendedKeyUsage=clientAuth" "keyUsage=digitalSignature,keyEncipherment") 2>/dev/null
+}
 
+# =============================================================================
+# init_certs_scan()
+# =============================================================================
+# Initializes certificates and authentication material required for scanning.
+#
+# The function creates the CA and client certificates used for gvmd/openvasd
+# authentication and initializes the JWT material.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+init_certs_scan() {
+    init_ca_gvmd_openvasd_auth
     init_jwt
 }
 
@@ -47,7 +60,6 @@ init_certs_scan() {
 # Returns:
 #   None.
 init_jwt() {
-    echo "Info: Install JWT..."
     openssl genpkey \
         -algorithm EC \
         -outform PEM \

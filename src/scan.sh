@@ -51,22 +51,16 @@ change_feed_sync_hour() {
 # =============================================================================
 # Restarts the feed synchronization service for the latest product deployment.
 #
-# The function determines the latest locally available product version, loads
-# the current settings, and restarts the feed-sync service in the corresponding
-# Docker Compose stack.
-#
-# Unless FEED_SYNC_FORCE_LOG is set to 'n', the function does not prompt for
-# log output. When it is set to 'n', the user is asked whether to follow the
-# feed-sync container logs after the restart.
+# The function uses the first argument as the log-follow setting, falling back
+# to FEED_SYNC_FORCE_LOG when no argument is provided. If neither is set, the
+# user is prompted whether to follow the feed-sync container logs after the
+# restart.
 #
 # Arguments:
-#   None.
+#   $1  Optional log-follow setting. Defaults to FEED_SYNC_FORCE_LOG.
 #
 # Returns:
 #   None.
-#
-# Exits:
-#   Exits if changing to the artifact directory fails.
 force_feed_sync() {
     local feed_sync_force_log="${1:-$FEED_SYNC_FORCE_LOG}"
 
