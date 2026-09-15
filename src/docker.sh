@@ -145,6 +145,47 @@ compose_ps() {
 }
 
 # =============================================================================
+# compose_recreate_container()
+# =============================================================================
+# Recreates a container for the selected OpenVAS product deployment.
+#
+# The function determines the latest locally available product version, loads
+# the deployment settings, secrets, and certificates, and runs Docker Compose
+# from the corresponding artifact directory to force-recreate the specified
+# container.
+#
+# Optionally, the function can follow the container logs after recreation.
+#
+# Arguments:
+#   $1  Name of the container or Compose service to recreate.
+#   $2  Optional. Set to "y" to follow the container logs after recreation.
+#       Defaults to "n".
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   Exits if the container argument is missing or changing to the artifact
+#   directory fails.
+compose_recreate_container() {
+    local container="${1:?Error: container argument is required}"
+    local log="${2:-n}"
+
+    get_latest_version
+
+    load_settings
+    load_secrets
+    load_certs
+
+    pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        docker compose --env-file settings.env up -d --force-recreate "${container}"
+        if [ "${log}" == "y" ]; then
+            docker compose --env-file settings.env logs -f "${container}"
+        fi
+    popd > /dev/null
+}
+
+# =============================================================================
 # init_docker_oci()
 # =============================================================================
 # Installs the OCI TLS client certificate and private key for Docker daemon
@@ -172,7 +213,7 @@ init_docker_oci() {
     fi
 
     if [ "${INIT_DOCKER_OCI}" == 'y' ]; then
-        echo "Info: Install OCI TLS certificates into dockerd..."
+        echo "Info: Install OCI TLS certificates into dockerd"
         sudo mkdir -p "${DOCKER_CERTS}"
         sudo install -m 0600 "${CERT_DIR_OCI}/client.crt" "${DOCKER_CERTS}/client.cert"
         sudo install -m 0600 "${CERT_DIR_OCI}/client.key" "${DOCKER_CERTS}/client.key"

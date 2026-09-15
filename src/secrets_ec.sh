@@ -1,10 +1,10 @@
 # =============================================================================
 # init_secrets_ec()
 # =============================================================================
-# Initializes secrets for the enterprise-container product.
+# Initializes secrets required by the Enterprise Container deployment.
 #
-# The function currently performs no secret generation or persistence and only
-# reports that enterprise-container secret initialization has started.
+# For scan deployments, the function initializes the scan-specific secrets.
+# For other deployment modes, no additional secrets are initialized.
 #
 # Arguments:
 #   None.
@@ -13,15 +13,19 @@
 #   None.
 init_secrets_ec() {
     echo "Info: Init secrets EC"
+
+    if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
+        init_secrets_scan
+    fi
 }
 
 # =============================================================================
 # load_secrets_ec()
 # =============================================================================
-# Loads secrets for the enterprise-container product.
+# Loads secrets required by the Enterprise Container deployment.
 #
-# The function currently performs no secret loading and only reports that
-# enterprise-container secrets are being loaded.
+# For scan deployments, the function loads the scan-specific secrets.
+# For other deployment modes, no additional secrets are loaded.
 #
 # Arguments:
 #   None.

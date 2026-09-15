@@ -1,4 +1,32 @@
 # =============================================================================
+# init_secrets_scan()
+# =============================================================================
+# Initializes the GVMD administrator password secret for the scan deployment.
+#
+# If GVMD_ADMIN_PASSWORD is already set, the function writes its value to the
+# corresponding secret file. Otherwise, it generates a random 16-character
+# alphanumeric password, stores it in the secret file, assigns it to
+# GVMD_ADMIN_PASSWORD, and prints the generated password.
+#
+# Arguments:
+#   None.
+#
+# Returns:
+#   None.
+init_secrets_scan() {
+    if [ "${GVMD_ADMIN_PASSWORD}" ]; then
+        echo "${GVMD_ADMIN_PASSWORD}" > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
+    else
+        echo "Info: No admin password set. Create random."
+        set +e
+        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
+        set -e
+        GVMD_ADMIN_PASSWORD="$(< "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD")"
+        echo "Your admin password is: ${GVMD_ADMIN_PASSWORD}"
+    fi
+}
+
+# =============================================================================
 # load_secrets_scan()
 # =============================================================================
 # Loads the administrator password required for scan deployments.

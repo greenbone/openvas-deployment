@@ -215,10 +215,10 @@ chmod 0600 /path/to/license-file
 | ---------------------------- | --------------------------- |
 | `--ingress-server-cert FILE` | Ingress server certificate. During `--init`, provide this together with `--ingress-server-key`; otherwise a self-signed certificate pair is generated. |
 | `--ingress-server-key FILE`  | Ingress server private key. During `--init`, provide this together with `--ingress-server-cert`; otherwise a self-signed certificate pair is generated. |
-| `--update-ingress-cert-redeploy` | With `--update-ingress-certs`, redeploy immediately after replacing the certificates. |
-| `--skip-update-ingress-cert-redeploy` | With `--update-ingress-certs`, replace the certificates without redeploying. |
+| `--update-ingress-cert-redeploy` | With `--update-ingress-certs`, redeploy the container immediately after replacing the certificates. |
+| `--skip-update-ingress-cert-redeploy` | With `--update-ingress-certs`, replace the certificates without redeploying the container. |
 
-If custom ingress certificates are not supplied during initialization, the utility generates a self-signed RSA certificate and key valid for 365 days. With `--update-ingress-certs`, both certificate files must exist. If neither redeploy option is supplied, the utility asks whether the compose stack should be redeployed.
+If custom ingress certificates are not supplied during initialization, the utility generates a self-signed RSA certificate and key valid for 365 days. With `--update-ingress-certs`, both certificate files must exist. If neither redeploy option is supplied, the utility asks whether the container should be redeployed.
 
 ## OpenVASD options
 
@@ -367,7 +367,7 @@ Both files must be supplied together. If either is missing, initialization creat
 
 ### Replace ingress certificates
 
-Replace the files and choose interactively whether to redeploy:
+Replace the files and choose interactively whether to redeploy the container:
 
 ```bash
 openvas-deployment --update-ingress-certs \
