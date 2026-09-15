@@ -178,9 +178,9 @@ compose_recreate_container() {
     load_certs
 
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        docker compose up -d --force-recreate "${container}"
+        docker compose --env-file settings.env up -d --force-recreate "${container}"
         if [ "${log}" == "y" ]; then
-            docker compose logs -f "${container}"
+            docker compose --env-file settings.env logs -f "${container}"
         fi
     popd > /dev/null
 }
