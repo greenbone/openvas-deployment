@@ -55,7 +55,7 @@ change_feed_sync_hour() {
 # the current settings, and restarts the feed-sync service in the corresponding
 # Docker Compose stack.
 #
-# Unless FEED_SYNC_FORCE_NO_LOG is set to 'n', the function does not prompt for
+# Unless FEED_SYNC_FORCE_LOG is set to 'n', the function does not prompt for
 # log output. When it is set to 'n', the user is asked whether to follow the
 # feed-sync container logs after the restart.
 #
@@ -68,12 +68,12 @@ change_feed_sync_hour() {
 # Exits:
 #   Exits if changing to the artifact directory fails.
 force_feed_sync() {
-    local feed_sync_force_no_log="${1:-$FEED_SYNC_FORCE_NO_LOG}"
+    local feed_sync_force_log="${1:-$FEED_SYNC_FORCE_LOG}"
 
-    if ! [ "${feed_sync_force_no_log}" ]; then
-        read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" feed_sync_force_no_log
+    if ! [ "${feed_sync_force_log}" ]; then
+        read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" feed_sync_force_log
     fi
-    compose_recreate_container 'feed-sync' "${feed_sync_force_no_log}"
+    compose_recreate_container 'feed-sync' "${feed_sync_force_log}"
 }
 
 # =============================================================================

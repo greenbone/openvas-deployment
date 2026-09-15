@@ -98,7 +98,7 @@ parse_args() {
                 shift 1
                 ;;
             --feed-sync-force-no-log)
-                FEED_SYNC_FORCE_NO_LOG='n'
+                FEED_SYNC_FORCE_LOG='n'
                 shift 1
                 ;;
             --feed-sync-hour)
