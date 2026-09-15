@@ -48,7 +48,6 @@ init_certs() {
 # Returns:
 #   None.
 init_certs_ingress() {
-    echo "Info: Install Ingress TLS certificates..."
     if [ -f "${INGRESS_TLS_SERVER_CERT}" ] && [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
         echo "Info: Using Ingress certs ${INGRESS_TLS_SERVER_CERT} and ${INGRESS_TLS_SERVER_KEY} ..."
         install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
@@ -90,7 +89,6 @@ init_oci_certs(){
         exit 1
     fi
 
-    echo "Info: Install OCI TLS certificates..."
     install -m 0600 "${OCI_TLS_CLIENT_CERT}" "${CERT_DIR_OCI}/client.crt"
     install -m 0600 "${OCI_TLS_CLIENT_KEY}" "${CERT_DIR_OCI}/client.key"
 }

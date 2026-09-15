@@ -213,7 +213,7 @@ init_docker_oci() {
     fi
 
     if [ "${INIT_DOCKER_OCI}" == 'y' ]; then
-        echo "Info: Install OCI TLS certificates into dockerd..."
+        echo "Info: Install OCI TLS certificates into dockerd"
         sudo mkdir -p "${DOCKER_CERTS}"
         sudo install -m 0600 "${CERT_DIR_OCI}/client.crt" "${DOCKER_CERTS}/client.cert"
         sudo install -m 0600 "${CERT_DIR_OCI}/client.key" "${DOCKER_CERTS}/client.key"
