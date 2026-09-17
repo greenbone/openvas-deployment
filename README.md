@@ -135,8 +135,8 @@ Use one action per invocation.
 | `--force-feed-sync`          | Restart feed synchronization immediately.                                                                                       |
 | `--create-openvasd-certs`    | Create TLS certificates for an OpenVASD scanner using the enterprise-container scan CA. Requires `--cn-openvasd`.               |
 | `--create-openvasd-cert-tar` | Create an OpenVASD certificate archive in the current directory. Requires `--cn-openvasd`.                                      |
-| `--create-openvasd-tar`      | Create a portable OpenVASD deployment archive in the current directory. Requires .                                              |
-| `--init-openvasd-tar`        | Install Docker OCI client credentials for an extracted OpenVASD deployment archive. Created with `--create-openvasd-tar`        |
+| `--create-openvasd-tar`      | Create a portable OpenVASD deployment archive in the current directory. Requires `--cn-openvasd`.                              |
+| `--init-openvasd-tar`        | Install Docker OCI client credentials for an extracted OpenVASD deployment archive created with `--create-openvasd-tar`.        |
 | `--get-openvasds`            | List OpenVASD scanners registered in `gvmd`. Requires the enterprise-container scan `gvmd` container to be running.             |
 | `--add-openvasd`             | Register an OpenVASD scanner in `gvmd`. Requires `--cn-openvasd`, `--openvasd-port`, and a reachable ready scanner.             |
 | `--del-openvasd`             | Remove an OpenVASD scanner from `gvmd`. Requires `--openvasd-uuid`. |
