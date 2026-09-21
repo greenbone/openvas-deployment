@@ -32,13 +32,16 @@ gvmd_add_openvasd_host_to_etc_hosts() {
     fi
 }
 
-run() {
+init() {
     echo_task 'Test Init'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
         --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
         --product enterprise-container --deployment-mode scan
     echo_task 'Test Update'
     openvas-deployment --update
+}
+
+run() {
     echo_task 'Test Run'
     openvas-deployment --run
 }
@@ -173,14 +176,17 @@ run_openvasd_tar_with_images() {
 }
 
 check_req
+init
 run
-change_admin_pw
-change_feed_sync_hour
-change_force_feed_sync
-gen_certs_ingress
-update_ingress_certs
-run_openvasd_cert_tar
-run_openvasd_tar
-run_openvasd_tar_with_images
+if [ "$SKIP" != 'run' ]; then
+    change_admin_pw
+    change_feed_sync_hour
+    change_force_feed_sync
+    gen_certs_ingress
+    update_ingress_certs
+    run_openvasd_cert_tar
+    run_openvasd_tar
+    run_openvasd_tar_with_images
+fi
 list 'Openvasd scan'
 clean 'Openvasd scan'
