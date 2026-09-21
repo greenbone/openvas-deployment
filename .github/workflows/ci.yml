@@ -54,6 +54,10 @@ jobs:
           tar -zxf "$FILE" -C oras-install/
           sudo install -o 0 -g 0 -m 0755 oras-install/oras /usr/local/bin/oras
           rm -rf "$FILE" oras-install/
+
+      - name: Install binfmt
+        if: matrix.runner == 'ubuntu-24.04-arm' || matrix.runner == 'ubuntu-22.04-arm' || matrix.runner == 'self-hosted-generic-vm-arm64'
+        run: |
           docker run --privileged --rm tonistiigi/binfmt --install amd64
 
       - name: Install
