@@ -177,7 +177,7 @@ run_openvasd_tar_with_images() {
 
 check_req
 init
-if [ "$SKIP" != 'run' ]; then
+if [ "${SKIP:-}" != 'run' ]; then
     run
     change_admin_pw
     change_feed_sync_hour
