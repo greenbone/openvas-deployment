@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: self-hosted-generic-vm-amd64
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: true
       matrix:
