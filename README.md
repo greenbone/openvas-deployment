@@ -7,6 +7,8 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 
 > [!IMPORTANT]
 > Requires compose version 5.3.1 and higher!
+> Requires bash version 5.1 and higher!
+> OSI requires an accurate system clock. Check the current system time with date and ensure that NTP synchronization is enabled, for example using systemd-timesyncd.
 
 ## Table of contents
 
