@@ -14,13 +14,13 @@ jobs:
       matrix:
         include:
           - product: ec
-            runner: ubuntu22
+            runner: ubuntu-22.04
           - product: ec
-            runner: ubuntu24
+            runner: ubuntu-24.04
           - product: ec
-            runner: ubuntu22-arm
+            runner: ubuntu-22.04-arm
           - product: ec
-            runner: ubuntu24-arm
+            runner: ubuntu-24.04-arm
           - product: ec
             runner: self-hosted-generic-vm-amd64
           - product: osi
