@@ -54,6 +54,7 @@ jobs:
           tar -zxf "$FILE" -C oras-install/
           sudo install -o 0 -g 0 -m 0755 oras-install/oras /usr/local/bin/oras
           rm -rf "$FILE" oras-install/
+          docker run --privileged --rm tonistiigi/binfmt --install amd64
 
       - name: Install
         run: |
