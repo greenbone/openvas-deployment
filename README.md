@@ -6,9 +6,9 @@ This script is intended for demonstration purposes until the standard deployment
 The utility initializes, updates, starts, stops, and manages an enterprise-container or security-intelligence deployment. It also supports feed synchronization, TLS certificate management, administrator password changes, deployment logs and status, and OpenVASD scanner registration.
 
 > [!IMPORTANT]
-> Requires compose version 5.3.1 and higher!
-> Requires bash version 5.1 and higher!
-> OSI requires an accurate system clock. Check the current system time with date and ensure that NTP synchronization is enabled, for example using systemd-timesyncd.
+> - Requires compose version 5.3.1 and higher!
+> - Requires bash version 5.1 and higher!
+> - OSI requires an accurate system clock. Check the current system time with date and ensure that NTP synchronization is enabled, for example using systemd-timesyncd.
 
 ## Table of contents
 
