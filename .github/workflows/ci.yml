@@ -18,6 +18,7 @@ jobs:
             skip: run
           - product: ec
             runner: ubuntu-24.04
+            skip: run
           - product: ec
             skip: run
             runner: ubuntu-22.04-arm
