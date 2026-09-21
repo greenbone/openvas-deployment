@@ -9,11 +9,23 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ubuntu-22.04
     strategy:
       fail-fast: true
       matrix:
-        product: [osi, ec]
+        include:
+          - product: ec
+            runner: ubuntu22
+          - product: ec
+            runner: ubuntu24
+          - product: ec
+            runner: ubuntu22-arm
+          - product: ec
+            runner: ubuntu24-arm
+          - product: ec
+            runner: self-hosted-generic-vm-amd64
+          - product: osi
+            runner: self-hosted-generic-vm-amd64
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
