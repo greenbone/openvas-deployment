@@ -27,6 +27,8 @@ jobs:
             skip: run
           - product: ec
             runner: self-hosted-generic-vm-amd64
+          - product: ec
+            runner: self-hosted-generic-vm-arm64
           - product: osi
             runner: self-hosted-generic-vm-amd64
     runs-on: ${{ matrix.runner }}
