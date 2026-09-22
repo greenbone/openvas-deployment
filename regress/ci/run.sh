@@ -4,22 +4,25 @@ set -euo pipefail
 source /etc/os-release
 case "$ID" in
     fedora)
-        dnf install -y --allowerasing bash make ca-certificates curl tar gzip zstd less gawk tree \
-            iproute coreutils findutils grep sed openssl sudo git make
-        export SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt
-        export SSL_CERT_DIR=/etc/pki/ca-trust/extracted/pem
+        dnf install -y --allowerasing \
+            bash make ca-certificates curl tar gzip zstd less gawk tree \
+            iproute coreutils findutils grep sed openssl sudo git
+        export SSL_CERT_FILE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+        export SSL_CERT_DIR=/etc/pki/tls/certs
         ;;
     ubuntu|debian)
         export DEBIAN_FRONTEND=noninteractive
         apt-get update
-        apt-get install -y --no-install-recommends bash make ca-certificates curl make \
-            tar gzip zstd less gawk tree iproute2 coreutils findutils grep sed openssl sudo git
+        apt-get install -y --no-install-recommends \
+            bash make ca-certificates curl tar gzip zstd less gawk tree \
+            iproute2 coreutils findutils grep sed openssl sudo git
         export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
         export SSL_CERT_DIR=/etc/ssl/certs
         ;;
     arch)
-        pacman -Syu --noconfirm --needed bash make ca-certificates curl tar gzip make \
-            zstd less gawk tree iproute2 coreutils findutils grep sed openssl sudo git
+        pacman -Syu --noconfirm --needed \
+            bash make ca-certificates curl tar gzip zstd less gawk tree \
+            iproute2 coreutils findutils grep sed openssl sudo git
         export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
         export SSL_CERT_DIR=/etc/ssl/certs
         ;;
