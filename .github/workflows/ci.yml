@@ -13,6 +13,7 @@ jobs:
       fail-fast: true
       matrix:
         include:
+          # OEC
           - image: fedora:43
             product: ec
             runner: self-hosted-generic-vm-amd64
@@ -34,6 +35,14 @@ jobs:
           - image: debian:13
             product: ec
             runner: self-hosted-generic-vm-amd64
+          # OSI
+          - image: debian:12
+            product: osi
+            runner: self-hosted-generic-vm-amd64
+          - image: archlinux:latest
+            product: osi
+            runner: self-hosted-generic-vm-amd64
+
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
@@ -49,19 +58,20 @@ jobs:
           echo '${{ secrets.FEED_KEY }}' > gsf.key
           echo '${{ secrets.OCI_CERT }}' > oci-client.cert
           echo '${{ secrets.OCI_KEY }}' > oci-client.key
+          echo '${{ secrets.OEC_LICENSE }}' > oec-license.toml
 
       - name: Run regression test ${{ matrix.product }}
-        env:
-          MHOSTS: 'yes'
         run: |
           docker run --rm \
             --name openvas-deployment-ci \
             --network host \
             --user 0 \
             -e HOME=/root \
+            -e MHOSTS=yes \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /etc/docker/certs.d:/etc/docker/certs.d \
             -v /etc/ssl/certs/ca-certificates.crt:/host-ca-certificates.crt:ro \
+            -v /etc/hosts:/etc/hosts \
             -v "$(pwd)":/workspace \
             -w /workspace \
             ${{ matrix.image }} \
