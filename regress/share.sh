@@ -11,6 +11,7 @@ echo_error() {
 clean() {
     echo_task 'Test down volumes'
     openvas-deployment --down-volumes
+    rm -rf product
 }
 
 list() {

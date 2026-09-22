@@ -18,6 +18,9 @@ check_req() {
     elif ! [ -f 'oci-client.key' ]; then
         echo_error "No oci-client.key found"
         exit 1
+    elif ! [ -f 'oec-license.toml' ]; then
+        echo_error "No oec-license.toml found"
+        exit 1
     fi
 }
 
@@ -26,7 +29,7 @@ gvmd_add_openvasd_host_to_etc_hosts() {
     local ip="${2:?Missing IP argument}"
 
     docker exec -u 0 enterprise-container-scan-gvmd-1 sh -c "chmod 0666 /etc/hosts && echo \"$ip $domain\" >> /etc/hosts"
-    if [ "$MHOSTS" ]; then
+    if [ "${MHOSTS:-}" ]; then
         sudo chmod 0666 /etc/hosts
         echo "$ip $domain" >> /etc/hosts
     fi
@@ -36,6 +39,15 @@ init() {
     echo_task 'Test Init'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
         --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
+        --product enterprise-container --deployment-mode scan
+    echo_task 'Test Update'
+    openvas-deployment --update
+}
+
+init_license() {
+    echo_task 'Test Init license file'
+    openvas-deployment --init --init-docker-oci --feed-key gsf.key \
+        --license-file oec-license.toml \
         --product enterprise-container --deployment-mode scan
     echo_task 'Test Update'
     openvas-deployment --update
@@ -177,6 +189,9 @@ run_openvasd_tar_with_images() {
 
 check_req
 init
+list 'Openvasd scan'
+clean 'Openvasd scan'
+init_license
 if [ "${SKIP:-}" != 'run' ]; then
     run
     change_admin_pw
