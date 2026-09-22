@@ -14,33 +14,37 @@ jobs:
       matrix:
         include:
           # OEC
-          - image: fedora:43
-            product: ec
+          - product: ec
+            image: fedora:43
             runner: self-hosted-generic-vm-amd64
-          - image: fedora:44
-            product: ec
+            skip: run
+          - product: ec
+            image: fedora:44
             runner: self-hosted-generic-vm-amd64
-          - image: ubuntu:22.04
-            product: ec
+            skip: run
+          - product: ec
+            image: ubuntu:22.04
             runner: self-hosted-generic-vm-amd64
-          - image: ubuntu:24.04
-            product: ec
+            skip: run
+          - product: ec
+            image: archlinux:latest
             runner: self-hosted-generic-vm-amd64
-          - image: archlinux:latest
-            product: ec
+          - product: ec
+            image: debian:12
             runner: self-hosted-generic-vm-amd64
-          - image: debian:12
-            product: ec
+          - product: ec
+            image: debian:13
             runner: self-hosted-generic-vm-amd64
-          - image: debian:13
-            product: ec
-            runner: self-hosted-generic-vm-amd64
+          # OEC ARM64
+          - product: ec
+            image: ubuntu:24.04
+            runner: self-hosted-generic-vm-arm64
           # OSI
-          - image: debian:12
-            product: osi
+          - product: osi
+            image: debian:12
             runner: self-hosted-generic-vm-amd64
-          - image: archlinux:latest
-            product: osi
+          - product: osi
+            image: archlinux:latest
             runner: self-hosted-generic-vm-amd64
 
     runs-on: ${{ matrix.runner }}
@@ -54,11 +58,18 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0 --install amd64
 
       - name: Install test Certs
+        env:
+          FEED_KEY: ${{ secrets.FEED_KEY }}
+          OCI_CERT: ${{ secrets.OCI_CERT }}
+          OCI_KEY: ${{ secrets.OCI_KEY }}
+          OEC_LICENSE: ${{ secrets.OEC_LICENSE }}
+          OSI_LICENSE: ${{ secrets.OSI_LICENSE }}
         run: |
-          echo '${{ secrets.FEED_KEY }}' > gsf.key
-          echo '${{ secrets.OCI_CERT }}' > oci-client.cert
-          echo '${{ secrets.OCI_KEY }}' > oci-client.key
-          echo '${{ secrets.OEC_LICENSE }}' > oec-license.toml
+          printf '%s\n' "$FEED_KEY" > gsf.key
+          printf '%s\n' "$OCI_CERT" > oci-client.cert
+          printf '%s\n' "$OCI_KEY" > oci-client.key
+          printf '%s\n' "$OEC_LICENSE" > oec-license.toml
+          printf '%s\n' "$OSI_LICENSE" > osi-license.toml
 
       - name: Run regression test ${{ matrix.product }}
         run: |
@@ -68,6 +79,7 @@ jobs:
             --user 0 \
             -e HOME=/root \
             -e MHOSTS=yes \
+            -e SKIP=${{ matrix.skip }} \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /etc/docker/certs.d:/etc/docker/certs.d \
             -v /etc/ssl/certs/ca-certificates.crt:/host-ca-certificates.crt:ro \
