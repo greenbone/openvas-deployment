@@ -64,4 +64,4 @@ jobs:
             -v "$(pwd)":/workspace \
             -w /workspace \
             ${{ matrix.image }} \
-            bash -c 'bash regress/ci/install-dependencies.sh && bash regress/${{ matrix.product }}.sh'
+            sh -c 'bash regress/ci/run.sh "${{ matrix.product }}"'

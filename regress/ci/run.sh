@@ -6,16 +6,22 @@ case "$ID" in
     fedora)
         dnf install -y --allowerasing bash make ca-certificates curl tar gzip zstd less gawk tree \
             iproute coreutils findutils grep sed openssl sudo git make
+        export SSL_CERT_FILE=/etc/pki/tls/certs/ca-bundle.crt
+        export SSL_CERT_DIR=/etc/pki/ca-trust/extracted/pem
         ;;
     ubuntu|debian)
         export DEBIAN_FRONTEND=noninteractive
         apt-get update
         apt-get install -y --no-install-recommends bash make ca-certificates curl make \
             tar gzip zstd less gawk tree iproute2 coreutils findutils grep sed openssl sudo git
+        export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+        export SSL_CERT_DIR=/etc/ssl/certs
         ;;
     arch)
         pacman -Syu --noconfirm --needed bash make ca-certificates curl tar gzip make \
             zstd less gawk tree iproute2 coreutils findutils grep sed openssl sudo git
+        export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+        export SSL_CERT_DIR=/etc/ssl/certs
         ;;
     *)
         printf 'Unsupported CI distribution: %s\n' "$ID" >&2
@@ -69,3 +75,6 @@ popd > /dev/null
 # Build
 make
 install -m 0755 openvas-deployment /usr/bin/openvas-deployment
+
+# Run CI
+bash "regress/$1.sh"
