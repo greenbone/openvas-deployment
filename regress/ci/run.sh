@@ -7,8 +7,6 @@ case "$ID" in
         dnf install -y --allowerasing \
             bash make ca-certificates curl tar gzip zstd less gawk tree \
             iproute coreutils findutils grep sed openssl sudo git
-        export SSL_CERT_FILE=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-        export SSL_CERT_DIR=/etc/pki/tls/certs
         ;;
     ubuntu|debian)
         export DEBIAN_FRONTEND=noninteractive
@@ -16,21 +14,19 @@ case "$ID" in
         apt-get install -y --no-install-recommends \
             bash make ca-certificates curl tar gzip zstd less gawk tree \
             iproute2 coreutils findutils grep sed openssl sudo git
-        export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-        export SSL_CERT_DIR=/etc/ssl/certs
         ;;
     arch)
         pacman -Syu --noconfirm --needed \
             bash make ca-certificates curl tar gzip zstd less gawk tree \
             iproute2 coreutils findutils grep sed openssl sudo git
-        export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-        export SSL_CERT_DIR=/etc/ssl/certs
         ;;
     *)
         printf 'Unsupported CI distribution: %s\n' "$ID" >&2
         exit 1
         ;;
 esac
+
+export SSL_CERT_FILE=/host-ca-certificates.crt
 
 case "$(uname -m)" in
     x86_64)

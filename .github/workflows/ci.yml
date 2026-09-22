@@ -61,6 +61,7 @@ jobs:
             -e HOME=/root \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /etc/docker/certs.d:/etc/docker/certs.d \
+            -v /etc/ssl/certs/ca-certificates.crt:/host-ca-certificates.crt:ro \
             -v "$(pwd)":/workspace \
             -w /workspace \
             ${{ matrix.image }} \
