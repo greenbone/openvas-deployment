@@ -188,7 +188,7 @@ openvas-deployment --logs \
 
 | Option                      | Description                                                                          |
 | --------------------------- | ------------------------------------------------------------------------------------ |
-| `--admin-password PASSWORD` | Administrator password used during enterprise-container scan initialization or with `--change-admin-password`. If omitted during initialization, a random 16-character alphanumeric password is generated and printed. |
+| `--admin-password PASSWORD` | Administrator password used during enterprise-container scan initialization or with `--change-admin-password`. If omitted during initialization, a random 32-character alphanumeric password is generated and printed. |
 
 Avoid exposing passwords in shell history. Where practical, use an interactive shell with history disabled temporarily or another protected invocation mechanism.
 
