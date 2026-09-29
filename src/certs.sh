@@ -94,6 +94,38 @@ init_oci_certs(){
 }
 
 # =============================================================================
+# load_cert()
+# =============================================================================
+# Loads a certificate or key file into an environment variable.
+#
+# The function verifies that the specified file exists and is not empty, then
+# exports its contents to the requested environment variable. The certificate
+# directory can be overridden by passing a custom directory path.
+#
+# Arguments:
+#   $1  File name to load from the certificate directory.
+#   $2  Environment variable name to export the file contents to.
+#   $3  Optional certificate directory (defaults to CERT_DIR).
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the specified certificate/key file does not exist or is empty.
+load_cert() {
+    local cert_file="$1"
+    local env_var="$2"
+    local certs_dir="${3:-$CERT_DIR}"
+
+    if [ -s "${certs_dir}/${cert_file}" ]; then
+        export "${env_var}=$(< "${certs_dir}/${cert_file}")"
+    else
+        echo "Error: No certificate found or is empty at ${certs_dir}/${cert_file}! Please run --init!"
+        exit 1
+    fi
+}
+
+# =============================================================================
 # load_certs()
 # =============================================================================
 # Loads the certificate configuration required for the selected product.
@@ -123,32 +155,30 @@ load_certs() {
 # Loads the ingress TLS certificate and private key from the product
 # certificate directory.
 #
-# The function reads the ingress server certificate and private key from
-# CERT_DIR_PRODUCT and exports their contents for use by subsequent deployment
-# operations.
+# The function loads the ingress server certificate and private key using the
+# generic load_cert() helper and exports their contents as environment
+# variables for use by ingress TLS configuration and agent control
+# communication.
+#
+# The same ingress TLS certificate and private key are exported for both the
+# ingress service and the OpenVAS ingress agent control configuration.
 #
 # Arguments:
-#   None.
+#   $1  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the ingress TLS certificate is missing.
-#   1 if the ingress TLS private key is missing.
+#   1 if the ingress TLS certificate file does not exist or is empty.
+#   1 if the ingress TLS private key file does not exist or is empty.
 load_certs_ingress() {
-    if [ -f "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
-        export INGRESS_CERTIFICATE="$(< "${CERT_DIR_PRODUCT}/ingress_server.crt")"
-    else
-        echo "Error: No enterprise-container Ingress TLS certificate found at ${CERT_DIR_PRODUCT}/ingress_server.crt! Please run --init!"
-        exit 1
-    fi
-    if [ -f "${CERT_DIR_PRODUCT}/ingress_server.key" ]; then
-        export INGRESS_PRIVATE_KEY="$(< "${CERT_DIR_PRODUCT}/ingress_server.key")"
-    else
-        echo "Error: No enterprise-container Ingress TLS private key found at ${CERT_DIR_PRODUCT}/ingress_server.key! Please run --init!"
-        exit 1
-    fi
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
+
+    load_cert "ingress_server.crt" "INGRESS_CERTIFICATE" "${cert_dir_product}"
+    load_cert "ingress_server.key" "INGRESS_PRIVATE_KEY" "${cert_dir_product}"
+    load_cert "ingress_server.crt" "OPENVAS_INGRESS_AGENT_CONTROL_CERTIFICATE" "${cert_dir_product}"
+    load_cert "ingress_server.key" "OPENVAS_INGRESS_AGENT_CONTROL_KEY" "${cert_dir_product}"
 }
 
 # =============================================================================

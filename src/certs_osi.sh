@@ -57,36 +57,40 @@ init_certs_osi() {
 # =============================================================================
 # load_certs_osi()
 # =============================================================================
-# Loads the TLS certificate configuration required for OSI.
+# Loads the OSI TLS certificates and ingress TLS credentials.
 #
-# The function reads the metafeed client certificate and private key from the
-# product certificate directory and exports their contents for use by OSI.
-# If either metafeed certificate file is missing, a warning is printed and the
-# corresponding environment variable is exported as an empty string.
-#
-# The function also loads the ingress TLS certificate configuration.
+# The function loads the optional Metafeed client certificate and key from the
+# product certificate directory using the generic load_cert() helper. Missing
+# Metafeed credentials are treated as warnings and result in empty environment
+# variables. The function also loads the ingress TLS certificate and private key.
 #
 # Arguments:
-#   None.
+#   $1  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
+#
+# Exits:
+#   1 if the ingress TLS certificate file does not exist or is empty.
+#   1 if the ingress TLS private key file does not exist or is empty.
 load_certs_osi() {
-    local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
 
     echo 'Info: Load certs OSI'
 
-    if [ -f "${cert_dir_product}/metafeed.crt" ]; then
-        export METAFEED_CLIENT_CERT="$(< "${cert_dir_product}/metafeed.crt")"
+    if [ -s "${cert_dir_product}/metafeed.crt" ]; then
+        load_cert "metafeed.crt" "METAFEED_CLIENT_CERT" "${cert_dir_product}"
     else
         echo "Warn: No Metafeed TLS certificate found at ${cert_dir_product}/metafeed.crt! Please run --init!"
         export METAFEED_CLIENT_CERT=''
     fi
-    if [ -f "${cert_dir_product}/metafeed.key" ]; then
-        export METAFEED_CLIENT_KEY="$(< "${cert_dir_product}/metafeed.key")"
+
+    if [ -s "${cert_dir_product}/metafeed.key" ]; then
+        load_cert "metafeed.key" "METAFEED_CLIENT_KEY" "${cert_dir_product}"
     else
         echo "Warn: No Metafeed TLS key found at ${cert_dir_product}/metafeed.key! Please run --init!"
         export METAFEED_CLIENT_KEY=''
     fi
-    load_certs_ingress
+
+    load_certs_ingress "${cert_dir_product}"
 }
