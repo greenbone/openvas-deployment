@@ -3,25 +3,23 @@
 # =============================================================================
 # Initializes the GVMD administrator password secret for the scan deployment.
 #
-# If GVMD_ADMIN_PASSWORD is already set, the function writes its value to the
-# corresponding secret file. Otherwise, it generates a random 16-character
-# alphanumeric password, stores it in the secret file, assigns it to
-# GVMD_ADMIN_PASSWORD, and prints the generated password.
+# If GVMD_ADMIN_PASSWORD is set, its value is written to the secret file.
+# Otherwise, a random password is generated, stored in the secret file, loaded
+# into GVMD_ADMIN_PASSWORD, and displayed to the console.
 #
 # Arguments:
-#   None.
+#   $1  Optional secrets directory. Defaults to SECRETS_DIR.
 #
 # Returns:
 #   None.
 init_secrets_scan() {
+    local secrets_dir="${1:-$SECRETS_DIR}"
+
     if [ "${GVMD_ADMIN_PASSWORD}" ]; then
-        echo "${GVMD_ADMIN_PASSWORD}" > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
+        init_echo_secret "GVMD_ADMIN_PASSWORD" "${GVMD_ADMIN_PASSWORD}" "${secrets_dir}" 'y'
     else
-        echo "Info: No admin password set. Create random."
-        set +e
-        LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 16 > "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD"
-        set -e
-        GVMD_ADMIN_PASSWORD="$(< "${SECRETS_DIR}/GVMD_ADMIN_PASSWORD")"
+        init_secret "GVMD_ADMIN_PASSWORD" gen_password "${secrets_dir}"
+        load_secret "GVMD_ADMIN_PASSWORD" "GVMD_ADMIN_PASSWORD" "${secrets_dir}"
         echo "Your admin password is: ${GVMD_ADMIN_PASSWORD}"
     fi
 }
@@ -48,10 +46,5 @@ init_secrets_scan() {
 load_secrets_scan() {
     local secrets_dir="${1:-$SECRETS_DIR}"
 
-    if [ -f "${secrets_dir}/GVMD_ADMIN_PASSWORD" ]; then
-        export GVMD_ADMIN_PASSWORD="$(< "${secrets_dir}/GVMD_ADMIN_PASSWORD")"
-    else
-        echo "Error: No admin password found at ${secrets_dir}/GVMD_ADMIN_PASSWORD! Please run --init or --change-admin-password!"
-        exit 1
-    fi
+    load_secret "GVMD_ADMIN_PASSWORD" "GVMD_ADMIN_PASSWORD" "${secrets_dir}"
 }
