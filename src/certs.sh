@@ -37,10 +37,13 @@ init_certs() {
 # files, the function installs them into CERT_DIR_PRODUCT with restrictive file
 # permissions.
 #
-# If either file is missing, the function generates a self-signed RSA
-# certificate and private key for the ingress service. The generated
-# certificate is valid for 365 days and uses the common name
-# "openvas-enterprise-container".
+# If no existing ingress certificate and private key are present in
+# CERT_DIR_PRODUCT, the function generates a self-signed RSA certificate and
+# private key for the ingress service. The generated certificate is valid for
+# 365 days and uses the common name "openvas-enterprise-container".
+#
+# If an ingress certificate and private key already exist in CERT_DIR_PRODUCT,
+# the function leaves them unchanged.
 #
 # Arguments:
 #   None.
@@ -48,16 +51,20 @@ init_certs() {
 # Returns:
 #   None.
 init_certs_ingress() {
-    if [ -f "${INGRESS_TLS_SERVER_CERT}" ] && [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
+    if [ -s "${INGRESS_TLS_SERVER_CERT}" ] && [ -s "${INGRESS_TLS_SERVER_KEY}" ]; then
         echo "Info: Using Ingress certs ${INGRESS_TLS_SERVER_CERT} and ${INGRESS_TLS_SERVER_KEY} ..."
         install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
         install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
     else
-        echo "Info: Create self sign Ingress certs!"
-        openssl genrsa -out "${CERT_DIR_PRODUCT}/ingress_server.key" 2048 2>/dev/null
-        openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ingress_server.key" -out "${CERT_DIR_PRODUCT}/ingress_server.crt" -days 365 \
-           -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
-           -subj "/CN=openvas-enterprise-container" 2>/dev/null
+        if [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.key" ] && [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
+            echo "Info: Create self sign Ingress certs!"
+            openssl genrsa -out "${CERT_DIR_PRODUCT}/ingress_server.key" 2048 2>/dev/null
+            openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ingress_server.key" -out "${CERT_DIR_PRODUCT}/ingress_server.crt" -days 365 \
+               -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
+               -subj "/CN=openvas-enterprise-container" 2>/dev/null
+        else
+            echo "Info: Ingress certs ${CERT_DIR_PRODUCT}/ingress_server.key ${CERT_DIR_PRODUCT}/ingress_server.crt exists, skip init!"
+        fi
     fi
 }
 

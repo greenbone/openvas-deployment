@@ -19,6 +19,7 @@ SOURCES := \
 	src/requirements.sh \
 	src/scan.sh \
 	src/secrets.sh \
+	src/secrets_agent.sh \
 	src/secrets_ec.sh \
 	src/secrets_osi.sh \
 	src/secrets_scan.sh \

@@ -30,8 +30,6 @@ init_settings_agent() {
     local domain_ip="${2:-$DOMAIN_IP}"
     local settings_dir="${3:-$SETTINGS_DIR}"
 
-    echo 'Info: Init settings OSI'
-
     if [ "${domain_name}" ]; then
         init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
     else
@@ -65,8 +63,6 @@ init_settings_agent() {
 # Exits:
 #   1 if a required setting file is missing or empty.
 load_settings_agent() {
-    echo 'Info: Load settings OSI'
-
     load_setting "DOMAIN_NAME" "DOMAIN_NAME"
     load_setting "DOMAIN_IP" "DOMAIN_IP"
 }
