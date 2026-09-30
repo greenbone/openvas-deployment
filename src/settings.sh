@@ -74,7 +74,7 @@ init_setting() {
 #   1 if the selected product is not included in PRODUCT_OPTIONS.
 init_settings() {
     local product="${1:-$PRODUCT}"
-    local working_dir="${1:-$WORKING_DIR}"
+    local working_dir="${2:-$WORKING_DIR}"
 
     if [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${product} " ]]; then
         init_setting 'PRODUCT' "${product}" "${working_dir}"

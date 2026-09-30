@@ -27,8 +27,8 @@
 #   1 if the domain name or domain IP address is not set.
 init_settings_agent() {
     local domain_name="${1:-$DOMAIN_NAME}"
-    local domain_ip="${1:-$DOMAIN_IP}"
-    local settings_dir="${2:-$SETTINGS_DIR}"
+    local domain_ip="${2:-$DOMAIN_IP}"
+    local settings_dir="${3:-$SETTINGS_DIR}"
 
     echo 'Info: Init settings OSI'
 

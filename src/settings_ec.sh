@@ -87,10 +87,11 @@ init_settings_ec() {
     fi
 
     init_feed_sync_hour
-    init_settings_agent
 
     if [ "${deployment_mode}" == 'openvasd' ]; then
         init_settings_openvasd
+    else
+        init_settings_agent
     fi
 }
 
@@ -135,5 +136,7 @@ load_settings_ec() {
 
     if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         load_settings_openvasd
+    else
+        load_settings_agent
     fi
 }
