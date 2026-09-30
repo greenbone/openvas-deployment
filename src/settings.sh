@@ -35,7 +35,7 @@ init_setting() {
     local settings_dir="${3:-$SETTINGS_DIR}"
     local force="${4:-n}"
 
-    if [ -s "${settings_dir}/${file}" ] && [ "${force}" == "n" ]; then
+    if [ -s "${settings_dir}/${file}" ] && [ "${force}" == 'n' ]; then
         chmod 0600 "${settings_dir}/${file}"
         echo "Info: Setting ${settings_dir}/${file} exists, skip init!"
         return
@@ -87,6 +87,46 @@ init_settings() {
         init_settings_ec
     elif [ "${product}" == 'security-intelligence' ]; then
         init_settings_osi
+    fi
+}
+
+# =============================================================================
+# load_setting()
+# =============================================================================
+# Loads a single setting value from a file and exports it as an environment
+# variable.
+#
+# The function reads the content of the specified setting file from the
+# settings directory and assigns it to the provided environment variable.
+# If the file does not exist or is empty, the function exits with an error.
+#
+# Arguments:
+#   $1
+#     Setting file name.
+#
+#   $2
+#     Environment variable name to export.
+#
+#   $3
+#     Optional settings directory.
+#     Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1
+#     If the setting file does not exist or is empty.
+load_setting() {
+    local setting_file="$1"
+    local env_var="$2"
+    local settings_dir="${3:-$SETTINGS_DIR}"
+
+    if [ -s "${settings_dir}/${setting_file}" ]; then
+        export "${env_var}=$(< "${settings_dir}/${setting_file}")"
+    else
+        echo "Error: No setting file found or is empty at ${settings_dir}/${setting_file}! Please run --init!"
+        exit 1
     fi
 }
 

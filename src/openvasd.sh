@@ -435,13 +435,17 @@ create_openvasd_tar() {
             "${ccert_mode}" \
             "${store_dir_name}/${settings_dir_name}/${product}" "y"
 
-        #init_setting "FEED_PATH" \
-        #    "${feed_path}" \
-        #    "${store_dir_name}/${settings_dir_name}/${product}" "y"
+        if [ "${FEED_MODE}" == 'mount' ]; then
+            init_setting "FEED_PATH" \
+                "${feed_path}" \
+                "${store_dir_name}/${settings_dir_name}/${product}" "y"
+        fi
 
-        #init_setting "CCERT_PATH" \
-        #    "${ccert_path}" \
-        #    "${store_dir_name}/${settings_dir_name}/${product}" "y"
+        if [ "${CCERT_MODE}" == 'mount' ]; then
+            init_setting "CCERT_PATH" \
+                "${ccert_path}" \
+                "${store_dir_name}/${settings_dir_name}/${product}" "y"
+        fi
 
         init_setting "CCERT_TYPE" \
             "${ccert_type}" \

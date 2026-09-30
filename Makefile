@@ -23,6 +23,7 @@ SOURCES := \
 	src/secrets_osi.sh \
 	src/secrets_scan.sh \
 	src/settings.sh \
+	src/settings_agent.sh \
 	src/settings_ec.sh \
 	src/settings_openvasd.sh \
 	src/settings_osi.sh \

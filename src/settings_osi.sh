@@ -40,9 +40,9 @@ init_settings_osi() {
 # =============================================================================
 # Loads the domain setting required by the security-intelligence product.
 #
-# The function reads the persisted domain name from the product settings
-# directory and exports it as DOMAIN_NAME for use by subsequent OSI deployment
-# operations.
+# The function loads the persisted domain name from the product settings
+# directory and exports it as DOMAIN_NAME using the generic load_setting()
+# helper. The value is used by subsequent OSI deployment operations.
 #
 # Arguments:
 #   None.
@@ -51,14 +51,9 @@ init_settings_osi() {
 #   None.
 #
 # Exits:
-#   1 if the domain name settings file is missing.
+#   1 if the domain name settings file is missing or empty.
 load_settings_osi() {
     echo 'Info: Load settings OSI'
 
-    if [ -f "${SETTINGS_DIR}/DOMAIN_NAME" ]; then
-        export DOMAIN_NAME="$(< "${SETTINGS_DIR}/DOMAIN_NAME")"
-    else
-        echo "Error: No domain name found at ${SETTINGS_DIR}/DOMAIN_NAME! Please run --init!"
-        exit 1
-    fi
+    load_setting "DOMAIN_NAME" "DOMAIN_NAME"
 }

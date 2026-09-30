@@ -60,9 +60,10 @@ Initialize an enterprise-container scan deployment:
 ```bash
 openvas-deployment --init \
   --product enterprise-container \
-  --oci-client-cert /path/to/product.crt \
-  --oci-client-key /path/to/product.key \
-  --feed-key /path/to/prod-feed.key
+  --license-file license.toml \
+  --feed-key /path/to/prod-feed.key \
+  --domain-name oec.example.com \
+  --domain-ip IP
 ```
 
 Or initialize a security-intelligence deployment:
@@ -70,8 +71,7 @@ Or initialize a security-intelligence deployment:
 ```bash
 openvas-deployment --init \
   --product security-intelligence \
-  --oci-client-cert /path/to/product.crt \
-  --oci-client-key /path/to/product.key \
+  --license-file license.toml \
   --domain-name osi.example.com
 ```
 
@@ -143,7 +143,8 @@ Use one action per invocation.
 | Option                   | Description                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `--product PRODUCT`       | Product to deploy: `enterprise-container` or `security-intelligence`. Required for `--init`; stored in `./product/PRODUCT` for later commands. |
-| `--domain-name NAME`      | Domain name for the deployment. Required for security-intelligence initialization. |
+| `--domain-name NAME`      | Domain name for the deployment. |
+| `--domain-ip IP`          | Domain IP for the deployment. |
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
@@ -245,13 +246,16 @@ If custom ingress certificates are not supplied during initialization, the utili
 
 ## Examples
 
-### Initialize using a license file
+### Initialize using a certs
 
 ```bash
 openvas-deployment --init \
   --product enterprise-container \
-  --license-file /path/to/license-file \
-  --feed-key /path/to/prod-feed.key
+  --oci-client-cert /path/to/product.crt \
+  --oci-client-key /path/to/product.key \
+  --feed-key /path/to/prod-feed.key \
+  --domain-name oec.example.com \
+  --domain-ip IP
 ```
 
 For non-interactive initialization, explicitly select how Docker OCI credentials should be handled:
@@ -259,9 +263,12 @@ For non-interactive initialization, explicitly select how Docker OCI credentials
 ```bash
 openvas-deployment --init \
   --product enterprise-container \
-  --license-file /path/to/license-file \
+  --oci-client-cert /path/to/product.crt \
+  --oci-client-key /path/to/product.key \
   --feed-key /path/to/prod-feed.key \
-  --init-docker-oci
+  --init-docker-oci \
+  --domain-name oec.example.com \
+  --domain-ip IP
 ```
 
 Use `--skip-docker-oci` instead to print the root commands without executing them.
@@ -271,9 +278,10 @@ Use `--skip-docker-oci` instead to print the root commands without executing the
 ```bash
 openvas-deployment --init \
   --product enterprise-container \
-  --oci-client-cert /path/to/product.crt \
-  --oci-client-key /path/to/product.key \
-  --feed-key /path/to/prod-feed.key
+  --license-file license.toml \
+  --feed-key /path/to/prod-feed.key \
+  --domain-name oec.example.com \
+  --domain-ip IP
 ```
 
 ### Initialize with a predefined administrator password
@@ -282,9 +290,9 @@ openvas-deployment --init \
 openvas-deployment --init \
   --product enterprise-container \
   --admin-password 'secure-password' \
-  --oci-client-cert /path/to/product.crt \
-  --oci-client-key /path/to/product.key \
-  --feed-key /path/to/prod-feed.key
+  --license-file license.toml \
+  --domain-name oec.example.com \
+  --domain-ip IP
 ```
 
 If `--admin-password` is omitted, initialization generates and prints a random password.
@@ -295,8 +303,7 @@ If `--admin-password` is omitted, initialization generates and prints a random p
 openvas-deployment --init \
   --product security-intelligence \
   --domain-name osi.example.com \
-  --oci-client-cert /path/to/product.crt \
-  --oci-client-key /path/to/product.key \
+  --license-file license.toml \
   --metafeed-cert /path/to/metafeed.crt \
   --metafeed-key /path/to/metafeed.key
 ```
@@ -311,8 +318,7 @@ During initialization:
 openvas-deployment --init \
   --product enterprise-container \
   --feed-sync-hour 3 \
-  --oci-client-cert /path/to/product.crt \
-  --oci-client-key /path/to/product.key \
+  --license-file license.toml \
   --feed-key /path/to/prod-feed.key
 ```
 
@@ -358,8 +364,7 @@ The enterprise-container scan deployment must be running because the command exe
 ```bash
 openvas-deployment --init \
   --product enterprise-container \
-  --oci-client-cert /path/to/product.crt \
-  --oci-client-key /path/to/product.key \
+  --license-file license.toml \
   --feed-key /path/to/prod-feed.key \
   --ingress-server-cert /path/to/ingress.crt \
   --ingress-server-key /path/to/ingress.key
@@ -436,8 +441,7 @@ openvas-deployment --init \
   --deployment-mode openvasd \
   --product enterprise-container \
   --cn-openvasd sensor.example.com \
-  --oci-client-cert oci.crt \
-  --oci-client-key oci.key \
+  --license-file license.toml \
   --feed-key key \
   --openvasd-server-cert server.crt \
   --openvasd-server-key server.key \

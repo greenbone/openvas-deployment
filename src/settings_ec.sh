@@ -47,18 +47,21 @@ init_settings_ec() {
         echo "Error: Deployment mode ${deployment_mode} is not supported only ${DEPLOYMENT_MODE_OPTIONS[*]}."
         exit 1
     fi
+
     if [[ " ${FEED_MODE_OPTIONS[*]} " =~ " ${feed_mode} " ]]; then
         init_setting "FEED_MODE" "${feed_mode}" "${settings_dir}"
     else
         echo "Error: feed mode option ${feed_mode} is not supported only ${FEED_MODE_OPTIONS[*]}."
         exit 1
     fi
+
     if [[ " ${CCERT_MODE_OPTIONS[*]} " =~ " ${ccert_mode} " ]]; then
         init_setting "CCERT_MODE" "${ccert_mode}" "${settings_dir}"
     else
         echo "Error: feed mode option ${ccert_mode} is not supported only ${CCERT_MODE_OPTIONS[*]}."
         exit 1
     fi
+
     if [ "${feed_mode}" == 'mount' ]; then
         if [ -d "${feed_path}" ]; then
             echo "Error: feed mode option mount is not supported currently!"
@@ -67,6 +70,7 @@ init_settings_ec() {
         fi
         exit 1
     fi
+
     if [ "${ccert_mode}" == 'mount' ]; then
         if [ -d "${ccert_path}" ]; then
             echo "Error: ccert mode option mount is not supported currently!"
@@ -75,6 +79,7 @@ init_settings_ec() {
         fi
         exit 1
     fi
+
     if [ "${ccert_mode}" == 'ca' ] || [ "${ccert_mode}" == 'cert' ]; then
         init_setting "CCERT_TYPE" "env" "${settings_dir}"
     else
@@ -82,6 +87,7 @@ init_settings_ec() {
     fi
 
     init_feed_sync_hour
+    init_settings_agent
 
     if [ "${deployment_mode}" == 'openvasd' ]; then
         init_settings_openvasd
@@ -91,15 +97,15 @@ init_settings_ec() {
 # =============================================================================
 # load_settings_ec()
 # =============================================================================
-# Loads the settings required for an enterprise-container deployment.
+# Loads the enterprise-container deployment settings.
 #
-# The function reads the persisted deployment, feed, CCERT, and feed
-# synchronization settings from SETTINGS_DIR and exports them for use by
-# subsequent deployment operations.
+# The function loads the persisted deployment configuration values from the
+# settings directory and exports them as environment variables using the
+# generic load_setting() helper.
 #
-# Mount-specific paths are loaded when the corresponding mode is set to
-# 'mount'. After loading the common enterprise-container settings, the function
-# dispatches to the deployment-mode-specific settings loader.
+# Depending on the selected feed and certificate modes, additional mount paths
+# are loaded. If the deployment mode is openvasd, the OpenVASD-specific settings
+# are loaded using load_settings_openvasd().
 #
 # Arguments:
 #   None.
@@ -108,52 +114,24 @@ init_settings_ec() {
 #   None.
 #
 # Exits:
-#   1 if a required settings file is missing.
+#   1 if a required setting file is missing or empty.
 load_settings_ec() {
     echo 'Info: Load settings EC'
 
-    if [ -f "${SETTINGS_DIR}/DEPLOYMENT_MODE" ]; then
-        export DEPLOYMENT_MODE="$(< "${SETTINGS_DIR}/DEPLOYMENT_MODE")"
-    else
-        echo "Error: No deployment mode found at ${SETTINGS_DIR}/DEPLOYMENT_MODE! Please run --init!"
-        exit 1
+    load_setting "DEPLOYMENT_MODE" "DEPLOYMENT_MODE"
+    load_setting "FEED_MODE" "FEED_MODE"
+    load_setting "CCERT_MODE" "CCERT_MODE"
+
+    if [ "${FEED_MODE}" == 'mount' ]; then
+        load_setting "FEED_PATH" "FEED_PATH"
     fi
-    if [ -f "${SETTINGS_DIR}/FEED_MODE" ]; then
-        export FEED_MODE="$(< "${SETTINGS_DIR}/FEED_MODE")"
-    else
-        echo "Error: No feed mode found at ${SETTINGS_DIR}/FEED_MODE! Please run --init!"
-        exit 1
+
+    if [ "${CCERT_MODE}" == 'mount' ]; then
+        load_setting "CCERT_PATH" "CCERT_PATH"
     fi
-    if [ -f "${SETTINGS_DIR}/CCERT_MODE" ]; then
-        export CCERT_MODE="$(< "${SETTINGS_DIR}/CCERT_MODE")"
-    else
-        echo "Error: No ccert mode found at ${SETTINGS_DIR}/CCERT_MODE! Please run --init!"
-        exit 1
-    fi
-    if [ "${FEED_MODE}" == 'mount' ] && [ -f "${SETTINGS_DIR}/FEED_PATH" ]; then
-        export FEED_PATH="$(< "${SETTINGS_DIR}/FEED_PATH")"
-    elif [ "${FEED_MODE}" == 'mount' ]; then
-        echo "Error: No feed path found at ${SETTINGS_DIR}/FEED_PATH! Please run --init!"
-        exit 1
-    fi
-    if [ "${CCERT_MODE}" == 'mount' ] && [ -f "${SETTINGS_DIR}/CCERT_PATH" ]; then
-        export CCERT_PATH="$(< "${SETTINGS_DIR}/CCERT_PATH")"
-    elif [ "${CCERT_MODE}" == 'mount' ]; then
-        echo "Error: No ccert path found at ${SETTINGS_DIR}/CCERT_PATH! Please run --init!"
-        exit 1
-    fi
-    if [ -f "${SETTINGS_DIR}/CCERT_TYPE" ]; then
-        export CCERT_TYPE="$(< "${SETTINGS_DIR}/CCERT_TYPE")"
-    else
-        echo "Error: No ccert type found at ${SETTINGS_DIR}/CCERT_TYPE! Please run --init!"
-        exit 1
-    fi
-    if [ -f "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR" ]; then
-        export GREENBONE_FEED_SYNC_JOB_HOUR="$(< "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR")"
-    else
-        echo "Error: No FEED_SYNC_JOB_HOUR found at ${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR! Please run --init or --change-feed-sync-hour with --feed-sync-hour!"
-        exit 1
-    fi
+
+    load_setting "CCERT_TYPE" "CCERT_TYPE"
+    load_setting "GREENBONE_FEED_SYNC_JOB_HOUR" "GREENBONE_FEED_SYNC_JOB_HOUR"
 
     if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         load_settings_openvasd
