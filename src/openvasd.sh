@@ -298,84 +298,187 @@ create_openvasd_cert_tar() {
 # Creates a portable archive for deploying an OpenVASD sensor.
 #
 # The function validates the OpenVASD common name, loads the current settings,
-# and assembles a temporary deployment directory containing the required
-# product artifacts, OCI certificates, OpenVASD certificates, feed key,
-# deployment settings, and the current script.
+# and creates a temporary deployment directory containing the required product
+# artifacts, OCI certificates, OpenVASD certificates, feed key, deployment
+# settings, and the current deployment script.
 #
-# If OPENVASD_TAR_WITH_IMAGES is set to 'y', the function also saves the
-# Docker images required by the OpenVASD deployment into the archive. The feed
-# key service image is included when FEED_MODE is set to 'service'.
+# The archive configuration can be customized through optional arguments,
+# including certificate paths, feed configuration, artifact locations, image
+# inclusion, and deployment metadata. If arguments are not provided, the
+# corresponding environment variables are used as defaults.
 #
-# The assembled directory is compressed into a gzip-compressed tar archive
-# named after the OpenVASD common name.
+# If OPENVASD_TAR_WITH_IMAGES is set to 'y', the function loads the required
+# secrets and certificates, determines the current product version, and stores
+# the required Docker images in the archive. The feed key service image is also
+# included when FEED_MODE is set to 'service'.
+#
+# The assembled deployment directory is compressed into a gzip-compressed tar
+# archive named after the OpenVASD common name, with dots replaced by dashes.
 #
 # Arguments:
-#   None.
+#   1. cn_openvasd:
+#      OpenVASD common name used for certificate lookup, configuration, and
+#      archive naming. Defaults to CN_OPENVASD.
+#   2. cert_dir_product:
+#      Directory containing product certificates and the feed key.
+#      Defaults to CERT_DIR_PRODUCT.
+#   3. openvasd_tar_with_images:
+#      Controls whether Docker images are included in the archive ('y'/'n').
+#      Defaults to OPENVASD_TAR_WITH_IMAGES.
+#   4. feed_mode:
+#      Feed synchronization mode. Defaults to FEED_MODE.
+#   5. ccert_mode:
+#      Client certificate mode. Defaults to CCERT_MODE.
+#   6. feed_path:
+#      Feed path configuration value. Defaults to FEED_PATH.
+#   7. ccert_path:
+#      Client certificate path configuration value. Defaults to CCERT_PATH.
+#   8. ccert_type:
+#      Client certificate type configuration value. Defaults to CCERT_TYPE.
+#   9. greenbone_feed_sync_job_hour:
+#      Scheduled feed synchronization hour. Defaults to
+#      GREENBONE_FEED_SYNC_JOB_HOUR.
+#   10. store_dir_name:
+#       Name of the deployment store directory. Defaults to STORE_DIR_NAME.
+#   11. cert_dir_name:
+#       Name of the certificate directory inside the archive. Defaults to
+#       CERT_DIR_NAME.
+#   12. cert_dir_oci:
+#       OCI certificate directory to include in the archive. Defaults to
+#       CERT_DIR_OCI.
+#   13. artifact_dir:
+#       Product artifact directory. Defaults to ARTIFACT_DIR.
+#   14. artifact_dir_name:
+#       Name of the artifact directory inside the archive. Defaults to
+#       ARTIFACT_DIR_NAME.
+#   15. image_dir_name:
+#       Name of the image directory inside the archive. Defaults to
+#       IMAGE_DIR_NAME.
+#   16. settings_dir_name:
+#       Name of the settings directory inside the archive. Defaults to
+#       SETTINGS_DIR_NAME.
+#   17. product:
+#       Product name used for directory layout and settings. Defaults to
+#       PRODUCT.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if CN_OPENVASD is not set.
+#   1 if the OpenVASD common name is not set.
 #   Exits if changing to a required temporary or artifact directory fails.
 create_openvasd_tar() {
-    if ! [ "${CN_OPENVASD}" ]; then
+    load_settings
+
+    local cn_openvasd="${1:-$CN_OPENVASD}"
+    local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
+    local openvasd_tar_with_images="${3:-$OPENVASD_TAR_WITH_IMAGES}"
+    local feed_mode="${4:-$FEED_MODE}"
+    local ccert_mode="${5:-$CCERT_MODE}"
+    local feed_path="${6:-$FEED_PATH}"
+    local ccert_path="${7:-$CCERT_PATH}"
+    local ccert_type="${8:-$CCERT_TYPE}"
+    local greenbone_feed_sync_job_hour="${9:-$GREENBONE_FEED_SYNC_JOB_HOUR}"
+    local store_dir_name="${10:-$STORE_DIR_NAME}"
+    local cert_dir_name="${11:-$CERT_DIR_NAME}"
+    local cert_dir_oci="${12:-$CERT_DIR_OCI}"
+    local artifact_dir="${13:-$ARTIFACT_DIR}"
+    local artifact_dir_name="${14:-$ARTIFACT_DIR_NAME}"
+    local image_dir_name="${15:-$IMAGE_DIR_NAME}"
+    local settings_dir_name="${16:-$SETTINGS_DIR_NAME}"
+    local product="${17:-$PRODUCT}"
+
+    if ! [ "${cn_openvasd}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
         exit 1
     fi
 
-    load_settings
+    local openvasd_name="${cn_openvasd//./-}"
+    local openvasd_cert_folder="${cn_openvasd//./_}"
+    openvasd_cert_folder="${cert_dir_product}/${openvasd_cert_folder}"
 
-    local openvasd_name="${CN_OPENVASD//./-}"
-    local openvasd_cert_folder="${CN_OPENVASD//./_}"
-    openvasd_cert_folder="${CERT_DIR_PRODUCT}/${openvasd_cert_folder}"
-    local tmp_dir="$(mktemp -d)"
+    local tmp_dir
+    tmp_dir="$(mktemp -d)"
     chmod 0700 "${tmp_dir}"
-    local tmp_images="${tmp_dir}/${STORE_DIR_NAME}/${IMAGE_DIR_NAME}/${PRODUCT}"
+
+    local tmp_images="${tmp_dir}/${store_dir_name}/${image_dir_name}/${product}"
+
     pushd "${tmp_dir}" > /dev/null || exit
-        mkdir -p "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}"
-        mkdir -p "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}"
-        mkdir -p "${STORE_DIR_NAME}/${ARTIFACT_DIR_NAME}"
-        cp -r "${CERT_DIR_OCI}" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/"
-        cp -r "${ARTIFACT_DIR}" "${STORE_DIR_NAME}/${ARTIFACT_DIR_NAME}/"
-        cp -r "${openvasd_cert_folder}" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}/"
-        cp "${CERT_DIR_PRODUCT}/feed.key" "${STORE_DIR_NAME}/${CERT_DIR_NAME}/${PRODUCT}/"
-        echo 'enterprise-container' > "${STORE_DIR_NAME}/PRODUCT"
-        echo 'openvasd' > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/DEPLOYMENT_MODE"
-        echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/GREENBONE_FEED_SYNC_JOB_HOUR"
-        echo "${CN_OPENVASD}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/OPENVASD_CN"
-        echo "${FEED_MODE}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/FEED_MODE"
-        echo "${CCERT_MODE}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/CCERT_MODE"
-        echo "${FEED_PATH}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/FEED_PATH"
-        echo "${CCERT_PATH}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/CCERT_PATH"
-        echo "${CCERT_TYPE}" > "${STORE_DIR_NAME}/${SETTINGS_DIR_NAME}/${PRODUCT}/CCERT_TYPE"
+        mkdir -p "${store_dir_name}/${settings_dir_name}/${product}"
+        mkdir -p "${store_dir_name}/${cert_dir_name}/${product}"
+        mkdir -p "${store_dir_name}/${artifact_dir_name}"
+
+        cp -r "${cert_dir_oci}" "${store_dir_name}/${cert_dir_name}/"
+        cp -r "${artifact_dir}" "${store_dir_name}/${artifact_dir_name}/"
+        cp -r "${openvasd_cert_folder}" "${store_dir_name}/${cert_dir_name}/${product}/"
+        cp "${cert_dir_product}/feed.key" "${store_dir_name}/${cert_dir_name}/${product}/"
+
+        init_setting "PRODUCT" "enterprise-container" \
+            "${store_dir_name}" "y"
+
+        init_setting "DEPLOYMENT_MODE" "openvasd" \
+            "${store_dir_name}/${settings_dir_name}/${product}" "y"
+
+        init_setting "GREENBONE_FEED_SYNC_JOB_HOUR" \
+            "${greenbone_feed_sync_job_hour}" \
+            "${store_dir_name}/${settings_dir_name}/${product}" "y"
+
+        init_setting "OPENVASD_CN" \
+            "${cn_openvasd}" \
+            "${store_dir_name}/${settings_dir_name}/${product}" "y"
+
+        init_setting "FEED_MODE" \
+            "${feed_mode}" \
+            "${store_dir_name}/${settings_dir_name}/${product}" "y"
+
+        init_setting "CCERT_MODE" \
+            "${ccert_mode}" \
+            "${store_dir_name}/${settings_dir_name}/${product}" "y"
+
+        #init_setting "FEED_PATH" \
+        #    "${feed_path}" \
+        #    "${store_dir_name}/${settings_dir_name}/${product}" "y"
+
+        #init_setting "CCERT_PATH" \
+        #    "${ccert_path}" \
+        #    "${store_dir_name}/${settings_dir_name}/${product}" "y"
+
+        init_setting "CCERT_TYPE" \
+            "${ccert_type}" \
+            "${store_dir_name}/${settings_dir_name}/${product}" "y"
     popd > /dev/null
 
     cp "${0}" "${tmp_dir}"
 
-    if [ "${OPENVASD_TAR_WITH_IMAGES}" == 'y' ]; then
+    if [ "${openvasd_tar_with_images}" == 'y' ]; then
         load_secrets
         load_certs
         get_latest_version
         mkdir -p "${tmp_images}"
-        pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
+        pushd "${artifact_dir}/${VERSION}" > /dev/null || exit
             docker save -o "${tmp_images}/openvas-openvasd.tar" \
                 "$(docker compose images | awk '$2 ~ /openvas-scanner$/ { print $5; exit }')"
+
             docker save -o "${tmp_images}/openvas-gpg-data.tar" \
                 "$(docker compose images | awk '$2 ~ /gpg-data$/ { print $5; exit }')"
+
             docker save -o "${tmp_images}/openvas-feed-sync.tar" \
                 "$(docker compose images | awk '$2 ~ /greenbone-feed-sync$/ { print $5; exit }')"
+
             docker save -o "${tmp_images}/openvas-redis.tar" \
                 "$(docker compose images | awk '$2 ~ /redis-server$/ { print $5; exit }')"
-        if [ "${FEED_MODE}" == 'service' ]; then
+
+            if [ "${feed_mode}" == 'service' ]; then
                 docker save -o "${tmp_images}/openvas-feed-key-service.tar" \
                     "$(docker compose images | awk '$2 ~ /feed-key-service$/ { print $5; exit }')"
-        fi
+            fi
+
         popd > /dev/null
     fi
 
     rm -f "${openvasd_name}.tar.gz"
     (umask 077; tar -czf "${openvasd_name}.tar.gz" -C "${tmp_dir}" .)
+
     rm -rf "${tmp_dir}"
 }
 
@@ -443,43 +546,73 @@ init_openvasd_tar() {
 # =============================================================================
 # load_openvasd_images()
 # =============================================================================
-# Loads packaged Docker images required for an OpenVASD deployment.
+# Loads the Docker images required for an OpenVASD deployment from local image
+# archives.
 #
-# The function checks IMAGE_DIR for known OpenVASD image archives and imports
-# each available archive into the local Docker image store using docker load.
-# Missing image archives are skipped with an informational message.
+# The function checks for each expected Docker image archive and loads available
+# images using docker load. Missing image archives are skipped and reported as
+# informational messages.
+#
+# The feed key service image is loaded only when the feed mode is set to
+# 'service'.
 #
 # Arguments:
-#   None.
+#   1. image_dir:
+#      Directory containing the Docker image archives.
+#      Defaults to IMAGE_DIR.
+#
+#   2. feed_mode:
+#      Feed synchronization mode. If set to 'service', the feed key service
+#      image archive is also loaded.
+#      Defaults to FEED_MODE.
+#
+# Expected files:
+#   ${image_dir}/openvas-openvasd.tar
+#   ${image_dir}/openvas-gpg-data.tar
+#   ${image_dir}/openvas-feed-sync.tar
+#   ${image_dir}/openvas-redis.tar
+#   ${image_dir}/openvas-feed-key-service.tar
+#       Loaded only when feed_mode is set to 'service'.
 #
 # Returns:
 #   None.
+#
+# Exits:
+#   Does not exit when image archives are missing. Missing files are skipped
+#   with an informational message.
 load_openvasd_images() {
-    if [ -f "${IMAGE_DIR}/openvas-openvasd.tar" ]; then
-        docker load -i "${IMAGE_DIR}/openvas-openvasd.tar"
+    local image_dir="${1:-$IMAGE_DIR}"
+    local feed_mode="${2:-$FEED_MODE}"
+
+    if [ -f "${image_dir}/openvas-openvasd.tar" ]; then
+        docker load -i "${image_dir}/openvas-openvasd.tar"
     else
-        echo "Info: Image ${IMAGE_DIR}/openvas-openvasd.tar not found. Skip!"
+        echo "Info: Image ${image_dir}/openvas-openvasd.tar not found. Skip!"
     fi
-    if [ -f "${IMAGE_DIR}/openvas-gpg-data.tar" ]; then
-        docker load -i "${IMAGE_DIR}/openvas-gpg-data.tar"
+
+    if [ -f "${image_dir}/openvas-gpg-data.tar" ]; then
+        docker load -i "${image_dir}/openvas-gpg-data.tar"
     else
-        echo "Info: Image ${IMAGE_DIR}/openvas-gpg-data.tar not found. Skip!"
+        echo "Info: Image ${image_dir}/openvas-gpg-data.tar not found. Skip!"
     fi
-    if [ -f "${IMAGE_DIR}/openvas-feed-sync.tar" ]; then
-        docker load -i "${IMAGE_DIR}/openvas-feed-sync.tar"
+
+    if [ -f "${image_dir}/openvas-feed-sync.tar" ]; then
+        docker load -i "${image_dir}/openvas-feed-sync.tar"
     else
-        echo "Info: Image ${IMAGE_DIR}/openvas-feed-sync.tar not found. Skip!"
+        echo "Info: Image ${image_dir}/openvas-feed-sync.tar not found. Skip!"
     fi
-    if [ -f "${IMAGE_DIR}/openvas-redis.tar" ]; then
-        docker load -i "${IMAGE_DIR}/openvas-redis.tar"
+
+    if [ -f "${image_dir}/openvas-redis.tar" ]; then
+        docker load -i "${image_dir}/openvas-redis.tar"
     else
-        echo "Info: Image ${IMAGE_DIR}/openvas-redis.tar not found. Skip!"
+        echo "Info: Image ${image_dir}/openvas-redis.tar not found. Skip!"
     fi
-    if [ "${FEED_MODE}" == 'service' ]; then
-        if [ -f "${IMAGE_DIR}/openvas-feed-key-service.tar" ]; then
-            docker load -i "${IMAGE_DIR}/openvas-feed-key-service.tar"
+
+    if [ "${feed_mode}" == 'service' ]; then
+        if [ -f "${image_dir}/openvas-feed-key-service.tar" ]; then
+            docker load -i "${image_dir}/openvas-feed-key-service.tar"
         else
-            echo "Info: Image ${IMAGE_DIR}/openvas-feed-key-service.tar not found. Skip!"
+            echo "Info: Image ${image_dir}/openvas-feed-key-service.tar not found. Skip!"
         fi
     fi
 }

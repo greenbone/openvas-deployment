@@ -1,10 +1,11 @@
 # =============================================================================
 # init_settings_osi()
 # =============================================================================
-# Initializes the domain setting required by the security-intelligence product.
+# Initializes the domain setting required by the OSI deployment.
 #
 # The function validates that a domain name is provided and stores it in the
-# product settings directory for later use by the OSI deployment.
+# product settings directory using init_setting(). Existing settings are kept
+# unless explicitly forced by init_setting().
 #
 # Arguments:
 #   $1
@@ -27,7 +28,7 @@ init_settings_osi() {
     echo 'Info: Init settings OSI'
 
     if [ "${domain_name}" ]; then
-        echo "${domain_name}" > "${settings_dir}/DOMAIN_NAME"
+        init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
     else
         echo "Error: Domain name not set! Run --init with --domain-name!"
         exit 1

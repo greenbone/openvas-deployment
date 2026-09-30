@@ -5,7 +5,7 @@
 # deployment.
 #
 # The function validates that an OpenVASD common name (CN) is provided and
-# stores it in the settings directory for later use.
+# stores it in the settings directory using init_setting().
 #
 # Arguments:
 #   $1
@@ -26,7 +26,7 @@ init_settings_openvasd() {
     local settings_dir="${2:-$SETTINGS_DIR}"
 
     if [ "${cn_openvasd}" ]; then
-        echo "${cn_openvasd}" > "${settings_dir}/OPENVASD_CN"
+        init_setting "OPENVASD_CN" "${cn_openvasd}" "${settings_dir}"
     else
         echo "Error: --cn-openvasd argument missing!"
     exit 1
