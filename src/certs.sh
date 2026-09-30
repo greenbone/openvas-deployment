@@ -56,7 +56,7 @@ init_certs_ingress() {
         install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
         install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
     else
-        if [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.key" ] && [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
+        if [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.key" ] || [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
             echo "Info: Create self sign Ingress certs!"
             openssl genrsa -out "${CERT_DIR_PRODUCT}/ingress_server.key" 2048 2>/dev/null
             openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ingress_server.key" -out "${CERT_DIR_PRODUCT}/ingress_server.crt" -days 365 \

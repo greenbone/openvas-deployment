@@ -40,7 +40,7 @@ init_settings_agent() {
     if [ "${domain_ip}" ]; then
         init_setting "DOMAIN_IP" "${domain_ip}" "${settings_dir}"
     else
-        echo "Error: Domain name not set! Run --init with --domain-ip!"
+        echo "Error: Domain ip not set! Run --init with --domain-ip!"
         exit 1
     fi
 }

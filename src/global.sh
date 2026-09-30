@@ -16,8 +16,8 @@ SECRETS_DIR_NAME='secrets'
 SETTINGS_DIR_NAME='settings'
 PRODUCT_OPTIONS=('enterprise-container' 'security-intelligence')
 DEPLOYMENT_MODE_OPTIONS=('scan' 'openvasd')
-FEED_MODE_OPTIONS=('volume' 'service' 'mount')
-CCERT_MODE_OPTIONS=('ca' 'cert' 'mount')
+FEED_MODE_OPTIONS=('volume' 'service')
+CCERT_MODE_OPTIONS=('ca' 'cert')
 GVMD_CONTAINER='enterprise-container-scan-gvmd-1'
 GVMD_CONTAINER_UID='1001'
 
