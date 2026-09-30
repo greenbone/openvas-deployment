@@ -16,6 +16,7 @@ init_secrets_ec() {
 
     if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
         init_secrets_scan
+        init_secrets_agent
     fi
 }
 
@@ -37,5 +38,6 @@ load_secrets_ec() {
 
     if [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
         load_secrets_scan
+        load_secrets_agent
     fi
 }

@@ -77,7 +77,8 @@ Deployment options:
                                    enterprise-container | security-intelligence
 
   --domain-name NAME             Domain name for the deployment
-                                 Only security-intelligence
+
+  --domain-ip IP                 Domain IP for the deployment
 
   --metafeed-cert FILE           Metafeed client certificate
                                  Only security-intelligence
@@ -204,45 +205,44 @@ Examples:
 Initialize a security-intelligence deployment:
   $0 --init \\
     --product security-intelligence \\
-    --oci-client-cert /path/to/product.crt \\
-    --oci-client-key /path/to/product.key \\
+    --license-file license.toml \\
     --domain-name osi.example.com
 
 Initialize a enterprise-container scan deployment:
   $0 --init \\
     --product enterprise-container \\
-    --oci-client-cert /path/to/product.crt \\
-    --oci-client-key /path/to/product.key \\
-    --feed-key /path/to/prod-feed.key
-
+    --license-file license.toml \\
+    --feed-key /path/to/prod-feed.key \\
+    --domain-name oec.example.com \\
+    --domain-ip IP
 
 Initialize a enterprise-container scan deployment with a predefined administrator password:
   $0 --init \\
     --product enterprise-container \\
     --admin-password 'secure-password' \\
-    --oci-client-cert /path/to/product.crt \\
-    --oci-client-key /path/to/product.key \\
-    --feed-key /path/to/prod-feed.key
-
+    --license-file license.toml \\
+    --feed-key /path/to/prod-feed.key \\
+    --domain-name oec.example.com \\
+    --domain-ip IP
 
 Initialize a enterprise-container deployment with scheduled feed synchronization:
   $0 --init \\
     --product enterprise-container \\
     --feed-sync-hour 3 \\
-    --oci-client-cert /path/to/product.crt \\
-    --oci-client-key /path/to/product.key \\
-    --feed-key /path/to/prod-feed.key
-
+    --license-file license.toml \\
+    --feed-key /path/to/prod-feed.key \\
+    --domain-name oec.example.com \\
+    --domain-ip IP
 
 Initialize a enterprise-container with custom ingress certificates:
   $0 --init \\
     --product enterprise-container \\
-    --oci-client-cert /path/to/product.crt \\
-    --oci-client-key /path/to/product.key \\
+    --license-file license.toml \\
     --feed-key /path/to/prod-feed.key \\
     --ingress-server-cert /path/to/ingress.crt \\
-    --ingress-server-key /path/to/ingress.key
-
+    --ingress-server-key /path/to/ingress.key \\
+    --domain-name oec.example.com \\
+    --domain-ip IP
 
 Update and start the deployment:
   $0 --update
@@ -303,8 +303,7 @@ Initialize the remote OpenVASD deployment:
   $0 --init --deployment-mode openvasd \\
     --product enterprise-container \\
     --cn-openvasd sensor.example.com \\
-    --oci-client-cert oci.crt \\
-    --oci-client-key oci.key \\
+    --license-file license.toml \\
     --feed-key key \\
     --openvasd-server-cert server.crt \\
     --openvasd-server-key server.key \\

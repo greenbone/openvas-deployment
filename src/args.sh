@@ -41,6 +41,10 @@ parse_args() {
                 DOMAIN_NAME="$2"
                 shift 2
                 ;;
+            --domain-ip)
+                DOMAIN_IP="$2"
+                shift 2
+                ;;
             --init-openvasd-tar)
                 MODE='init-openvasd-tar'
                 shift 1

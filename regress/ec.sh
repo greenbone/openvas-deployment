@@ -39,7 +39,8 @@ init() {
     echo_task 'Test Init'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
         --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
-        --product enterprise-container --deployment-mode scan
+        --product enterprise-container --deployment-mode scan \
+        --domain-name oec.test.test --domain-ip 127.0.0.1
     echo_task 'Test Update'
     openvas-deployment --update
 }
@@ -48,7 +49,8 @@ init_license() {
     echo_task 'Test Init license file'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
         --license-file oec-license.toml \
-        --product enterprise-container --deployment-mode scan
+        --product enterprise-container --deployment-mode scan \
+        --domain-name oec.test.test --domain-ip 127.0.0.1
     echo_task 'Test Update'
     openvas-deployment --update
 }

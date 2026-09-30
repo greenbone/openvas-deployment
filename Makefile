@@ -19,10 +19,12 @@ SOURCES := \
 	src/requirements.sh \
 	src/scan.sh \
 	src/secrets.sh \
+	src/secrets_agent.sh \
 	src/secrets_ec.sh \
 	src/secrets_osi.sh \
 	src/secrets_scan.sh \
 	src/settings.sh \
+	src/settings_agent.sh \
 	src/settings_ec.sh \
 	src/settings_openvasd.sh \
 	src/settings_osi.sh \

@@ -29,17 +29,6 @@ init() {
         echo "Info: Using mode ${DEPLOYMENT_MODE}."
     fi
 
-    if [ -d "${WORKING_DIR}" ]; then
-        if [ "${SKIP_INIT_IF_EXIST}" == "y" ]; then
-            exit 0
-        fi
-        echo "Warning: ${WORKING_DIR} exist! CA setup will be overwritten if continue!"
-        read -r -p "Continue? (y/n)" response
-        if [ "$response" != "y" ]; then
-            exit 1
-        fi
-    fi
-
     init_base_folders
     if [ "${LICENSE_FILE}" ]; then
         read_license_file

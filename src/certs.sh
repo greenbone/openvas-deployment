@@ -37,10 +37,13 @@ init_certs() {
 # files, the function installs them into CERT_DIR_PRODUCT with restrictive file
 # permissions.
 #
-# If either file is missing, the function generates a self-signed RSA
-# certificate and private key for the ingress service. The generated
-# certificate is valid for 365 days and uses the common name
-# "openvas-enterprise-container".
+# If no existing ingress certificate and private key are present in
+# CERT_DIR_PRODUCT, the function generates a self-signed RSA certificate and
+# private key for the ingress service. The generated certificate is valid for
+# 365 days and uses the common name "openvas-enterprise-container".
+#
+# If an ingress certificate and private key already exist in CERT_DIR_PRODUCT,
+# the function leaves them unchanged.
 #
 # Arguments:
 #   None.
@@ -48,16 +51,20 @@ init_certs() {
 # Returns:
 #   None.
 init_certs_ingress() {
-    if [ -f "${INGRESS_TLS_SERVER_CERT}" ] && [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
+    if [ -s "${INGRESS_TLS_SERVER_CERT}" ] && [ -s "${INGRESS_TLS_SERVER_KEY}" ]; then
         echo "Info: Using Ingress certs ${INGRESS_TLS_SERVER_CERT} and ${INGRESS_TLS_SERVER_KEY} ..."
         install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
         install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
     else
-        echo "Info: Create self sign Ingress certs!"
-        openssl genrsa -out "${CERT_DIR_PRODUCT}/ingress_server.key" 2048 2>/dev/null
-        openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ingress_server.key" -out "${CERT_DIR_PRODUCT}/ingress_server.crt" -days 365 \
-           -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
-           -subj "/CN=openvas-enterprise-container" 2>/dev/null
+        if [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.key" ] || [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
+            echo "Info: Create self sign Ingress certs!"
+            openssl genrsa -out "${CERT_DIR_PRODUCT}/ingress_server.key" 2048 2>/dev/null
+            openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ingress_server.key" -out "${CERT_DIR_PRODUCT}/ingress_server.crt" -days 365 \
+               -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
+               -subj "/CN=openvas-enterprise-container" 2>/dev/null
+        else
+            echo "Info: Ingress certs ${CERT_DIR_PRODUCT}/ingress_server.key ${CERT_DIR_PRODUCT}/ingress_server.crt exists, skip init!"
+        fi
     fi
 }
 
@@ -94,6 +101,38 @@ init_oci_certs(){
 }
 
 # =============================================================================
+# load_cert()
+# =============================================================================
+# Loads a certificate or key file into an environment variable.
+#
+# The function verifies that the specified file exists and is not empty, then
+# exports its contents to the requested environment variable. The certificate
+# directory can be overridden by passing a custom directory path.
+#
+# Arguments:
+#   $1  File name to load from the certificate directory.
+#   $2  Environment variable name to export the file contents to.
+#   $3  Optional certificate directory (defaults to CERT_DIR).
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the specified certificate/key file does not exist or is empty.
+load_cert() {
+    local cert_file="$1"
+    local env_var="$2"
+    local certs_dir="${3:-$CERT_DIR}"
+
+    if [ -s "${certs_dir}/${cert_file}" ]; then
+        export "${env_var}=$(< "${certs_dir}/${cert_file}")"
+    else
+        echo "Error: No certificate found or is empty at ${certs_dir}/${cert_file}! Please run --init!"
+        exit 1
+    fi
+}
+
+# =============================================================================
 # load_certs()
 # =============================================================================
 # Loads the certificate configuration required for the selected product.
@@ -123,32 +162,30 @@ load_certs() {
 # Loads the ingress TLS certificate and private key from the product
 # certificate directory.
 #
-# The function reads the ingress server certificate and private key from
-# CERT_DIR_PRODUCT and exports their contents for use by subsequent deployment
-# operations.
+# The function loads the ingress server certificate and private key using the
+# generic load_cert() helper and exports their contents as environment
+# variables for use by ingress TLS configuration and agent control
+# communication.
+#
+# The same ingress TLS certificate and private key are exported for both the
+# ingress service and the OpenVAS ingress agent control configuration.
 #
 # Arguments:
-#   None.
+#   $1  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the ingress TLS certificate is missing.
-#   1 if the ingress TLS private key is missing.
+#   1 if the ingress TLS certificate file does not exist or is empty.
+#   1 if the ingress TLS private key file does not exist or is empty.
 load_certs_ingress() {
-    if [ -f "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
-        export INGRESS_CERTIFICATE="$(< "${CERT_DIR_PRODUCT}/ingress_server.crt")"
-    else
-        echo "Error: No enterprise-container Ingress TLS certificate found at ${CERT_DIR_PRODUCT}/ingress_server.crt! Please run --init!"
-        exit 1
-    fi
-    if [ -f "${CERT_DIR_PRODUCT}/ingress_server.key" ]; then
-        export INGRESS_PRIVATE_KEY="$(< "${CERT_DIR_PRODUCT}/ingress_server.key")"
-    else
-        echo "Error: No enterprise-container Ingress TLS private key found at ${CERT_DIR_PRODUCT}/ingress_server.key! Please run --init!"
-        exit 1
-    fi
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
+
+    load_cert "ingress_server.crt" "INGRESS_CERTIFICATE" "${cert_dir_product}"
+    load_cert "ingress_server.key" "INGRESS_PRIVATE_KEY" "${cert_dir_product}"
+    load_cert "ingress_server.crt" "OPENVAS_INGRESS_AGENT_CONTROL_CERTIFICATE" "${cert_dir_product}"
+    load_cert "ingress_server.key" "OPENVAS_INGRESS_AGENT_CONTROL_KEY" "${cert_dir_product}"
 }
 
 # =============================================================================

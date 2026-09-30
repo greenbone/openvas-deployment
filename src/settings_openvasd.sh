@@ -5,7 +5,7 @@
 # deployment.
 #
 # The function validates that an OpenVASD common name (CN) is provided and
-# stores it in the settings directory for later use.
+# stores it in the settings directory using init_setting().
 #
 # Arguments:
 #   $1
@@ -26,7 +26,7 @@ init_settings_openvasd() {
     local settings_dir="${2:-$SETTINGS_DIR}"
 
     if [ "${cn_openvasd}" ]; then
-        echo "${cn_openvasd}" > "${settings_dir}/OPENVASD_CN"
+        init_setting "OPENVASD_CN" "${cn_openvasd}" "${settings_dir}"
     else
         echo "Error: --cn-openvasd argument missing!"
     exit 1
@@ -38,9 +38,13 @@ init_settings_openvasd() {
 # =============================================================================
 # Loads the OpenVASD-specific settings for an enterprise-container deployment.
 #
-# The function reads the persisted OpenVASD common name (CN) from the settings
-# directory and exports it as CN_OPENVASD for use by subsequent OpenVASD
-# operations.
+# The function loads the persisted OpenVASD common name (CN) from the settings
+# directory and exports it as CN_OPENVASD using the generic load_setting()
+# helper.
+#
+# If OPENVASD_PORT is configured, the function exports the value as
+# OPENVAS_SCANNER_HOST_LISTEN_PORT to configure the OpenVAS scanner listener
+# port.
 #
 # Arguments:
 #   $1
@@ -51,18 +55,12 @@ init_settings_openvasd() {
 #   None.
 #
 # Exits:
-#   1 if the OpenVASD common name settings file is missing.
+#   1 if the OpenVASD common name settings file is missing or empty.
 load_settings_openvasd() {
     local settings_dir="${1:-$SETTINGS_DIR}"
 
-    if [ -f "${settings_dir}/OPENVASD_CN" ]; then
-        export CN_OPENVASD="$(< "${settings_dir}/OPENVASD_CN")"
-    else
-        echo "Error: No openvasd cn found at ${settings_dir}/OPENVASD_CN! Please run --init --deployment-mode openvasd!"
-        exit 1
-    fi
+    load_setting "OPENVASD_CN" "CN_OPENVASD" "${settings_dir}"
 
-    # Todo: put me into file
     if [ "${OPENVASD_PORT}" ]; then
         export OPENVAS_SCANNER_HOST_LISTEN_PORT="${OPENVASD_PORT}"
     fi

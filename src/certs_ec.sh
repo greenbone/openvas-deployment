@@ -96,27 +96,25 @@ load_certs_ec() {
 # =============================================================================
 # load_feed_key()
 # =============================================================================
-# Loads the feed key for volume-based feed synchronization.
+# Loads the Feed synchronization key when using volume-based Feed mode.
 #
-# If FEED_MODE is set to 'volume', the function reads the feed key from the
-# product certificate directory and exports its contents for use by the feed
-# synchronization service.
+# The function loads the Feed key from the product certificate directory using
+# the generic load_cert() helper and exports its contents as
+# FEED_SYNC_GSF_KEY for use by Feed synchronization operations.
 #
 # Arguments:
-#   None.
+#   $1  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if FEED_MODE is 'volume' and the feed key file is missing.
+#   1 if FEED_MODE is set to volume and the Feed key file does not exist or is
+#     empty.
 load_feed_key() {
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
+
     if [ "$FEED_MODE" == 'volume' ]; then
-        if [ -f "${CERT_DIR_PRODUCT}/feed.key" ]; then
-            export FEED_SYNC_GSF_KEY="$(< "${CERT_DIR_PRODUCT}/feed.key")"
-        else
-            echo "Error: No Feed key found at ${CERT_DIR_PRODUCT}/feed.key! Please run --init!"
-            exit 1
-        fi
+        load_cert "feed.key" "FEED_SYNC_GSF_KEY" "${cert_dir_product}"
     fi
 }

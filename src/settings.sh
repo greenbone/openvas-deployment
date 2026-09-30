@@ -1,12 +1,59 @@
 # =============================================================================
+# init_setting()
+# =============================================================================
+# Initializes a single setting file with the provided value.
+#
+# The function writes the given setting value to the specified settings file
+# and applies restrictive file permissions. If the setting file already exists
+# and force initialization is disabled, the existing value is preserved and
+# initialization is skipped.
+#
+# Arguments:
+#   $1
+#     Setting file name.
+#
+#   $2
+#     Setting value to write.
+#
+#   $3
+#     Settings directory.
+#     Defaults to SETTINGS_DIR.
+#
+#   $4
+#     Force initialization flag.
+#     Defaults to "n".
+#     If set to "n", existing non-empty setting files are not overwritten.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the setting file name or setting value is empty.
+init_setting() {
+    local file="${1:?Error: Setting file name is empty}"
+    local setting="${2:?Error: Setting $file is empty}"
+    local settings_dir="${3:-$SETTINGS_DIR}"
+    local force="${4:-n}"
+
+    if [ -s "${settings_dir}/${file}" ] && [ "${force}" == 'n' ]; then
+        chmod 0600 "${settings_dir}/${file}"
+        echo "Info: Setting ${settings_dir}/${file} exists, skip init!"
+        return
+    fi
+
+    printf '%s' "${setting}" > "${settings_dir}/${file}"
+    chmod 0600 "${settings_dir}/${file}"
+}
+
+# =============================================================================
 # init_settings()
 # =============================================================================
-# Validates the selected product and initializes its product-specific settings.
+# Validates the selected product and initializes the product settings.
 #
 # The function verifies that the provided product is included in
-# PRODUCT_OPTIONS. If supported, the product name is stored in WORKING_DIR and
-# initialization is dispatched to the corresponding product-specific settings
-# function.
+# PRODUCT_OPTIONS. If supported, the product identifier is stored in the
+# settings directory using init_setting and product-specific initialization is
+# executed.
 #
 # For enterprise-container, init_settings_ec is called. For
 # security-intelligence, init_settings_osi is called.
@@ -16,6 +63,10 @@
 #     Product name.
 #     Defaults to PRODUCT.
 #
+#   $2
+#     Settings directory.
+#     Defaults to WORKING_DIR.
+#
 # Returns:
 #   None.
 #
@@ -23,9 +74,10 @@
 #   1 if the selected product is not included in PRODUCT_OPTIONS.
 init_settings() {
     local product="${1:-$PRODUCT}"
+    local working_dir="${2:-$WORKING_DIR}"
 
     if [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${product} " ]]; then
-        echo "${product}" > "${WORKING_DIR}/PRODUCT"
+        init_setting 'PRODUCT' "${product}" "${working_dir}"
     else
         echo "Error: Product ${product} is not supported only ${PRODUCT_OPTIONS[*]}."
         exit 1
@@ -35,6 +87,46 @@ init_settings() {
         init_settings_ec
     elif [ "${product}" == 'security-intelligence' ]; then
         init_settings_osi
+    fi
+}
+
+# =============================================================================
+# load_setting()
+# =============================================================================
+# Loads a single setting value from a file and exports it as an environment
+# variable.
+#
+# The function reads the content of the specified setting file from the
+# settings directory and assigns it to the provided environment variable.
+# If the file does not exist or is empty, the function exits with an error.
+#
+# Arguments:
+#   $1
+#     Setting file name.
+#
+#   $2
+#     Environment variable name to export.
+#
+#   $3
+#     Optional settings directory.
+#     Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1
+#     If the setting file does not exist or is empty.
+load_setting() {
+    local setting_file="$1"
+    local env_var="$2"
+    local settings_dir="${3:-$SETTINGS_DIR}"
+
+    if [ -s "${settings_dir}/${setting_file}" ]; then
+        export "${env_var}=$(< "${settings_dir}/${setting_file}")"
+    else
+        echo "Error: No setting file found or is empty at ${settings_dir}/${setting_file}! Please run --init!"
+        exit 1
     fi
 }
 

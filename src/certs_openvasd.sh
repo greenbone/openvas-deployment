@@ -67,28 +67,24 @@ init_certs_openvasd() {
 # =============================================================================
 # load_certs_openvasd()
 # =============================================================================
-# Loads the TLS certificate, private key, and client CA certificate for an
-# OpenVASD instance.
+# Loads the OpenVAS scanner TLS certificate, private key, and CA certificate.
 #
-# The function derives the OpenVASD-specific certificate directory from the
-# configured common name (CN), reads the required certificate files, and
-# exports their contents for use by the OpenVAS scanner service.
+# The function loads the OpenVAS scanner TLS files from the deployment-specific
+# certificate directory using the generic load_cert() helper and exports their
+# contents as environment variables for use by OpenVAS scanner TLS
+# configuration.
 #
 # Arguments:
-#   $1
-#     OpenVASD common name (CN).
-#     Defaults to CN_OPENVASD.
-#
-#   $2
-#     Product certificate directory.
-#     Defaults to CERT_DIR_PRODUCT.
+#   $1  Optional OpenVASD common name (defaults to CN_OPENVASD).
+#   $2  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the OpenVASD server certificate, server private key, or client CA
-#   certificate is missing.
+#   1 if the OpenVAS scanner TLS certificate file does not exist or is empty.
+#   1 if the OpenVAS scanner TLS private key file does not exist or is empty.
+#   1 if the OpenVAS scanner CA certificate file does not exist or is empty.
 load_certs_openvasd() {
     local openvasd_cn="${1:-$CN_OPENVASD}"
     local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
@@ -96,22 +92,7 @@ load_certs_openvasd() {
     local openvasd_cert_folder="${openvasd_cn//./_}"
     local cert_dir_openvasd="${cert_dir_product}/${openvasd_cert_folder}"
 
-    if [ -f "${cert_dir_openvasd}/server.crt" ]; then
-        export OPENVAS_SCANNER_TLS_CERT="$(< "${cert_dir_openvasd}/server.crt")"
-    else
-        echo "Error: No enterprise-container TLS certificate found at ${cert_dir_openvasd}/server.crt! Please run --init --deployment-mode openvasd!"
-        exit 1
-    fi
-    if [ -f "${cert_dir_openvasd}/server.key" ]; then
-        export OPENVAS_SCANNER_TLS_KEY="$(< "${cert_dir_openvasd}/server.key")"
-    else
-        echo "Error: No enterprise-container TLS private key found at ${cert_dir_openvasd}/server.key! Please run --init --deployment-mode openvasd!"
-        exit 1
-    fi
-    if [ -f "${cert_dir_openvasd}/ca.crt" ]; then
-        export OPENVAS_TLS_CLIENT_CA="$(< "${cert_dir_openvasd}/ca.crt")"
-    else
-        echo "Error: No enterprise-container TLS CA certificate found at ${cert_dir_openvasd}/ca.crt! Please run --init --deployment-mode openvasd!"
-        exit 1
-    fi
+    load_cert "server.crt" "OPENVAS_SCANNER_TLS_CERT" "${cert_dir_openvasd}"
+    load_cert "server.key" "OPENVAS_SCANNER_TLS_KEY" "${cert_dir_openvasd}"
+    load_cert "ca.crt" "OPENVAS_TLS_CLIENT_CA" "${cert_dir_openvasd}"
 }

@@ -4,26 +4,41 @@
 # Creates the certificate authority and client certificates used for
 # authentication between gvmd and openvasd.
 #
-# The function generates a self-signed CA certificate and a client certificate
-# signed by that CA. The generated certificates and private keys are stored in
-# CERT_DIR_PRODUCT and are valid for 365 days.
+# The function creates a self-signed CA certificate and a client certificate
+# signed by that CA. Existing complete CA and client certificate/key pairs are
+# detected and reused to avoid unnecessary regeneration. Generated certificates
+# and private keys are stored in the specified certificate directory and are
+# valid for 365 days.
 #
 # Arguments:
-#   None.
+#   $1  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
+#
+# Exits:
+#   None.
 init_ca_gvmd_openvasd_auth() {
-    openssl genrsa -out "${CERT_DIR_PRODUCT}/ca.key" 2048 2>/dev/null
-    openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ca.key" -out "${CERT_DIR_PRODUCT}/ca.crt" -days 365 \
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
+
+    if [ -s "${cert_dir_product}/client.key" ] && \
+       [ -s "${cert_dir_product}/client.crt" ] && \
+       [ -s "${cert_dir_product}/ca.key" ] && \
+       [ -s "${cert_dir_product}/ca.crt" ]; then
+        echo "Info: GVMD client/CA certificate and key already exist in ${cert_dir_product}/client.key|client.crt|ca.key|ca.crt. Skipping generation."
+        return
+    fi
+
+    openssl genrsa -out "${cert_dir_product}/ca.key" 2048 2>/dev/null
+    openssl req -new -x509 -key "${cert_dir_product}/ca.key" -out "${cert_dir_product}/ca.crt" -days 365 \
        -addext "basicConstraints=CA:TRUE" \
        -subj "/CN=enterprise-container-ca" 2>/dev/null
 
-    openssl genrsa -out "${CERT_DIR_PRODUCT}/client.key" 2048 2>/dev/null
-    openssl req -new -key "${CERT_DIR_PRODUCT}/client.key" -out "${CERT_DIR_PRODUCT}/client.csr" \
+    openssl genrsa -out "${cert_dir_product}/client.key" 2048 2>/dev/null
+    openssl req -new -key "${cert_dir_product}/client.key" -out "${cert_dir_product}/client.csr" \
         -subj "/CN=enterprise-container-client" 2>/dev/null
-    openssl x509 -req -in "${CERT_DIR_PRODUCT}/client.csr" -out "${CERT_DIR_PRODUCT}/client.crt" -days 365 \
-        -CA "${CERT_DIR_PRODUCT}/ca.crt" -CAkey "${CERT_DIR_PRODUCT}/ca.key" \
+    openssl x509 -req -in "${cert_dir_product}/client.csr" -out "${cert_dir_product}/client.crt" -days 365 \
+        -CA "${cert_dir_product}/ca.crt" -CAkey "${cert_dir_product}/ca.key" \
         -extfile <(printf '%s\n' "basicConstraints=CA:FALSE" "extendedKeyUsage=clientAuth" "keyUsage=digitalSignature,keyEncipherment") 2>/dev/null
 }
 
@@ -50,29 +65,41 @@ init_certs_scan() {
 # =============================================================================
 # Generates the ECDSA key pair used for JWT signing and verification.
 #
-# The function creates a private EC key using the P-256 curve and stores it in
-# CERT_DIR_PRODUCT. It then derives and writes the corresponding public key in
-# PEM format.
+# The function creates an ECDSA private key using the P-256 curve and derives
+# the corresponding public key in PEM format. Existing JWT ECDSA private and
+# public keys are detected and reused to avoid unnecessary regeneration. The
+# generated keys are stored in the specified certificate directory.
 #
 # Arguments:
-#   None.
+#   $1  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
+#
+# Exits:
+#   None.
 init_jwt() {
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
+
+    if [ -s "${cert_dir_product}/ecdsa.private.pem" ] && [ -s "${cert_dir_product}/ecdsa.public.pem" ]; then
+        echo "Info: JWT ECDSA key pair already exists in ${cert_dir_product}/ecdsa.private.pem|ecdsa.public.pem. Skipping generation."
+        return
+    fi
+
     openssl genpkey \
         -algorithm EC \
         -outform PEM \
         -quiet \
-        -out "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
+        -out "${cert_dir_product}/ecdsa.private.pem" \
         -pkeyopt ec_paramgen_curve:"P-256" \
         -pkeyopt ec_param_enc:named_curve \
         >/dev/null 2>&1
+
     openssl ec \
-        -in "${CERT_DIR_PRODUCT}/ecdsa.private.pem" \
+        -in "${cert_dir_product}/ecdsa.private.pem" \
         -pubout \
         -outform PEM \
-        -out "${CERT_DIR_PRODUCT}/ecdsa.public.pem" \
+        -out "${cert_dir_product}/ecdsa.public.pem" \
         >/dev/null 2>&1
 }
 
@@ -82,30 +109,23 @@ init_jwt() {
 # Loads the ECDSA key pair required by the feed key service for scan
 # deployments.
 #
-# The function reads the private and public ECDSA keys from CERT_DIR_PRODUCT
-# and exports their contents for use by the feed key service JWT
+# The function loads the private and public ECDSA keys from the product
+# certificate directory using the generic load_cert() helper and exports their
+# contents as environment variables for use by the feed key service JWT
 # configuration.
 #
 # Arguments:
-#   None.
+#   $1  Optional product certificate directory (defaults to CERT_DIR_PRODUCT).
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if the ECDSA private key is missing.
-#   1 if the ECDSA public key is missing.
+#   1 if the ECDSA private key file does not exist or is empty.
+#   1 if the ECDSA public key file does not exist or is empty.
 load_certs_scan() {
-    if [ -f "${CERT_DIR_PRODUCT}/ecdsa.private.pem" ]; then
-        export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_KEY="$(< "${CERT_DIR_PRODUCT}/ecdsa.private.pem")"
-    else
-        echo "Error: No enterprise-container feed key service ecdsa key found at ${CERT_DIR_PRODUCT}/ecdsa.private.pem! Please run --init!"
-        exit 1
-    fi
-    if [ -f "${CERT_DIR_PRODUCT}/ecdsa.public.pem" ]; then
-        export OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_PUBLIC_KEY="$(< "${CERT_DIR_PRODUCT}/ecdsa.public.pem")"
-    else
-        echo "Error: No enterprise-container feed key service public ecdsa key found at ${CERT_DIR_PRODUCT}/ecdsa.public.pem! Please run --init!"
-        exit 1
-    fi
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
+
+    load_cert "ecdsa.private.pem" "OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_KEY" "${cert_dir_product}"
+    load_cert "ecdsa.public.pem" "OPENVAS_FEED_KEY_SERVICE_JWT_ECDSA_PUBLIC_KEY" "${cert_dir_product}"
 }
