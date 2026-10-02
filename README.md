@@ -6,9 +6,13 @@ This script is intended for demonstration purposes until the standard deployment
 The utility initializes, updates, starts, stops, and manages an enterprise-container or security-intelligence deployment. It also supports feed synchronization, TLS certificate management, administrator password changes, deployment logs and status, and OpenVASD scanner registration.
 
 > [!IMPORTANT]
-> - Requires compose version 5.3.1 and higher!
-> - Requires bash version 5.1 and higher!
-> - OSI requires an accurate system clock. Check the current system time with date and ensure that NTP synchronization is enabled, for example using systemd-timesyncd.
+> - Requires Docker Compose version 5.3.1 or higher.
+> - Requires Bash version 5.1 or higher.
+> - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
+> - Starting with `openvas-deployment` version 0.0.7:
+>   - An EC private key is required for the ingress service.
+>   - `--domain-name DOMAIN` and `--domain-ip IP` must be set. These options are not required for versions earlier than 0.0.7.
+>   - Support for OpenVAS Enterprise Container Agent component.
 
 ## Table of contents
 
