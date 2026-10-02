@@ -9,9 +9,9 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 > - Requires Docker Compose version 5.3.1 or higher.
 > - Requires Bash version 5.1 or higher.
 > - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
-> - Starting with `openvas-deployment` version 0.0.7:
+> - Starting with `openvas-deployment` version 0.0.8:
 >   - An EC private key is required for the ingress service.
->   - `--domain-name DOMAIN` and `--domain-ip IP` must be set. These options are not required for versions earlier than 0.0.7.
+>   - On `--init` `--domain-name DOMAIN` and `--domain-ip IP` must be set. These options are not required for versions earlier than 0.0.8.
 >   - Support for OpenVAS Enterprise Container Agent component.
 
 ## Table of contents
