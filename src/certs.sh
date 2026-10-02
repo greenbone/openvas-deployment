@@ -33,37 +33,64 @@ init_certs() {
 # =============================================================================
 # Initializes the TLS certificate and private key used by the ingress service.
 #
-# If both INGRESS_TLS_SERVER_CERT and INGRESS_TLS_SERVER_KEY point to existing
-# files, the function installs them into CERT_DIR_PRODUCT with restrictive file
+# If the configured certificate and private key exist and are non-empty, they
+# are installed into the product certificate directory with restrictive file
 # permissions.
 #
-# If no existing ingress certificate and private key are present in
-# CERT_DIR_PRODUCT, the function generates a self-signed RSA certificate and
-# private key for the ingress service. The generated certificate is valid for
-# 365 days and uses the common name "openvas-enterprise-container".
+# If no certificate and private key already exist in the product certificate
+# directory, the function generates a self-signed certificate using an EC
+# private key on the prime256v1 curve. The certificate is valid for 365 days,
+# uses "openvas-enterprise-container" as its common name, and is restricted to
+# TLS server authentication. Its subject alternative names include
+# "openvas-enterprise-container", "localhost", and "127.0.0.1".
 #
-# If an ingress certificate and private key already exist in CERT_DIR_PRODUCT,
-# the function leaves them unchanged.
+# If both an ingress certificate and private key already exist in the product
+# certificate directory, the function leaves them unchanged.
 #
 # Arguments:
-#   None.
+#   $1 - Optional path to the ingress TLS server certificate.
+#        Default: $INGRESS_TLS_SERVER_CERT.
+#   $2 - Optional path to the ingress TLS server private key.
+#        Default: $INGRESS_TLS_SERVER_KEY.
+#   $3 - Optional destination directory for the ingress certificate and key.
+#        Default: $CERT_DIR_PRODUCT.
 #
 # Returns:
 #   None.
 init_certs_ingress() {
-    if [ -s "${INGRESS_TLS_SERVER_CERT}" ] && [ -s "${INGRESS_TLS_SERVER_KEY}" ]; then
-        echo "Info: Using Ingress certs ${INGRESS_TLS_SERVER_CERT} and ${INGRESS_TLS_SERVER_KEY} ..."
-        install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
-        install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
+    local ingress_tls_server_cert="${1:-$INGRESS_TLS_SERVER_CERT}"
+    local ingress_tls_server_key="${1:-$INGRESS_TLS_SERVER_KEY}"
+    local cert_dir_product="${1:-$CERT_DIR_PRODUCT}"
+
+    if [ -s "${ingress_tls_server_cert}" ] && [ -s "${ingress_tls_server_key}" ]; then
+        echo "Info: Using Ingress certs ${ingress_tls_server_cert} and ${ingress_tls_server_key} ..."
+        install -m 0600 "${ingress_tls_server_cert}" "${cert_dir_product}/ingress_server.crt"
+        install -m 0600 "${ingress_tls_server_key}" "${cert_dir_product}/ingress_server.key"
     else
-        if [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.key" ] || [ ! -s "${CERT_DIR_PRODUCT}/ingress_server.crt" ]; then
+        if [ ! -s "${cert_dir_product}/ingress_server.key" ] || [ ! -s "${cert_dir_product}/ingress_server.crt" ]; then
             echo "Info: Create self sign Ingress certs!"
-            openssl genrsa -out "${CERT_DIR_PRODUCT}/ingress_server.key" 2048 2>/dev/null
-            openssl req -new -x509 -key "${CERT_DIR_PRODUCT}/ingress_server.key" -out "${CERT_DIR_PRODUCT}/ingress_server.crt" -days 365 \
-               -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
-               -subj "/CN=openvas-enterprise-container" 2>/dev/null
+            openssl ecparam \
+                -name prime256v1 \
+                -genkey \
+                -noout \
+                -out "${cert_dir_product}/ingress_server.key" \
+            2>/dev/null
+
+            openssl req \
+                -new \
+                -x509 \
+                -key "${cert_dir_product}/ingress_server.key" \
+                -out "${cert_dir_product}/ingress_server.crt" \
+                -sha256 \
+                -days 365 \
+                -subj "/CN=openvas-enterprise-container" \
+                -addext "basicConstraints=CA:FALSE" \
+                -addext "extendedKeyUsage=serverAuth" \
+                -addext "keyUsage=digitalSignature" \
+                -addext "subjectAltName=DNS:openvas-enterprise-container,DNS:localhost,IP:127.0.0.1" \
+            2>/dev/null
         else
-            echo "Info: Ingress certs ${CERT_DIR_PRODUCT}/ingress_server.key ${CERT_DIR_PRODUCT}/ingress_server.crt exists, skip init!"
+            echo "Info: Ingress certs ${cert_dir_product}/ingress_server.key ${cert_dir_product}/ingress_server.crt exists, skip init!"
         fi
     fi
 }
