@@ -155,11 +155,11 @@ Use one action per invocation.
 | `--openvasd-client-ca FILE` | OpenVASD client CA certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-cert FILE` | OpenVASD server certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-key FILE` | OpenVASD server private key required for `--init --deployment-mode openvasd`. Only enterprise-container. |
-| `--feed-mode MODE`       | Feed mode: `volume`, `service`, or `mount`. Default: `volume`. `mount` is currently rejected during initialization. Only enterprise-container. |
+| `--feed-mode MODE`       | Feed mode: `volume` or `service`. Default: `volume`. Only enterprise-container. |
 | `--feed-key FILE`        | Feed key file. Required for enterprise-container initialization. Base64-encoded keys are decoded before storage; other files are copied as-is. |
 | `--feed-path PATH`       | Host feed directory for feed mode `mount`. The `mount` mode is currently not supported. Only enterprise-container. |
 | `--feed-sync-hour HOUR`  | Daily scheduled feed synchronization hour from `0` to `23`. Default: `3`. Only enterprise-container. |
-| `--ccert-mode MODE`      | Client certificate mode: `ca`, `cert`, or `mount`. Default: `ca`. `mount` is currently rejected during initialization. Only enterprise-container. |
+| `--ccert-mode MODE`      | Client certificate mode: `ca` or `cert`. Default: `ca`. Only enterprise-container. |
 | `--ccert-path PATH`      | Host client-certificate directory for client certificate mode `mount`. The `mount` mode is currently not supported. Only enterprise-container. |
 | `--feed-sync-force-no-log` | With `--force-feed-sync` or `--change-feed-sync-hour`, do not prompt to follow the `feed-sync` service logs. Only enterprise-container. |
 | `--skip-init-if-exist`   | With `--init`, exit with status 0 without changing the existing `./product` directory if it already exists. |
@@ -222,10 +222,12 @@ chmod 0600 /path/to/license-file
 | ---------------------------- | --------------------------- |
 | `--ingress-server-cert FILE` | Ingress server certificate. During `--init`, provide this together with `--ingress-server-key`; otherwise a self-signed certificate pair is generated. |
 | `--ingress-server-key FILE`  | Ingress server private key. During `--init`, provide this together with `--ingress-server-cert`; otherwise a self-signed certificate pair is generated. |
+| `--ingress-agent-control-cert FILE` | Agent-control server certificate for `--init`. Supply together with `--ingress-agent-control-key`; otherwise a separate self-signed pair is generated if none exists. |
+| `--ingress-agent-control-key FILE` | Agent-control server private key for `--init`. Supply together with `--ingress-agent-control-cert`. |
 | `--update-ingress-cert-redeploy` | With `--update-ingress-certs`, redeploy the container immediately after replacing the certificates. |
 | `--skip-update-ingress-cert-redeploy` | With `--update-ingress-certs`, replace the certificates without redeploying the container. |
 
-If custom ingress certificates are not supplied during initialization, the utility generates a self-signed RSA certificate and key valid for 365 days. With `--update-ingress-certs`, both certificate files must exist. If neither redeploy option is supplied, the utility asks whether the container should be redeployed.
+If custom ingress certificates are not supplied during initialization, the utility generates a self-signed EC certificate and key valid for 365 days.
 
 ## OpenVASD options
 

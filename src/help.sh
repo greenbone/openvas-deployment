@@ -8,11 +8,13 @@ OpenVAS Deployment
 
 Support for enterprise-container and security-intelligence
 
-Requires compose version 5.3.1 and higher!
+Requires Bash 5.1+, Docker Compose 5.3.1+, ORAS, and a reachable Docker daemon.
 
 Info:
   There are several examples further down.
   You can move up and down with arrow keys. Press q to quit.
+  Deployment state is stored in ./product relative to the current directory.
+  Run subsequent commands from the directory used for initialization.
 
 
 Usage:
@@ -21,26 +23,31 @@ Usage:
 
 
 Actions:
+  Use one action per invocation.
+
   --init                         Initialize deployment, certificates, and
                                  deployment settings
 
   --init-openvasd-tar            Initialize OCI client certificates from an
                                  OpenVASD deployment archive created with
-                                 --create-openvasd-tar
+                                  --create-openvasd-tar
+                                 Only enterprise-container
 
   --change-admin-password        Change the gvmd administrator password
                                  Only enterprise-container
 
   --change-feed-sync-hour        Set the daily hour for scheduled feed
-                                 synchronization (0-23)
+                                 synchronization (0-23) and restart it immediately
                                  Only enterprise-container
 
   --force-feed-sync              Restart feed synchronization immediately
                                  Only enterprise-container
 
-  --update                       Download and install the latest product version
+  --update                       Download and extract the latest product version
 
   --run                          Start or redeploy the configured deployment
+                                 Uses the latest locally downloaded version;
+                                 run --update first to download a new version
 
   --logs                         Show deployment logs
                                  Optional: --service-name
@@ -77,8 +84,12 @@ Deployment options:
                                    enterprise-container | security-intelligence
 
   --domain-name NAME             Domain name for the deployment
+                                 Required for --init with security-intelligence
+                                 or enterprise-container scan mode
 
   --domain-ip IP                 Domain IP for the deployment
+                                 Required for --init in enterprise-container
+                                 scan mode (including agent support)
 
   --metafeed-cert FILE           Metafeed client certificate
                                  Only security-intelligence
@@ -104,7 +115,7 @@ Deployment options:
                                  Only enterprise-container
 
   --feed-mode MODE               Feed mode:
-                                   volume | service | mount
+                                   volume | service
                                  Default: ${FEED_MODE}
                                  Only enterprise-container
 
@@ -112,25 +123,32 @@ Deployment options:
                                  Only enterprise-container
 
   --feed-path PATH               Host feed directory used with mount mode
+                                 Mount mode is currently not supported
                                  Only enterprise-container
 
   --feed-sync-hour HOUR          Scheduled feed synchronization hour (0-23)
                                  Default: ${GREENBONE_FEED_SYNC_JOB_HOUR}
                                  Only enterprise-container
 
-  --feed-sync-force-no-log       Force feed synchronization without logging
+  --feed-sync-force-no-log       Skip the prompt to follow feed-sync logs with
+                                 --force-feed-sync or --change-feed-sync-hour
                                  Only enterprise-container
 
   --ccert-mode MODE              Client certificate mode:
-                                   ca | cert | mount
+                                   ca | cert
                                  Default: ${CCERT_MODE}
                                  Only enterprise-container
 
   --ccert-path PATH              Host client certificate directory used with
-                                 mount mode
+                                  mount mode
+                                 Mount mode is currently not supported
                                  Only enterprise-container
 
   --skip-init-if-exist           Exit with status 0 if already initialized
+
+
+Log options:
+  --service-name SERVICE         Restrict --logs to one Docker Compose service
 
 
 Administrator options:
@@ -157,6 +175,20 @@ Ingress certificate options:
   --ingress-server-cert FILE     Ingress server certificate
 
   --ingress-server-key FILE      Ingress server private key
+                                 Supply both ingress files together
+                                 An EC private key is required for ingress
+
+  --ingress-agent-control-cert FILE
+                                 Agent-control server certificate for --init
+
+  --ingress-agent-control-key FILE
+                                 Agent-control server private key for --init
+                                 Supply both files, otherwise a separate
+                                 self-signed pair is created if none exists
+
+  During --init, existing certificate pairs are preserved unless replacement
+  files are supplied. Missing pairs are generated separately as self-signed
+  EC certificates valid for 365 days.
 
   --update-ingress-cert-redeploy
                                  Redeploy after updating ingress certificates
@@ -169,8 +201,9 @@ Ingress certificate options:
 OpenVASD options:
   --cn-openvasd NAME             OpenVASD common name and scanner hostname
 
-  --openvasd-port PORT           OpenVASD scanner port
-                                 Default port: 443
+  --openvasd-port PORT           OpenVASD scanner or exposed host port
+                                 Deployment default: 443
+                                 Required explicitly with --add-openvasd
 
   --openvasd-uuid UUID           Scanner UUID returned by --get-openvasds
 
@@ -208,7 +241,7 @@ Initialize a security-intelligence deployment:
     --license-file license.toml \\
     --domain-name osi.example.com
 
-Initialize a enterprise-container scan deployment:
+Initialize an enterprise-container scan deployment:
   $0 --init \\
     --product enterprise-container \\
     --license-file license.toml \\
@@ -216,7 +249,7 @@ Initialize a enterprise-container scan deployment:
     --domain-name oec.example.com \\
     --domain-ip IP
 
-Initialize a enterprise-container scan deployment with a predefined administrator password:
+Initialize an enterprise-container scan deployment with a predefined administrator password:
   $0 --init \\
     --product enterprise-container \\
     --admin-password 'secure-password' \\
@@ -225,7 +258,7 @@ Initialize a enterprise-container scan deployment with a predefined administrato
     --domain-name oec.example.com \\
     --domain-ip IP
 
-Initialize a enterprise-container deployment with scheduled feed synchronization:
+Initialize an enterprise-container deployment with scheduled feed synchronization:
   $0 --init \\
     --product enterprise-container \\
     --feed-sync-hour 3 \\
@@ -234,13 +267,15 @@ Initialize a enterprise-container deployment with scheduled feed synchronization
     --domain-name oec.example.com \\
     --domain-ip IP
 
-Initialize a enterprise-container with custom ingress certificates:
+Initialize an enterprise-container with separate ingress and agent-control certificates:
   $0 --init \\
     --product enterprise-container \\
     --license-file license.toml \\
     --feed-key /path/to/prod-feed.key \\
     --ingress-server-cert /path/to/ingress.crt \\
     --ingress-server-key /path/to/ingress.key \\
+    --ingress-agent-control-cert /path/to/agent-control.crt \\
+    --ingress-agent-control-key /path/to/agent-control.key \\
     --domain-name oec.example.com \\
     --domain-ip IP
 
@@ -263,6 +298,7 @@ Restart feed synchronization immediately:
 
 Show logs and status:
   $0 --logs
+  $0 --logs --service-name SERVICE
   $0 --ps
 
 
@@ -327,6 +363,10 @@ Create an OpenVASD deployment archive:
   $0 --create-openvasd-tar \\
      --cn-openvasd sensor.example.com \\
      --openvasd-tar-with-images
+
+
+Install Docker OCI credentials from an extracted archive on the sensor host:
+  $0 --init-openvasd-tar --init-docker-oci
 
 
 Run an extracted OpenVASD archive on your OpenVASD sensor node/host:
