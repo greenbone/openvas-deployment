@@ -31,25 +31,22 @@ init_certs() {
 # =============================================================================
 # init_certs_ingress()
 # =============================================================================
-# Initializes TLS certificate pairs for the ingress server and agent control.
+# Initializes the TLS certificate and private key pair for the ingress server.
 #
-# Each certificate pair is initialized by init_certs_ingress_pair(). Certificate
-# and private key paths for both endpoints can be overridden with function
-# arguments. If not provided, the corresponding environment variables are used.
+# The source certificate and private key paths can be provided as function
+# arguments. If omitted or empty, the corresponding environment variables are
+# used. The destination directory can also be overridden and defaults to the
+# product certificate directory.
 #
-# Both certificate pairs are installed in or generated within the same product
-# certificate directory.
+# The certificate pair is initialized by init_certs_ingress_pair() using
+# "ingress_server" as the destination certificate name.
 #
 # Arguments:
 #   $1 - Optional path to the ingress TLS server certificate.
 #        Default: $INGRESS_TLS_SERVER_CERT.
 #   $2 - Optional path to the ingress TLS server private key.
 #        Default: $INGRESS_TLS_SERVER_KEY.
-#   $3 - Optional path to the ingress agent-control certificate.
-#        Default: $INGRESS_AGENT_CONTROL_CERT.
-#   $4 - Optional path to the ingress agent-control private key.
-#        Default: $INGRESS_AGENT_CONTROL_KEY.
-#   $5 - Optional destination directory for both certificate pairs.
+#   $3 - Optional destination directory for the certificate pair.
 #        Default: $CERT_DIR_PRODUCT.
 #
 # Returns:
@@ -57,12 +54,9 @@ init_certs() {
 init_certs_ingress() {
     local ingress_tls_server_cert="${1:-$INGRESS_TLS_SERVER_CERT}"
     local ingress_tls_server_key="${2:-$INGRESS_TLS_SERVER_KEY}"
-    local ingress_agent_control_cert="${3:-$INGRESS_AGENT_CONTROL_CERT}"
-    local ingress_agent_control_key="${4:-$INGRESS_AGENT_CONTROL_KEY}"
-    local cert_dir_product="${5:-$CERT_DIR_PRODUCT}"
+    local cert_dir_product="${3:-$CERT_DIR_PRODUCT}"
 
     init_certs_ingress_pair "${ingress_tls_server_cert}" "${ingress_tls_server_key}" "${cert_dir_product}" 'ingress_server'
-    init_certs_ingress_pair "${ingress_agent_control_cert}" "${ingress_agent_control_key}" "${cert_dir_product}" 'ingress_agent_control'
 }
 
 # =============================================================================
@@ -224,15 +218,15 @@ load_certs() {
 # =============================================================================
 # load_certs_ingress()
 # =============================================================================
-# Loads the ingress server and agent-control TLS certificate pairs.
+# Loads the ingress server TLS certificate and private key.
 #
-# The certificates and private keys are loaded from the product certificate
-# directory using load_cert() and assigned to their corresponding environment
-# variables.
+# The certificate and private key are loaded from the product certificate
+# directory using load_cert() and assigned to INGRESS_CERTIFICATE and
+# INGRESS_PRIVATE_KEY, respectively.
 #
 # Arguments:
-#   $1 - Optional directory containing the ingress certificates and private
-#        keys. Default: $CERT_DIR_PRODUCT.
+#   $1 - Optional directory containing the ingress certificate and private key.
+#        Default: $CERT_DIR_PRODUCT.
 #
 # Returns:
 #   None.
@@ -241,8 +235,6 @@ load_certs_ingress() {
 
     load_cert "ingress_server.crt" "INGRESS_CERTIFICATE" "${cert_dir_product}"
     load_cert "ingress_server.key" "INGRESS_PRIVATE_KEY" "${cert_dir_product}"
-    load_cert "ingress_agent_control.crt" "OPENVAS_INGRESS_AGENT_CONTROL_CERTIFICATE" "${cert_dir_product}"
-    load_cert "ingress_agent_control.key" "OPENVAS_INGRESS_AGENT_CONTROL_KEY" "${cert_dir_product}"
 }
 
 # =============================================================================
