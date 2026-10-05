@@ -75,6 +75,13 @@ change_force_feed_sync() {
     openvas-deployment --force-feed-sync --feed-sync-force-no-log
 }
 
+update_ingress_certs_agent() {
+    echo_task 'Test update ingress agent control certs'
+    openvas-deployment --update-ingress-agent-control-certs --skip-update-ingress-cert-redeploy \
+        --ingress-agent-control-cert ./test_ingress_server.crt \
+        --ingress-agent-control-key ./test_ingress_server.key
+}
+
 run_openvasd_cert_tar() {
     echo_task 'Test Openvasd cert tar gen'
     openvas-deployment --create-openvasd-certs --cn-openvasd sensor1.test.test
@@ -201,6 +208,7 @@ if [ "${SKIP:-}" != 'run' ]; then
     change_force_feed_sync
     gen_certs_ingress
     update_ingress_certs
+    update_ingress_certs_agent
     run_openvasd_cert_tar
     run_openvasd_tar
     run_openvasd_tar_with_images

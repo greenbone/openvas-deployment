@@ -5,6 +5,7 @@ SOURCES := \
 	src/args.sh \
 	src/artifact.sh \
 	src/certs.sh \
+	src/certs_agent.sh \
 	src/certs_ec.sh \
 	src/certs_openvasd.sh \
 	src/certs_osi.sh \

@@ -129,6 +129,18 @@ parse_args() {
                 INGRESS_TLS_SERVER_KEY="$2"
                 shift 2
                 ;;
+            --update-ingress-agent-control-certs)
+                MODE='update-ingress-agent-control-certs'
+                shift 1
+                ;;
+            --ingress-agent-control-cert)
+                INGRESS_AGENT_CONTROL_CERT="$2"
+                shift 2
+                ;;
+            --ingress-agent-control-key)
+                INGRESS_AGENT_CONTROL_KEY="$2"
+                shift 2
+                ;;
             --update-ingress-cert-redeploy)
                 UPDATE_INGRESS_CERT_REDEPLOY='y'
                 shift 1
@@ -358,6 +370,14 @@ run() {
     fi
     if [ "${MODE}" == 'update-ingress-certs' ]; then
         update_ingress_certs
+    fi
+    if [ "${MODE}" == 'update-ingress-agent-control-certs' ]; then
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            update_ingress_certs_agent
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
     fi
     if [ "${MODE}" == 'change-admin-password' ]; then
         if [ "${PRODUCT}" == 'enterprise-container' ]; then

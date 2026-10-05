@@ -1,18 +1,18 @@
 # =============================================================================
 # init_certs_ec()
 # =============================================================================
-# Initializes certificates for the EC deployment according to the selected
-# deployment mode.
+# Initializes certificates and feed verification keys for the EC deployment.
 #
-# In scan mode, the function initializes both scan-related and ingress
-# certificates. In openvasd mode, it initializes the certificates required by
-# openvasd. Other deployment modes do not trigger certificate initialization.
+# The feed verification key is initialized for all deployment modes.
+#
+# In scan mode, initializes the scan, ingress agent-control, and ingress server
+# certificate pairs. In openvasd mode, initializes the certificates required by
+# openvasd. Other deployment modes do not trigger additional certificate
+# initialization.
 #
 # Arguments:
-#   $1
-#     Deployment mode that determines which certificate initialization
-#     functions are called.
-#     Defaults to DEPLOYMENT_MODE.
+#   $1 - Optional deployment mode that determines which certificates are
+#        initialized. Default: $DEPLOYMENT_MODE.
 #
 # Returns:
 #   None.
@@ -24,6 +24,7 @@ init_certs_ec() {
     init_feed_key
     if [ "${deployment_mode}" == 'scan' ]; then
         init_certs_scan
+        init_certs_agent
         init_certs_ingress
     elif [ "${deployment_mode}" == 'openvasd' ]; then
         init_certs_openvasd
@@ -67,14 +68,15 @@ init_feed_key(){
 # =============================================================================
 # load_certs_ec()
 # =============================================================================
-# Loads the certificate configuration required for the selected
-# enterprise-container deployment mode.
+# Loads the certificate and feed verification key configuration for the EC
+# deployment.
 #
-# In openvasd mode, the function loads the OpenVASD certificates and, if
-# OPENVASD_PORT is set, exports it as OPENVAS_SCANNER_HOST_LISTEN_PORT.
+# The feed verification key is loaded for all deployment modes.
 #
-# In scan mode, the function loads the scan and ingress certificate
-# configuration.
+# In openvasd mode, loads the certificates required by openvasd. In scan mode,
+# loads the scan, ingress agent-control, and ingress server certificate
+# configuration. Other deployment modes do not trigger additional certificate
+# loading.
 #
 # Arguments:
 #   None.
@@ -89,6 +91,7 @@ load_certs_ec() {
         load_certs_openvasd
     elif [ "${DEPLOYMENT_MODE}" == 'scan' ]; then
         load_certs_scan
+        load_certs_agent
         load_certs_ingress
     fi
 }
