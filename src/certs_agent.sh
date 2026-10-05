@@ -108,6 +108,7 @@ update_ingress_certs_agent() {
         read -r -p "Info: Redeploy the ingress container, to activate the new Ingress certificates? (y/n)" update_ingress_cert_redeploy
     fi
     if [ "${update_ingress_cert_redeploy}" == "y" ]; then
+        compose_recreate_container 'agent-control'
         compose_recreate_container 'ingress-agent-control'
     fi
 }
