@@ -60,6 +60,10 @@ Actions:
 
   --update-ingress-certs         Replace ingress TLS certificate and key
 
+  --update-ingress-agent-control-certs
+                                 Replace ingress Agent Control TLS certificate and key
+                                 Only enterprise-container
+
   --create-openvasd-certs        Create TLS certificates for an OpenVASD scanner
                                  Only enterprise-container
 
@@ -175,16 +179,13 @@ Ingress certificate options:
   --ingress-server-cert FILE     Ingress server certificate
 
   --ingress-server-key FILE      Ingress server private key
-                                 Supply both ingress files together
-                                 An EC private key is required for ingress
 
   --ingress-agent-control-cert FILE
-                                 Agent-control server certificate for --init
+                                 Agent-control server certificate
 
   --ingress-agent-control-key FILE
-                                 Agent-control server private key for --init
-                                 Supply both files, otherwise a separate
-                                 self-signed pair is created if none exists
+                                 Agent-control server private key,
+                                 an EC private key is required!
 
   During --init, existing certificate pairs are preserved unless replacement
   files are supplied. Missing pairs are generated separately as self-signed

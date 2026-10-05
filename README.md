@@ -135,6 +135,7 @@ Use one action per invocation.
 | `--down`                  | Stop the deployment.                                                                       |
 | `--down-volumes`          | Stop the deployment and remove its Docker volumes and orphaned containers.                 |
 | `--update-ingress-certs`  | Replace the ingress TLS certificate and private key. Requires both ingress certificate options. |
+| `--update-ingress-agent-control-certs`  | Replace the ingress Agent Control TLS certificate and private key. Requires both ingress certificate options. Only enterprise-container. |
 | `--create-openvasd-certs` | Create TLS certificates for an OpenVASD scanner using the enterprise-container scan CA. Requires `--cn-openvasd`. Only enterprise-container. |
 | `--create-openvasd-tar`   | Create a portable OpenVASD deployment archive in the current directory. Requires `--cn-openvasd`. Only enterprise-container. |
 | `--get-openvasds`         | List OpenVASD scanners registered in `gvmd`. Requires the enterprise-container scan `gvmd` container to be running. Only enterprise-container. |
@@ -223,7 +224,7 @@ chmod 0600 /path/to/license-file
 | `--ingress-server-cert FILE` | Ingress server certificate. During `--init`, provide this together with `--ingress-server-key`; otherwise a self-signed certificate pair is generated. |
 | `--ingress-server-key FILE`  | Ingress server private key. During `--init`, provide this together with `--ingress-server-cert`; otherwise a self-signed certificate pair is generated. |
 | `--ingress-agent-control-cert FILE` | Agent-control server certificate for `--init`. Supply together with `--ingress-agent-control-key`; otherwise a separate self-signed pair is generated if none exists. |
-| `--ingress-agent-control-key FILE` | Agent-control server private key for `--init`. Supply together with `--ingress-agent-control-cert`. |
+| `--ingress-agent-control-key FILE` | Agent-control server private key for `--init`. Supply together with `--ingress-agent-control-cert`. An EC private key is required! |
 | `--update-ingress-cert-redeploy` | With `--update-ingress-certs`, redeploy the container immediately after replacing the certificates. |
 | `--skip-update-ingress-cert-redeploy` | With `--update-ingress-certs`, replace the certificates without redeploying the container. |
 

@@ -240,40 +240,55 @@ load_certs_ingress() {
 # =============================================================================
 # update_ingress_certs()
 # =============================================================================
-# Updates the ingress TLS certificate and private key.
+# Updates the ingress server TLS certificate and private key.
 #
-# The function validates the configured ingress server certificate and private
-# key, then installs them into CERT_DIR_PRODUCT with restrictive permissions.
+# The source certificate and private key paths can be provided as function
+# arguments. If omitted or empty, the corresponding environment variables are
+# used. The certificate pair is installed in the product certificate directory
+# using init_certs_ingress_pair() with "ingress_server" as the destination
+# certificate name.
 #
-# The first argument controls whether the ingress container is recreated after
-# the certificates are installed and defaults to UPDATE_INGRESS_CERT_REDEPLOY.
-# If neither value is set, the user is prompted whether to recreate the ingress
-# container. The container is recreated only when the resulting value is "y".
+# Both source files must exist and be non-empty. Otherwise, the function exits
+# with an error.
+#
+# The fourth argument controls whether the ingress container is recreated after
+# the certificates are installed. If omitted or empty, it defaults to
+# UPDATE_INGRESS_CERT_REDEPLOY. If that value is also empty, the user is
+# prompted whether to recreate the container. The container is recreated only
+# when the resulting value is "y".
 #
 # Arguments:
-#   $1
-#     Optional ingress container redeploy setting.
-#     Defaults to UPDATE_INGRESS_CERT_REDEPLOY.
+#   $1 - Optional path to the ingress server certificate.
+#        Default: $INGRESS_TLS_SERVER_CERT.
+#   $2 - Optional path to the ingress server private key.
+#        Default: $INGRESS_TLS_SERVER_KEY.
+#   $3 - Optional destination directory for the certificate pair.
+#        Default: $CERT_DIR_PRODUCT.
+#   $4 - Optional ingress container redeploy setting.
+#        Default: $UPDATE_INGRESS_CERT_REDEPLOY.
 #
 # Returns:
 #   None.
 #
 # Exits:
-#   1 if INGRESS_TLS_SERVER_CERT does not reference an existing file.
-#   1 if INGRESS_TLS_SERVER_KEY does not reference an existing file.
+#   1 if the ingress server certificate is missing or empty.
+#   1 if the ingress server private key is missing or empty.
 update_ingress_certs() {
-    local update_ingress_cert_redeploy="${1:-$UPDATE_INGRESS_CERT_REDEPLOY}"
+    local ingress_tls_server_cert="${1:-$INGRESS_TLS_SERVER_CERT}"
+    local ingress_tls_server_key="${2:-$INGRESS_TLS_SERVER_KEY}"
+    local cert_dir_product="${3:-$CERT_DIR_PRODUCT}"
+    local update_ingress_cert_redeploy="${4:-$UPDATE_INGRESS_CERT_REDEPLOY}"
 
-    if ! [ -f "${INGRESS_TLS_SERVER_CERT}" ]; then
-        echo "Error: --ingress-server-cert argument missing or file ${INGRESS_TLS_SERVER_CERT} not found! Required for --update-ingress-certs !"
+
+    if [ -s "${ingress_tls_server_cert}" ] && [ -s "${ingress_tls_server_key}" ]; then
+        init_certs_ingress_pair "${ingress_tls_server_cert}" "${ingress_tls_server_key}" "${cert_dir_product}" 'ingress_server'
+    elif [ ! -s "${ingress_tls_server_cert}" ]; then
+        echo "Error: --ingress-server-cert argument missing or file ${ingress_tls_server_cert} not found! Required for --update-ingress-certs !"
+        exit 1
+    elif [ ! -s "${ingress_tls_server_key}" ]; then
+        echo "Error: --ingress-server-key argument missing or file ${ingress_tls_server_key} not found! Required for --update-ingress-certs !"
         exit 1
     fi
-    if ! [ -f "${INGRESS_TLS_SERVER_KEY}" ]; then
-        echo "Error: --ingress-server-key argument missing or file ${INGRESS_TLS_SERVER_KEY} not found! Required for --update-ingress-certs !"
-        exit 1
-    fi
-    install -m 0600 "${INGRESS_TLS_SERVER_CERT}" "${CERT_DIR_PRODUCT}/ingress_server.crt"
-    install -m 0600 "${INGRESS_TLS_SERVER_KEY}" "${CERT_DIR_PRODUCT}/ingress_server.key"
 
     if ! [ "${update_ingress_cert_redeploy}" ]; then
         read -r -p "Info: Redeploy the ingress container, to activate the new Ingress certificates? (y/n)" update_ingress_cert_redeploy
