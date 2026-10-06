@@ -34,6 +34,8 @@ init_secrets_osi() {
 
     # Notification Service
     init_secret "NOTIFICATION_SERVICE_DB_PASSWORD" gen_password
+    init_secret "NOTIFICATION_SERVICE_ENCRYPTION_KEY" gen_password
+    init_secret "NOTIFICATION_SERVICE_SALT" gen_password
 
     # REPORT
     init_secret "ASSET_MANAGEMENT_DB_PASSWORD" gen_password
@@ -90,6 +92,8 @@ load_secrets_osi() {
 
     # Notification Service
     load_secret "NOTIFICATION_SERVICE_DB_PASSWORD" "NOTIFICATION_SERVICE_DB_PASSWORD" "${secrets_dir}"
+    load_secret "NOTIFICATION_SERVICE_ENCRYPTION_KEY" "NOTIFICATION_SERVICE_ENCRYPTION_KEY" "${secrets_dir}"
+    load_secret "NOTIFICATION_SERVICE_SALT" "NOTIFICATION_SERVICE_SALT" "${secrets_dir}"
 
     # Asset Management / Report
     load_secret "ASSET_MANAGEMENT_DB_PASSWORD" "ASSET_MANAGEMENT_DB_PASSWORD" "${secrets_dir}"
