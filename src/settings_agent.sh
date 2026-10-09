@@ -3,7 +3,7 @@
 # =============================================================================
 # Initializes the agent-specific settings.
 #
-# The function persists the configured domain name and domain IP address into
+# The function validates and persists the domain name and IPv4/IPv6 address into
 # the settings directory using the generic init_setting() helper. These values
 # are required for subsequent agent deployment operations.
 #
@@ -24,7 +24,7 @@
 #   None.
 #
 # Exits:
-#   1 if the domain name or domain IP address is not set.
+#   1 if the domain name or domain IP address is missing or invalid.
 init_settings_agent() {
     local domain_name="${1:-$DOMAIN_NAME}"
     local domain_ip="${2:-$DOMAIN_IP}"

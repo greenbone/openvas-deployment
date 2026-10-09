@@ -93,7 +93,19 @@ Start or redeploy the configured deployment:
 openvas-deployment --run
 ```
 
-`--run` uses the latest locally downloaded product version. Run `--update` before the first deployment and whenever a newer product version should be downloaded.
+`--run` uses the latest locally downloaded product version by default. Run `--update` before the first deployment and whenever a newer product version should be downloaded.
+
+Use `--version VERSION` to select a specific artifact version for the current invocation:
+
+```sh
+openvas-deployment --update --version 1.2.3
+openvas-deployment --run --version 1.2.3
+openvas-deployment --logs --version 1.2.3
+openvas-deployment --ps --version 1.2.3
+openvas-deployment --down --version 1.2.3
+```
+
+With `--update`, this downloads the exact registry tag. Commands using local artifacts (including `--down-volumes`, container recreation, certificate redeployment, and `--create-openvasd-tar`) use the selected local version and fail if its `compose.yaml` is missing. Download it with `--update --version VERSION` first. An OpenVASD archive created with `--version` includes only that artifact version. The selection is not persisted; repeat `--version` on subsequent commands. Without it, downloads select the latest registry release and local commands select the latest downloaded version.
 
 Check the deployment status:
 
@@ -126,10 +138,12 @@ Use one action per invocation.
 | `--init-openvasd-tar`     | Install Docker OCI client credentials for an extracted OpenVASD deployment archive.        |
 | `--create-openvasd-cert-tar` | Create an OpenVASD certificate archive in the current directory. Requires `--cn-openvasd`. Only enterprise-container. |
 | `--change-admin-password` | Change the `gvmd` administrator password. Requires `--admin-password` and a running enterprise-container scan deployment. Only enterprise-container. |
+| `--change-setting NAME VALUE` | Replace an existing saved setting for either product. Values must satisfy initialization constraints: supported product/mode values, a feed-sync hour from 0–23, valid domain names and IPv4/IPv6 addresses, and non-empty values. Run `--run` afterward to apply the change. |
+| `--list-settings` | List saved settings for the selected product as `NAME=VALUE` pairs. |
 | `--change-feed-sync-hour` | Change the daily scheduled feed synchronization hour and immediately restart feed synchronization. Requires `--feed-sync-hour`. Only enterprise-container. |
 | `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
-| `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
-| `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
+| `--update`                | Download and extract `--version VERSION` or the latest product version from the configured OCI registry. If the selected version is already present locally, no download is performed. |
+| `--run`                   | Start or redeploy the configured deployment using `--version VERSION` or the latest locally downloaded product version. |
 | `--logs`                  | Show deployment logs. Optionally restrict the output to one service with `--service-name`. |
 | `--ps`                    | Show the deployment status, including stopped containers.                                  |
 | `--down`                  | Stop the deployment.                                                                       |
@@ -143,13 +157,36 @@ Use one action per invocation.
 | `--del-openvasd`          | Remove an OpenVASD scanner from `gvmd`. Requires `--openvasd-uuid`. Only enterprise-container. |
 | `-h`, `--help`            | Display the command-line help.                                                             |
 
+### Change a saved setting
+
+Run `openvas-deployment --list-settings` to display the selected product's saved
+setting names and current values in filename order. This works for both products;
+an empty settings directory produces no output, and a missing directory reports
+an error requesting initialization.
+
+Use the uppercase file name from `./product/settings/<product>/` as `NAME`.
+The setting must already exist. `VALUE` must be non-empty and is stored literally,
+without setting-specific validation; quote values containing spaces or shell characters.
+
+```bash
+openvas-deployment --change-setting GREENBONE_FEED_SYNC_JOB_HOUR 4
+openvas-deployment --run
+```
+
+This updates the saved setting with file permissions `0600`. For changing the
+feed synchronization hour and restarting synchronization immediately, use
+`--change-feed-sync-hour --feed-sync-hour 4` instead.
+
 ## Deployment options
 
 | Option                   | Description                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `--product PRODUCT`       | Product to deploy: `enterprise-container` or `security-intelligence`. Required for `--init`; stored in `./product/PRODUCT` for later commands. |
-| `--domain-name NAME`      | Domain name for the deployment. |
-| `--domain-ip IP`          | Domain IP for the deployment. |
+| `--domain-name NAME`      | DNS host name for the deployment: ASCII letters, digits, and interior hyphens; labels up to 63 characters and a total length up to 253 characters (excluding an optional trailing dot). |
+| `--domain-ip IP`          | IPv4 or IPv6 address for the deployment. IPv4 uses four decimal octets (0–255, without leading zeroes); IPv6 supports compressed notation and embedded IPv4, without brackets, a zone ID, or a subnet prefix. |
+
+Domain validation applies both during `--init` and when updating `DOMAIN_NAME` or
+`DOMAIN_IP` with `--change-setting`.
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
