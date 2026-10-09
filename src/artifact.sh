@@ -1,14 +1,14 @@
 # =============================================================================
 # artifact_download()
 # =============================================================================
-# Downloads and extracts the latest available product release from the OCI
+# Downloads and extracts the requested or latest product release from the OCI
 # registry.
 #
 # The function verifies that the required OCI client certificate and private
-# key are available, determines the latest version published for PRODUCT_URL,
+# key are available, uses REQUESTED_VERSION or the latest version for PRODUCT_URL,
 # and downloads the corresponding artifact using ORAS.
 #
-# If the latest version has already been downloaded and contains a compose.yaml
+# If the selected version has already been downloaded and contains a compose.yaml
 # file, the function returns without downloading it again. Otherwise, it
 # creates a version-specific artifact directory, pulls the product archive,
 # extracts its contents, and removes the downloaded archive.
@@ -17,7 +17,7 @@
 #   None.
 #
 # Returns:
-#   0 if the latest product version is already available locally.
+#   0 if the selected product version is already available locally.
 #
 # Exits:
 #   1 if a required OCI client certificate or key is missing.
@@ -36,10 +36,13 @@ artifact_download() {
         exit 1
     fi
 
-    # Get latest version
-    set +e
-    VERSION="$(oras repo tags --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sed '/-/! s/$/_/' | sort -Vu | sed 's/_$//' | tail -1)"
-    set -e
+    VERSION="${REQUESTED_VERSION}"
+    if ! [ "${VERSION}" ]; then
+        # Get latest version
+        set +e
+        VERSION="$(oras repo tags --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sed '/-/! s/$/_/' | sort -Vu | sed 's/_$//' | tail -1)"
+        set -e
+    fi
 
     # Check if VERSION exist
     if ! [ "${VERSION}" ]; then
@@ -50,7 +53,7 @@ artifact_download() {
 
     # Check if compose files already exist
     if [ -f "$ARTIFACT_DIR/${VERSION}/compose.yaml" ]; then
-        echo "Info: Latest version ${VERSION} already downloaded."
+        echo "Info: Version ${VERSION} already downloaded."
         return 0
     fi
 
@@ -68,7 +71,8 @@ artifact_download() {
 # =============================================================================
 # get_latest_version()
 # =============================================================================
-# Determines the latest locally downloaded product version.
+# Determines the requested or latest locally downloaded product version.
+# An explicit REQUESTED_VERSION must contain compose.yaml locally.
 #
 # The function scans ARTIFACT_DIR for version directories matching a semantic
 # version pattern, sorts the discovered versions, and stores the latest version
@@ -84,6 +88,15 @@ artifact_download() {
 #   1 if ARTIFACT_DIR does not exist.
 #   1 if no downloaded product version can be found in ARTIFACT_DIR.
 get_latest_version() {
+    if [ "${REQUESTED_VERSION}" ]; then
+        VERSION="${REQUESTED_VERSION}"
+        if ! [ -f "${ARTIFACT_DIR}/${VERSION}/compose.yaml" ]; then
+            echo "Error: Product version ${VERSION} is not downloaded! Please run --update --version ${VERSION}!" >&2
+            exit 1
+        fi
+        return 0
+    fi
+
     if [ -d "${ARTIFACT_DIR}" ]; then
         set +e
         VERSION="$(ls "${ARTIFACT_DIR}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sed '/-/! s/$/_/' | sort -Vu | sed 's/_$//' | tail -1)"

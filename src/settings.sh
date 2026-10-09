@@ -28,12 +28,14 @@
 #   None.
 #
 # Exits:
-#   1 if the setting file name or setting value is empty.
+#   1 if the setting file name or setting value is empty, or a domain is invalid.
 init_setting() {
     local file="${1:?Error: Setting file name is empty}"
     local setting="${2:?Error: Setting $file is empty}"
     local settings_dir="${3:-$SETTINGS_DIR}"
     local force="${4:-n}"
+
+    validate_domain_setting "${file}" "${setting}"
 
     if [ -s "${settings_dir}/${file}" ] && [ "${force}" == 'n' ]; then
         chmod 0600 "${settings_dir}/${file}"
@@ -43,6 +45,119 @@ init_setting() {
 
     printf '%s' "${setting}" > "${settings_dir}/${file}"
     chmod 0600 "${settings_dir}/${file}"
+}
+
+# =============================================================================
+# list_settings()
+# =============================================================================
+# Prints saved settings as NAME=VALUE pairs in filename order. Only regular,
+# non-symlink files with valid setting names are included. An empty settings
+# directory produces no output.
+#
+# Arguments:
+#   $1
+#     Settings directory.
+#     Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the settings directory does not exist or a setting cannot be read.
+list_settings() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
+    local file
+    local name
+    local value
+
+    if [ ! -d "${settings_dir}" ]; then
+        echo "Error: No settings directory found at ${settings_dir}! Please run --init!" >&2
+        exit 1
+    fi
+
+    for file in "${settings_dir}"/*; do
+        name="${file##*/}"
+        if [[ "${name}" =~ ^[A-Z_][A-Z0-9_]*$ ]] && [ -f "${file}" ] && [ ! -L "${file}" ]; then
+            value=$(< "${file}")
+            printf '%s=%s\n' "${name}" "${value}"
+        fi
+    done
+}
+
+# =============================================================================
+# change_setting()
+# =============================================================================
+# Replaces an existing setting for the selected product. Names must be uppercase
+# environment variable identifiers; values are stored literally and must not be
+# empty. Product and mode values must be supported, and the feed synchronization
+# hour must be an integer from 0 through 23. Domain names and IPv4/IPv6 addresses
+# are validated by init_setting. Only regular, non-symlink setting
+# files may be updated.
+#
+# Arguments:
+#   $1
+#     Setting name.
+#     Defaults to SETTING_NAME.
+#
+#   $2
+#     Setting value.
+#     Defaults to SETTING_VALUE.
+#
+#   $3
+#     Settings directory.
+#     Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if the name or value is invalid, or the setting does not exist.
+change_setting() {
+    local name="${1:-$SETTING_NAME}"
+    local value="${2:-$SETTING_VALUE}"
+    local settings_dir="${3:-$SETTINGS_DIR}"
+    local option
+    local supported='n'
+    local -a options=()
+
+    if [[ ! "${name}" =~ ^[A-Z_][A-Z0-9_]*$ ]] || [ -z "${value}" ]; then
+        echo "Error: A valid setting NAME and a non-empty VALUE are required." >&2
+        exit 1
+    fi
+
+    if [ ! -f "${settings_dir}/${name}" ] || [ -L "${settings_dir}/${name}" ]; then
+        echo "Error: No regular setting file found at ${settings_dir}/${name}! Use an existing setting name." >&2
+        exit 1
+    fi
+
+    case "${name}" in
+        PRODUCT) options=("${PRODUCT_OPTIONS[@]}") ;;
+        DEPLOYMENT_MODE) options=("${DEPLOYMENT_MODE_OPTIONS[@]}") ;;
+        FEED_MODE) options=("${FEED_MODE_OPTIONS[@]}") ;;
+        CCERT_MODE) options=("${CCERT_MODE_OPTIONS[@]}") ;;
+        GREENBONE_FEED_SYNC_JOB_HOUR)
+            if [[ ! "${value}" =~ ^([01]?[0-9]|2[0-3])$ ]]; then
+                echo "Error: Feed sync hour ${value} needs to be an integer between 0 and 23." >&2
+                exit 1
+            fi
+            ;;
+    esac
+
+    if [ "${#options[@]}" -gt 0 ]; then
+        for option in "${options[@]}"; do
+            if [ "${value}" == "${option}" ]; then
+                supported='y'
+                break
+            fi
+        done
+        if [ "${supported}" != 'y' ]; then
+            echo "Error: ${name} value ${value} is not supported, only ${options[*]}." >&2
+            exit 1
+        fi
+    fi
+
+    init_setting "${name}" "${value}" "${settings_dir}" 'y'
+    echo "Info: Setting ${name} updated. Run --run to apply the change."
 }
 
 # =============================================================================
@@ -116,10 +231,11 @@ init_settings() {
 #
 # Exits:
 #   1
-#     If the setting file does not exist or is empty.
+#     If a required argument is missing or empty, or the setting file does not
+#     exist or is empty.
 load_setting() {
-    local setting_file="$1"
-    local env_var="$2"
+    local setting_file="${1:?Error: Setting file name is empty}"
+    local env_var="${2:?Error: Environment variable name is empty}"
     local settings_dir="${3:-$SETTINGS_DIR}"
 
     if [ -s "${settings_dir}/${setting_file}" ]; then

@@ -36,6 +36,14 @@ Actions:
   --change-admin-password        Change the gvmd administrator password
                                  Only enterprise-container
 
+  --list-settings                List saved settings as NAME=VALUE pairs
+                                 for the selected product
+
+  --change-setting NAME VALUE    Replace an existing saved setting for either product
+                                 NAME is the uppercase setting file name
+                                 VALUE must be non-empty and is stored literally
+                                 Run --run afterward to apply the change
+
   --change-feed-sync-hour        Set the daily hour for scheduled feed
                                  synchronization (0-23) and restart it immediately
                                  Only enterprise-container
@@ -43,10 +51,11 @@ Actions:
   --force-feed-sync              Restart feed synchronization immediately
                                  Only enterprise-container
 
-  --update                       Download and extract the latest product version
+  --update                       Download and extract the selected product version
+                                 Default: latest version in the registry
 
   --run                          Start or redeploy the configured deployment
-                                 Uses the latest locally downloaded version;
+                                 Uses --version or the latest local version;
                                  run --update first to download a new version
 
   --logs                         Show deployment logs
@@ -84,14 +93,19 @@ Actions:
 
 
 Deployment options:
+  --version VERSION              Select an artifact version for this invocation
+                                 --update downloads this registry tag; commands
+                                 using local artifacts require it downloaded
+                                 Default: latest available version
+
   --product PRODUCT              Product to deploy:
                                    enterprise-container | security-intelligence
 
-  --domain-name NAME             Domain name for the deployment
+  --domain-name NAME             DNS host name for the deployment
                                  Required for --init with security-intelligence
                                  or enterprise-container scan mode
 
-  --domain-ip IP                 Domain IP for the deployment
+  --domain-ip IP                 IPv4 or IPv6 address (without brackets or zone ID)
                                  Required for --init in enterprise-container
                                  scan mode (including agent support)
 
@@ -284,9 +298,20 @@ Update and start the deployment:
   $0 --update
   $0 --run
 
+Download and use a specific artifact version:
+  $0 --update --version 1.2.3
+  $0 --run --version 1.2.3
+  $0 --logs --version 1.2.3
+
 
 Change the gvmd administrator password:
   $0 --change-admin-password --admin-password 'new-secure-password'
+
+
+Change a saved setting and redeploy:
+  $0 --list-settings
+  $0 --change-setting GREENBONE_FEED_SYNC_JOB_HOUR 4
+  $0 --run
 
 
 Change the scheduled feed synchronization hour:

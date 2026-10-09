@@ -33,6 +33,20 @@ parse_args() {
                 MODE='init'
                 shift 1
                 ;;
+            --list-settings)
+                MODE='list-settings'
+                shift 1
+                ;;
+            --change-setting)
+                if [[ ! "${2:-}" =~ ^[A-Z_][A-Z0-9_]*$ ]] || [ -z "${3:-}" ] || [[ "${3:-}" == --* ]]; then
+                    echo "Error: --change-setting requires a setting NAME and a non-empty VALUE." >&2
+                    exit 2
+                fi
+                MODE='change-setting'
+                SETTING_NAME="$2"
+                SETTING_VALUE="$3"
+                shift 3
+                ;;
             --product)
                 PRODUCT="$2"
                 shift 2
@@ -225,6 +239,14 @@ parse_args() {
                 MODE='down-volumes'
                 shift 1
                 ;;
+            --version)
+                if [[ ! "${2:-}" =~ ^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$ ]]; then
+                    echo "Error: --version requires a valid artifact tag (1-128 letters, digits, underscores, dots or hyphens; cannot start with a dot or hyphen)." >&2
+                    exit 2
+                fi
+                REQUESTED_VERSION="$2"
+                shift 2
+                ;;
             --update)
                 MODE='update'
                 shift 1
@@ -299,6 +321,12 @@ run() {
 
     if [ "${MODE}" == 'init' ]; then
         init
+    fi
+    if [ "${MODE}" == 'change-setting' ]; then
+        change_setting
+    fi
+    if [ "${MODE}" == 'list-settings' ]; then
+        list_settings
     fi
     if [ "${MODE}" == 'init-openvasd-tar' ]; then
         if [ "${PRODUCT}" == 'enterprise-container' ]; then

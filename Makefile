@@ -29,6 +29,7 @@ SOURCES := \
 	src/settings_ec.sh \
 	src/settings_openvasd.sh \
 	src/settings_osi.sh \
+	src/settings_validation.sh \
 	src/main.sh
 
 .PHONY: all clean

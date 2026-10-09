@@ -45,6 +45,16 @@ init() {
     openvas-deployment --update
 }
 
+init_version() {
+    echo_task 'Test Init version 0.10.2'
+    openvas-deployment --init --init-docker-oci --feed-key gsf.key \
+        --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
+        --product enterprise-container --deployment-mode scan \
+        --domain-name oec.test.test --domain-ip 127.0.0.1 --version 0.10.2
+    echo_task 'Test Update version 0.10.2'
+    openvas-deployment --update --version 0.10.2
+}
+
 init_license() {
     echo_task 'Test Init license file'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
@@ -58,6 +68,11 @@ init_license() {
 run() {
     echo_task 'Test Run'
     openvas-deployment --run
+}
+
+run_version() {
+    echo_task 'Test Run version 0.10.2'
+    openvas-deployment --run --version 0.10.2
 }
 
 change_admin_pw() {
@@ -197,6 +212,12 @@ run_openvasd_tar_with_images() {
 }
 
 check_req
+init_version
+if [ "${SKIP:-}" != 'run' ]; then
+    run_version
+fi
+list 'Openvasd scan version 0.10.2'
+clean 'Openvasd scan version 0.10.2'
 init
 list 'Openvasd scan'
 clean 'Openvasd scan'

@@ -409,7 +409,13 @@ create_openvasd_tar() {
         mkdir -p "${store_dir_name}/${artifact_dir_name}"
 
         cp -r "${cert_dir_oci}" "${store_dir_name}/${cert_dir_name}/"
-        cp -r "${artifact_dir}" "${store_dir_name}/${artifact_dir_name}/"
+        if [ "${REQUESTED_VERSION}" ]; then
+            get_latest_version
+            mkdir -p "${store_dir_name}/${artifact_dir_name}/${product}"
+            cp -r "${artifact_dir}/${VERSION}" "${store_dir_name}/${artifact_dir_name}/${product}/"
+        else
+            cp -r "${artifact_dir}" "${store_dir_name}/${artifact_dir_name}/"
+        fi
         cp -r "${openvasd_cert_folder}" "${store_dir_name}/${cert_dir_name}/${product}/"
         cp "${cert_dir_product}/feed.key" "${store_dir_name}/${cert_dir_name}/${product}/"
 

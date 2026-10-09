@@ -3,7 +3,7 @@
 # =============================================================================
 # Initializes the domain setting required by the OSI deployment.
 #
-# The function validates that a domain name is provided and stores it in the
+# The function validates that a DNS host name is provided and stores it in the
 # product settings directory using init_setting(). Existing settings are kept
 # unless explicitly forced by init_setting().
 #
@@ -20,7 +20,7 @@
 #   None.
 #
 # Exits:
-#   1 if the domain name is not provided.
+#   1 if the domain name is missing or invalid.
 init_settings_osi() {
     local domain_name="${1:-$DOMAIN_NAME}"
     local settings_dir="${2:-$SETTINGS_DIR}"
