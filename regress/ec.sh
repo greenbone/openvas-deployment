@@ -46,13 +46,13 @@ init() {
 }
 
 init_version() {
-    echo_task 'Test Init version 0.10.2'
+    echo_task 'Test Init version 0.10.1'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
         --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
         --product enterprise-container --deployment-mode scan \
-        --domain-name oec.test.test --domain-ip 127.0.0.1 --version 0.10.2
-    echo_task 'Test Update version 0.10.2'
-    openvas-deployment --update --version 0.10.2
+        --domain-name oec.test.test --domain-ip 127.0.0.1
+    echo_task 'Test Update version 0.10.1'
+    openvas-deployment --update --version 0.10.1
 }
 
 init_license() {
@@ -71,8 +71,8 @@ run() {
 }
 
 run_version() {
-    echo_task 'Test Run version 0.10.2'
-    openvas-deployment --run --version 0.10.2
+    echo_task 'Test Run version 0.10.1'
+    openvas-deployment --run --version 0.10.1
 }
 
 change_admin_pw() {
