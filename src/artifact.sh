@@ -97,13 +97,13 @@ artifact_download() {
 # Arguments:
 #   CERT_DIR_OCI
 #     Directory containing the OCI client certificate and private key. Defaults
-#     to CERT_DIR_OCI when omitted or empty; the configured value is required.
+#     to CERT_DIR_OCI when omitted or empty. The configured value is required.
 #   CERT_DIR_PRODUCT
 #     Directory used in the missing-credential error message. Defaults to
-#     CERT_DIR_PRODUCT when omitted or empty; the configured value is required.
+#     CERT_DIR_PRODUCT when omitted or empty. The configured value is required.
 #   PRODUCT_URL
 #     OCI registry repository whose tags are listed. Defaults to PRODUCT_URL
-#     when omitted or empty; the configured value is required.
+#     when omitted or empty. The configured value is required.
 #
 # Outputs:
 #   One accepted tag per line on stdout; errors are reported on stderr.
@@ -150,7 +150,7 @@ list_remote_versions() {
 # Arguments:
 #   ARTIFACT_DIR
 #     Directory containing downloaded version directories. Defaults to
-#     ARTIFACT_DIR when omitted or empty; the configured value is required.
+#     ARTIFACT_DIR when omitted or empty. The configured value is required.
 #
 # Outputs:
 #   One version per line on stdout; a missing or non-directory path is reported
