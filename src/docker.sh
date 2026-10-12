@@ -4,8 +4,9 @@
 # Stops the currently deployed OpenVAS product compose stack.
 #
 # The function loads the deployment settings, secrets, and certificates,
-# determines the latest locally available product version, and runs Docker
-# Compose from the corresponding artifact directory to stop the deployment.
+# resolves the requested locally available product version (or the latest when
+# no version was requested), and runs Docker Compose from the corresponding
+# artifact directory to stop the deployment.
 #
 # Arguments:
 #   None.
@@ -40,9 +41,9 @@ compose_down() {
 # associated Docker volumes.
 #
 # The function loads the deployment settings, secrets, and certificates,
-# determines the latest locally available product version, and runs Docker
-# Compose from the corresponding artifact directory with orphan and volume
-# removal enabled.
+# resolves the requested locally available product version (or the latest when
+# no version was requested), and runs Docker Compose from the corresponding
+# artifact directory with orphan and volume removal enabled.
 #
 # Arguments:
 #   None.
@@ -76,8 +77,9 @@ compose_down_volumes() {
 # Prints Docker Compose logs for the selected OpenVAS product deployment.
 #
 # The function loads the deployment settings, secrets, and certificates,
-# determines the latest locally available product version, and prints logs
-# from the corresponding Docker Compose stack.
+# resolves the requested locally available product version (or the latest when
+# no version was requested), and prints logs from the corresponding Docker
+# Compose stack.
 #
 # If SERVICE_NAME is set, only logs for that service are shown. Otherwise,
 # logs for all services in the compose stack are printed.
@@ -116,9 +118,9 @@ compose_logs() {
 # Prints the status of containers for the selected OpenVAS product deployment.
 #
 # The function loads the deployment settings, secrets, and certificates,
-# determines the latest locally available product version, and runs Docker
-# Compose from the corresponding artifact directory to list all containers,
-# including stopped containers.
+# resolves the requested locally available product version (or the latest when
+# no version was requested), and runs Docker Compose from the corresponding
+# artifact directory to list all containers, including stopped containers.
 #
 # Arguments:
 #   None.
@@ -149,10 +151,10 @@ compose_ps() {
 # =============================================================================
 # Recreates a container for the selected OpenVAS product deployment.
 #
-# The function determines the latest locally available product version, loads
-# the deployment settings, secrets, and certificates, and runs Docker Compose
-# from the corresponding artifact directory to force-recreate the specified
-# container.
+# The function resolves the requested locally available product version (or the
+# latest when no version was requested), loads the deployment settings, secrets,
+# and certificates, and runs Docker Compose from the corresponding artifact
+# directory to force-recreate the specified container.
 #
 # Optionally, the function can follow the container logs after recreation.
 #
@@ -172,6 +174,8 @@ compose_recreate_container() {
     local log="${2:-n}"
 
     get_latest_version
+
+    echo "Info: Using version ${VERSION}."
 
     load_settings
     load_secrets

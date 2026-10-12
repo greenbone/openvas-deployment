@@ -19,6 +19,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 - [Installation](#installation)
 - [Download](#download)
 - [Quick start](#quick-start)
+- [Artifact version selection](#artifact-version-selection)
 - [Actions](#actions)
 - [Deployment options](#deployment-options)
 - [Log options](#log-options)
@@ -95,6 +96,29 @@ openvas-deployment --run
 
 `--run` uses the latest locally downloaded product version. Run `--update` before the first deployment and whenever a newer product version should be downloaded.
 
+## Artifact version selection
+
+Use `--version VERSION` to select the artifact used by artifact-consuming actions. `VERSION` must be a strict [Semantic Version 2.0.0](https://semver.org/) value; an optional lowercase `v` prefix is accepted and removed for selection. When omitted, the latest valid version is selected.
+
+For `--update`, an omitted version selects the latest remote artifact. An explicit version is requested exactly and fails if it is unavailable; it is never replaced by another version. For actions that use locally downloaded artifacts, an explicit version must already exist locally, while an omitted version selects the latest locally available artifact. The selected version is used by `--update`, `--run`, `--logs`, `--ps`, `--down`, `--down-volumes`, OpenVASD archive creation, and actions that recreate a Compose service.
+
+Other actions accept and ignore `--version` because they do not consume product artifacts. `--version` alone does not create an OpenVASD tar archive; use `--create-openvasd-tar` for that action.
+
+Examples:
+
+```bash
+# Download an exact remote artifact, or fail if it is unavailable.
+openvas-deployment --update --version 1.2.3
+
+# Run an exact artifact already downloaded locally.
+openvas-deployment --run --version v1.2.3
+
+# Include the selected local artifact in an OpenVASD deployment archive.
+openvas-deployment --create-openvasd-tar \
+  --cn-openvasd sensor.example.com \
+  --version 1.2.3
+```
+
 Check the deployment status:
 
 ```bash
@@ -148,6 +172,7 @@ Use one action per invocation.
 | Option                   | Description                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `--product PRODUCT`       | Product to deploy: `enterprise-container` or `security-intelligence`. Required for `--init`; stored in `./product/PRODUCT` for later commands. |
+| `--version VERSION`       | Select an artifact version using strict SemVer 2.0.0, with an optional lowercase `v` prefix. Omitted selects the latest; an explicit unavailable version fails. Accepted and ignored by non-artifact actions. |
 | `--domain-name NAME`      | Domain name for the deployment. |
 | `--domain-ip IP`          | Domain IP for the deployment. |
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |

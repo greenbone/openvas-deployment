@@ -49,7 +49,9 @@ change_feed_sync_hour() {
 # =============================================================================
 # force_feed_sync()
 # =============================================================================
-# Restarts the feed synchronization service for the latest product deployment.
+# Restarts the feed synchronization service for the requested product
+# deployment, or the latest deployment when no version was requested. Artifact
+# resolution is performed by compose_recreate_container.
 #
 # The function uses the first argument as the log-follow setting, falling back
 # to FEED_SYNC_FORCE_LOG when no argument is provided. If neither is set, the

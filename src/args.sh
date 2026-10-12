@@ -37,6 +37,15 @@ parse_args() {
                 PRODUCT="$2"
                 shift 2
                 ;;
+            --version)
+                VERSION="${2-}"
+                VERSION_EXPLICIT='y'
+                if [ $# -gt 1 ]; then
+                    shift 2
+                else
+                    shift 1
+                fi
+                ;;
             --domain-name)
                 DOMAIN_NAME="$2"
                 shift 2

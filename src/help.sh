@@ -87,6 +87,11 @@ Deployment options:
   --product PRODUCT              Product to deploy:
                                    enterprise-container | security-intelligence
 
+  --version VERSION              Select an artifact version using strict SemVer
+                                  2.0.0 (optional lowercase "v" prefix accepted)
+                                  Omitted: select the latest available version
+                                  Explicit unavailable versions fail
+
   --domain-name NAME             Domain name for the deployment
                                  Required for --init with security-intelligence
                                  or enterprise-container scan mode
@@ -284,6 +289,10 @@ Update and start the deployment:
   $0 --update
   $0 --run
 
+Select an artifact version:
+  $0 --update --version 1.2.3
+  $0 --run --version v1.2.3
+
 
 Change the gvmd administrator password:
   $0 --change-admin-password --admin-password 'new-secure-password'
@@ -364,6 +373,14 @@ Create an OpenVASD deployment archive:
   $0 --create-openvasd-tar \\
      --cn-openvasd sensor.example.com \\
      --openvasd-tar-with-images
+
+Create an OpenVASD deployment archive using a selected artifact:
+  $0 --create-openvasd-tar \\
+     --cn-openvasd sensor.example.com \\
+     --version 1.2.3
+
+--version selects the artifact included in the archive; it does not create an
+archive by itself. Use --create-openvasd-tar to create the archive.
 
 
 Install Docker OCI credentials from an extracted archive on the sensor host:
