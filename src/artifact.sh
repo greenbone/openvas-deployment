@@ -34,11 +34,11 @@ artifact_download() {
 
     # Check certs exist
     if ! [ -f "${CERT_DIR_OCI}/client.crt" ]; then
-        echo "Error: No OCI TLS certificate found at ${CERT_DIR_PRODUCT}/server.crt! Please run --init!"
+        echo "Error: No OCI TLS certificate found at ${CERT_DIR_OCI}/client.crt! Please run --init!"
         exit 1
     fi
     if ! [ -f "${CERT_DIR_OCI}/client.key" ]; then
-        echo "Error: No OCI TLS certificate found at ${CERT_DIR_PRODUCT}/server.crt! Please run --init!"
+        echo "Error: No OCI TLS certificate found at ${CERT_DIR_OCI}/client.key! Please run --init!"
         exit 1
     fi
 
@@ -121,7 +121,7 @@ list_remote_versions() {
         return 1
     fi
     if ! [ -f "${cert_dir_oci}/client.key" ]; then
-        echo "Error: No OCI TLS certificate found at ${cert_dir_product}/server.crt! Please run --init!" >&2
+        echo "Error: No OCI TLS certificate found at ${cert_dir_oci}/client.key! Please run --init!" >&2
         return 1
     fi
 
