@@ -117,7 +117,7 @@ list_remote_versions() {
     local product_url="${3:-${PRODUCT_URL:?Error: PRODUCT_URL is empty or unset}}"
     local tags tag normalized
     if ! [ -f "${cert_dir_oci}/client.crt" ]; then
-        echo "Error: No OCI TLS certificate found at ${cert_dir_product}/server.crt! Please run --init!" >&2
+        echo "Error: No OCI TLS client certificate found at ${cert_dir_oci}/client.crt! Please run --init!" >&2
         return 1
     fi
     if ! [ -f "${cert_dir_oci}/client.key" ]; then
