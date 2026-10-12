@@ -1,7 +1,8 @@
 # =============================================================================
 # deploy()
 # =============================================================================
-# Deploys the selected OpenVAS product using the latest downloaded artifacts.
+# Deploys the selected OpenVAS product using the requested downloaded artifact,
+# or the latest downloaded artifact when no version was requested.
 #
 # The function loads deployment settings, determines the latest available local
 # product version, and loads the required secrets and certificate data.

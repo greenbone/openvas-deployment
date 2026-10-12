@@ -3,6 +3,7 @@ OUTPUT := openvas-deployment
 SOURCES := \
 	src/global.sh \
 	src/args.sh \
+	src/semver.sh \
 	src/artifact.sh \
 	src/certs.sh \
 	src/certs_agent.sh \

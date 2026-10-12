@@ -26,6 +26,12 @@
 artifact_download() {
     echo "🚀 Downloading product..."
 
+    if [ "${VERSION_EXPLICIT}" = 'y' ]; then
+        if ! VERSION="$(normalize_semver "${VERSION-}")"; then
+            exit 1
+        fi
+    fi
+
     # Check certs exist
     if ! [ -f "${CERT_DIR_OCI}/client.crt" ]; then
         echo "Error: No OCI TLS certificate found at ${CERT_DIR_PRODUCT}/server.crt! Please run --init!"
@@ -37,9 +43,20 @@ artifact_download() {
     fi
 
     # Get latest version
-    set +e
-    VERSION="$(oras repo tags --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sed '/-/! s/$/_/' | sort -Vu | sed 's/_$//' | tail -1)"
-    set -e
+    if [ "${VERSION_EXPLICIT}" != 'y' ]; then
+        set +e
+        VERSION="$(oras repo tags --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}" | {
+            latest=''
+            while IFS= read -r tag; do
+            normalized="$(normalize_semver "${tag}" 2>/dev/null)" || continue
+            if [ -z "${latest}" ] || semver_greater "${normalized}" "${latest}"; then
+                latest="${normalized}"
+            fi
+            done
+            printf '%s\n' "${latest}"
+        })"
+        set -e
+    fi
 
     # Check if VERSION exist
     if ! [ "${VERSION}" ]; then
@@ -57,9 +74,12 @@ artifact_download() {
     # Create artifact dir
     mkdir -p "$ARTIFACT_DIR/${VERSION}"
 
-    # Download artifact
+    # Download the selected artifact without falling back to another tag.
     pushd "${ARTIFACT_DIR}/${VERSION}" > /dev/null || exit
-        oras pull --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}:${VERSION}"
+        if ! oras pull --cert-file "${CERT_DIR_OCI}/client.crt" --key-file "${CERT_DIR_OCI}/client.key" "${PRODUCT_URL}:${VERSION}"; then
+            echo "Error: Product version ${VERSION} is not available in registry ${PRODUCT_URL}." >&2
+            exit 1
+        fi
         tar  xzf "${PRODUCT}.tar.gz"
         rm -f "${PRODUCT}.tar.gz"
     popd > /dev/null
@@ -84,9 +104,30 @@ artifact_download() {
 #   1 if ARTIFACT_DIR does not exist.
 #   1 if no downloaded product version can be found in ARTIFACT_DIR.
 get_latest_version() {
+    if [ "${VERSION_EXPLICIT}" = 'y' ]; then
+        if ! VERSION="$(normalize_semver "${VERSION-}")"; then
+            exit 1
+        fi
+        if [ ! -d "${ARTIFACT_DIR}" ] || [ ! -f "${ARTIFACT_DIR}/${VERSION}/compose.yaml" ]; then
+            echo "Error: Requested version ${VERSION} is not downloaded at ${ARTIFACT_DIR}/${VERSION}/compose.yaml. Please run --update." >&2
+            exit 1
+        fi
+        return 0
+    fi
+
     if [ -d "${ARTIFACT_DIR}" ]; then
         set +e
-        VERSION="$(ls "${ARTIFACT_DIR}" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sed '/-/! s/$/_/' | sort -Vu | sed 's/_$//' | tail -1)"
+        local entry normalized
+        local latest=''
+        for entry in "${ARTIFACT_DIR}"/*; do
+            [ -d "${entry}" ] || continue
+            [ -f "${entry}/compose.yaml" ] || continue
+            normalized="$(normalize_semver "${entry##*/}" 2>/dev/null)" || continue
+            if [ -z "${latest}" ] || semver_greater "${normalized}" "${latest}"; then
+                latest="${normalized}"
+            fi
+        done
+        VERSION="${latest}"
         set -e
         if ! [ "${VERSION}" ]; then
             echo "Error: No product downloaded! Please run --update!"

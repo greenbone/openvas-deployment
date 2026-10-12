@@ -383,6 +383,7 @@ create_openvasd_tar() {
     local cert_dir_name="${11:-$CERT_DIR_NAME}"
     local cert_dir_oci="${12:-$CERT_DIR_OCI}"
     local artifact_dir="${13:-$ARTIFACT_DIR}"
+    local ARTIFACT_DIR="${artifact_dir}"
     local artifact_dir_name="${14:-$ARTIFACT_DIR_NAME}"
     local image_dir_name="${15:-$IMAGE_DIR_NAME}"
     local settings_dir_name="${16:-$SETTINGS_DIR_NAME}"
@@ -392,6 +393,10 @@ create_openvasd_tar() {
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
         exit 1
     fi
+
+    # Resolve the requested artifact before creating the temporary archive
+    # directory so an unavailable explicit version cannot leave an archive.
+    get_latest_version
 
     local openvasd_name="${cn_openvasd//./-}"
     local openvasd_cert_folder="${cn_openvasd//./_}"
@@ -406,10 +411,10 @@ create_openvasd_tar() {
     pushd "${tmp_dir}" > /dev/null || exit
         mkdir -p "${store_dir_name}/${settings_dir_name}/${product}"
         mkdir -p "${store_dir_name}/${cert_dir_name}/${product}"
-        mkdir -p "${store_dir_name}/${artifact_dir_name}"
+        mkdir -p "${store_dir_name}/${artifact_dir_name}/${product}"
 
         cp -r "${cert_dir_oci}" "${store_dir_name}/${cert_dir_name}/"
-        cp -r "${artifact_dir}" "${store_dir_name}/${artifact_dir_name}/"
+        cp -r "${artifact_dir}/${VERSION}" "${store_dir_name}/${artifact_dir_name}/${product}/"
         cp -r "${openvasd_cert_folder}" "${store_dir_name}/${cert_dir_name}/${product}/"
         cp "${cert_dir_product}/feed.key" "${store_dir_name}/${cert_dir_name}/${product}/"
 
@@ -457,7 +462,6 @@ create_openvasd_tar() {
     if [ "${openvasd_tar_with_images}" == 'y' ]; then
         load_secrets
         load_certs
-        get_latest_version
         mkdir -p "${tmp_images}"
         pushd "${artifact_dir}/${VERSION}" > /dev/null || exit
             docker save -o "${tmp_images}/openvas-openvasd.tar" \
