@@ -36,3 +36,13 @@ gen_certs_ingress() {
        -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
        -subj "/CN=openvas-enterprise-container"
 }
+
+list_versions() {
+    echo_task 'Test list versions'
+    openvas-deployment --list-versions
+}
+
+list_local_versions() {
+    echo_task 'Test list local versions'
+    openvas-deployment --list-local-versions
+}
