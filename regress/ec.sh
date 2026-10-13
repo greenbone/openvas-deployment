@@ -232,6 +232,8 @@ if [ "${SKIP:-}" != 'run' ]; then
     gen_certs_ingress
     update_ingress_certs
     update_ingress_certs_agent
+    change_domain_name
+    change_domain_ip
     run_openvasd_cert_tar
     run_openvasd_tar
     run_openvasd_tar_with_images

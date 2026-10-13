@@ -99,12 +99,16 @@ Deployment options:
                                    Explicit unavailable versions fail
 
   --domain-name NAME             Domain name for the deployment
-                                 Required for --init with security-intelligence
-                                 or enterprise-container scan mode
+                                  Required for --init with security-intelligence
+                                  or enterprise-container scan mode
+                                  Also used by --change-domain-name (OSI, or
+                                  enterprise-container scan deployment)
 
   --domain-ip IP                 Domain IP for the deployment
-                                 Required for --init in enterprise-container
-                                 scan mode (including agent support)
+                                  Required for --init in enterprise-container
+                                  scan mode (including agent support)
+                                  Also used by --change-domain-ip (enterprise-
+                                  container scan deployment only)
 
   --metafeed-cert FILE           Metafeed client certificate
                                  Only security-intelligence
@@ -160,6 +164,7 @@ Deployment options:
                                  Only enterprise-container
 
   --skip-init-if-exist           Exit with status 0 if already initialized
+                                  Deprecated!
 
 
 Log options:
@@ -312,6 +317,12 @@ Change the gvmd administrator password:
 Change the scheduled feed synchronization hour:
   $0 --change-feed-sync-hour --feed-sync-hour 4
 
+
+Change the domain name and redeploy (initialized deployment required):
+  $0 --change-domain-name --domain-name new.example.com
+
+Change the enterprise-container scan domain IP and redeploy:
+  $0 --change-domain-ip --domain-ip IP
 
 Restart feed synchronization immediately:
   $0 --force-feed-sync

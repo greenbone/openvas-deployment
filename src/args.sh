@@ -42,6 +42,14 @@ parse_args() {
                 VERSION_EXPLICIT='y'
                 shift 2
                 ;;
+            --change-domain-name)
+                MODE='change-domain-name'
+                shift 1
+                ;;
+            --change-domain-ip)
+                MODE='change-domain-ip'
+                shift 1
+                ;;
             --domain-name)
                 DOMAIN_NAME="$2"
                 shift 2
@@ -310,127 +318,140 @@ run() {
 
     update_globals
 
-    if [ "${MODE}" == 'init' ]; then
+    case "${MODE}" in
+    init)
         init
-    fi
-    if [ "${MODE}" == 'init-openvasd-tar' ]; then
+        ;;
+    init-openvasd-tar)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             init_openvasd_tar
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'create-openvasd-tar' ]; then
+        ;;
+    create-openvasd-tar)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             create_openvasd_tar
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'create-openvasd-cert-tar' ]; then
+        ;;
+    create-openvasd-cert-tar)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             create_openvasd_cert_tar
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'update' ]; then
+        ;;
+    update)
         artifact_download
-    fi
-    if [ "${MODE}" == 'list-versions' ]; then
-        list_remote_versions "${CERT_DIR_OCI}" "${CERT_DIR_PRODUCT}" "${PRODUCT_URL}" || exit 1
-    fi
-    if [ "${MODE}" == 'list-local-versions' ]; then
-        list_local_versions "${ARTIFACT_DIR}" || exit 1
-    fi
-    if [ "${MODE}" == 'run' ]; then
+        ;;
+    run)
         deploy
-    fi
-    if [ "${MODE}" == 'down' ]; then
+        ;;
+    down)
         compose_down
-    fi
-    if [ "${MODE}" == 'down-volumes' ]; then
+        ;;
+    down-volumes)
         compose_down_volumes
-    fi
-    if [ "${MODE}" == 'create-openvasd-cert' ]; then
+        ;;
+    create-openvasd-cert)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             create_openvasd_cert
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'get-openvasds' ]; then
+        ;;
+    get-openvasds)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             get_openvasds
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'add-openvasd' ]; then
+        ;;
+    add-openvasd)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             add_openvasd
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'del-openvasd' ]; then
+        ;;
+    del-openvasd)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             del_openvasd
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'update-ingress-certs' ]; then
+        ;;
+    update-ingress-certs)
         update_ingress_certs
-    fi
-    if [ "${MODE}" == 'update-ingress-agent-control-certs' ]; then
+        ;;
+    update-ingress-agent-control-certs)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             update_ingress_certs_agent
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'change-admin-password' ]; then
+        ;;
+    change-admin-password)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             change_admin_password_scan
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'force-feed-sync' ]; then
+        ;;
+    force-feed-sync)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             force_feed_sync
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'change-feed-sync-hour' ]; then
+        ;;
+    change-feed-sync-hour)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             change_feed_sync_hour
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
-    fi
-    if [ "${MODE}" == 'logs' ]; then
+        ;;
+    change-domain-name)
+        change_domain_name
+        ;;
+    change-domain-ip)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_domain_ip
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
+        ;;
+    list-versions)
+        list_remote_versions
+        ;;
+    list-local-versions)
+        list_local_versions
+        ;;
+    logs)
         compose_logs
-    fi
-    if [ "${MODE}" == 'ps' ]; then
+        ;;
+    ps)
         compose_ps
-    fi
-    if [ "${MODE}" == '' ]; then
+        ;;
+    '')
         show_help
-    fi
+        ;;
+    esac
 }
 
 # =============================================================================
@@ -452,7 +473,7 @@ run() {
 # Exits:
 #   1 if PRODUCT is not set and no PRODUCT file exists in WORKING_DIR.
 update_globals() {
-    if ! [ "${PRODUCT}" ]; then
+    if ! [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${PRODUCT} " ]]; then
         if [ -f "${WORKING_DIR}/PRODUCT" ]; then
             export PRODUCT="$(< "${WORKING_DIR}/PRODUCT")"
         else
