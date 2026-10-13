@@ -19,7 +19,6 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 - [Installation](#installation)
 - [Download](#download)
 - [Quick start](#quick-start)
-- [Artifact version selection](#artifact-version-selection)
 - [Actions](#actions)
 - [Deployment options](#deployment-options)
 - [Log options](#log-options)
@@ -28,6 +27,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 - [Ingress certificate options](#ingress-certificate-options)
 - [OpenVASD options](#openvasd-options)
 - [Development options](#development-options)
+- [Product versions](#product-versions)
 - [Examples](#examples)
 - [Security considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
@@ -96,29 +96,6 @@ openvas-deployment --run
 
 `--run` uses the latest locally downloaded product version. Run `--update` before the first deployment and whenever a newer product version should be downloaded.
 
-## Artifact version selection
-
-Use `--version VERSION` to select the artifact used by artifact-consuming actions. `VERSION` must be a strict [Semantic Version 2.0.0](https://semver.org/) value; an optional lowercase `v` prefix is accepted and removed for selection. When omitted, the latest valid version is selected.
-
-For `--update`, an omitted version selects the latest remote artifact. An explicit version is requested exactly and fails if it is unavailable; it is never replaced by another version. For actions that use locally downloaded artifacts, an explicit version must already exist locally, while an omitted version selects the latest locally available artifact. The selected version is used by `--update`, `--run`, `--logs`, `--ps`, `--down`, `--down-volumes`, OpenVASD archive creation, and actions that recreate a Compose service.
-
-Other actions accept and ignore `--version` because they do not consume product artifacts. `--version` alone does not create an OpenVASD tar archive; use `--create-openvasd-tar` for that action.
-
-Examples:
-
-```bash
-# Download an exact remote artifact, or fail if it is unavailable.
-openvas-deployment --update --version 1.2.3
-
-# Run an exact artifact already downloaded locally.
-openvas-deployment --run --version v1.2.3
-
-# Include the selected local artifact in an OpenVASD deployment archive.
-openvas-deployment --create-openvasd-tar \
-  --cn-openvasd sensor.example.com \
-  --version 1.2.3
-```
-
 Check the deployment status:
 
 ```bash
@@ -139,6 +116,7 @@ openvas-deployment --down
 
 > [!WARNING]
 > `--down-volumes` stops the deployment and removes its Docker volumes. This can permanently delete persistent deployment data.
+
 
 ## Actions
 
@@ -275,6 +253,50 @@ If custom ingress certificates are not supplied during initialization, the utili
 | `--integration` | Use development stage URL prefix `-dev/integration` for the current registry operation, typically with `--update`. |
 | `--testing` | Use development stage URL prefix `-dev/testing` for the current registry operation, typically with `--update`. |
 | `--staging` | Use development stage URL prefix `-dev/staging` for the current registry operation, typically with `--update`. |
+
+## Product versions
+
+The standalone `--list-versions` action lists valid strict SemVer tags from the remote OCI registry for the selected product and stage. The standalone `--list-local-versions` action lists local versions under that product's `ARTIFACT_DIR`.
+
+List versions:
+
+```bash
+openvas-deployment --list-versions
+```
+
+List versions from the staging registry:
+
+```bash
+openvas-deployment --list-versions \
+  --staging
+```
+
+List versions already downloaded:
+
+```bash
+openvas-deployment --list-local-versions 
+```
+
+Download a product in version:
+
+```bash
+openvas-deployment --update --version 1.2.3
+```
+
+Run a product in version:
+
+```bash
+openvas-deployment --run --version v1.2.3
+```
+
+Include the selected local artifact in an OpenVASD deployment archive.
+
+```bash
+openvas-deployment --create-openvasd-tar \
+  --cn-openvasd sensor.example.com \
+  --version 1.2.3
+```
+
 
 ## Examples
 

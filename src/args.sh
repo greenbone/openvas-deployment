@@ -234,6 +234,14 @@ parse_args() {
                 MODE='update'
                 shift 1
                 ;;
+            --list-versions)
+                MODE='list-versions'
+                shift 1
+                ;;
+            --list-local-versions)
+                MODE='list-local-versions'
+                shift 1
+                ;;
             --logs)
                 MODE='logs'
                 shift 1
@@ -331,6 +339,12 @@ run() {
     fi
     if [ "${MODE}" == 'update' ]; then
         artifact_download
+    fi
+    if [ "${MODE}" == 'list-versions' ]; then
+        list_remote_versions "${CERT_DIR_OCI}" "${CERT_DIR_PRODUCT}" "${PRODUCT_URL}" || exit 1
+    fi
+    if [ "${MODE}" == 'list-local-versions' ]; then
+        list_local_versions "${ARTIFACT_DIR}" || exit 1
     fi
     if [ "${MODE}" == 'run' ]; then
         deploy
