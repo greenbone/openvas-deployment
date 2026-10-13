@@ -473,7 +473,7 @@ run() {
 # Exits:
 #   1 if PRODUCT is not set and no PRODUCT file exists in WORKING_DIR.
 update_globals() {
-    if [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${PRODUCT} " ]]; then
+    if ! [[ " ${PRODUCT_OPTIONS[*]} " =~ " ${PRODUCT} " ]]; then
         if [ -f "${WORKING_DIR}/PRODUCT" ]; then
             export PRODUCT="$(< "${WORKING_DIR}/PRODUCT")"
         else
