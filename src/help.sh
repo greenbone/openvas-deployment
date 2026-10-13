@@ -23,11 +23,7 @@ Usage:
 
 
 Actions:
-  Multiple action selectors may be supplied, including mixed actions. The final
-  action selector in the command line executes. Domain change actions use the
-  value for their matching option (--domain-name or --domain-ip); values
-  consumed by options are not action selectors.
-  --skip-init-if-exist is an init-only modifier and has no effect here.
+  Use one action per invocation.
 
   --init                         Initialize deployment, certificates, and
                                  deployment settings
