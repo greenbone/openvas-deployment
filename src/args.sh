@@ -29,14 +29,6 @@ parse_args() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --change-domain-name)
-                MODE='change-domain-name'
-                shift 1
-                ;;
-            --change-domain-ip)
-                MODE='change-domain-ip'
-                shift 1
-                ;;
             --init)
                 MODE='init'
                 shift 1
@@ -50,12 +42,20 @@ parse_args() {
                 VERSION_EXPLICIT='y'
                 shift 2
                 ;;
+            --change-domain-name)
+                MODE='change-domain-name'
+                shift 1
+                ;;
+            --change-domain-ip)
+                MODE='change-domain-ip'
+                shift 1
+                ;;
             --domain-name)
-                DOMAIN_NAME="${2-}"
+                DOMAIN_NAME="$2"
                 shift 2
                 ;;
             --domain-ip)
-                DOMAIN_IP="${2-}"
+                DOMAIN_IP="$2"
                 shift 2
                 ;;
             --init-openvasd-tar)
@@ -319,24 +319,6 @@ run() {
     update_globals
 
     case "${MODE}" in
-    change-domain-name)
-        change_domain_name
-        ;;
-    change-domain-ip)
-        if [ "${PRODUCT}" == 'enterprise-container' ]; then
-            change_domain_ip
-        else
-            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
-            exit 1
-        fi
-        ;;
-       fi
-    list-versions)
-        list_remote_versions
-        ;;
-    list-local-versions)
-        list_local_versions
-        ;;
     init)
         init
         ;;
@@ -442,6 +424,23 @@ run() {
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
+        ;;
+    change-domain-name)
+        change_domain_name
+        ;;
+    change-domain-ip)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_domain_ip
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
+        ;;
+    list-versions)
+        list_remote_versions
+        ;;
+    list-local-versions)
+        list_local_versions
         ;;
     logs)
         compose_logs
