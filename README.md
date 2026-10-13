@@ -19,7 +19,6 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 - [Installation](#installation)
 - [Download](#download)
 - [Quick start](#quick-start)
-- [Artifact version selection](#artifact-version-selection)
 - [Actions](#actions)
 - [Deployment options](#deployment-options)
 - [Log options](#log-options)
@@ -96,29 +95,6 @@ openvas-deployment --run
 
 `--run` uses the latest locally downloaded product version. Run `--update` before the first deployment and whenever a newer product version should be downloaded.
 
-## Artifact version selection
-
-Use `--version VERSION` to select the artifact used by artifact-consuming actions. `VERSION` must be a strict [Semantic Version 2.0.0](https://semver.org/) value; an optional lowercase `v` prefix is accepted and removed for selection. When omitted, the latest valid version is selected.
-
-For `--update`, an omitted version selects the latest remote artifact. An explicit version is requested exactly and fails if it is unavailable; it is never replaced by another version. For actions that use locally downloaded artifacts, an explicit version must already exist locally, while an omitted version selects the latest locally available artifact. The selected version is used by `--update`, `--run`, `--logs`, `--ps`, `--down`, `--down-volumes`, OpenVASD archive creation, and actions that recreate a Compose service.
-
-Other actions accept and ignore `--version` because they do not consume product artifacts. `--version` alone does not create an OpenVASD tar archive; use `--create-openvasd-tar` for that action.
-
-Examples:
-
-```bash
-# Download an exact remote artifact, or fail if it is unavailable.
-openvas-deployment --update --version 1.2.3
-
-# Run an exact artifact already downloaded locally.
-openvas-deployment --run --version v1.2.3
-
-# Include the selected local artifact in an OpenVASD deployment archive.
-openvas-deployment --create-openvasd-tar \
-  --cn-openvasd sensor.example.com \
-  --version 1.2.3
-```
-
 Check the deployment status:
 
 ```bash
@@ -151,6 +127,8 @@ Use one action per invocation.
 | `--create-openvasd-cert-tar` | Create an OpenVASD certificate archive in the current directory. Requires `--cn-openvasd`. Only enterprise-container. |
 | `--change-admin-password` | Change the `gvmd` administrator password. Requires `--admin-password` and a running enterprise-container scan deployment. Only enterprise-container. |
 | `--change-feed-sync-hour` | Change the daily scheduled feed synchronization hour and immediately restart feed synchronization. Requires `--feed-sync-hour`. Only enterprise-container. |
+| `--change-domain-name` | Change the domain name setting and deploy. Requires `--domain-name` and a successfully initialized deployment (all product settings must load). Supported for security-intelligence and enterprise-container scan deployments; not enterprise-container OpenVASD. The selected setting is saved before deployment and remains changed if deployment fails. |
+| `--change-domain-ip` | Change the domain IP setting and deploy. Requires `--domain-ip` and a successfully initialized enterprise-container scan deployment (all product settings must load). Not supported for security-intelligence or enterprise-container OpenVASD. The selected setting is saved before deployment and remains changed if deployment fails. Only a non-empty value is required; IP format is not validated. |
 | `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
 | `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
 | `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
@@ -173,8 +151,8 @@ Use one action per invocation.
 | ------------------------ | ---------------------------------------------------------------------------- |
 | `--product PRODUCT`       | Product to deploy: `enterprise-container` or `security-intelligence`. Required for `--init`; stored in `./product/PRODUCT` for later commands. |
 | `--version VERSION`       | Select an artifact version using strict SemVer 2.0.0, with an optional lowercase `v` prefix. Omitted selects the latest; an explicit unavailable version fails. Accepted and ignored by non-artifact actions. |
-| `--domain-name NAME`      | Domain name for the deployment. |
-| `--domain-ip IP`          | Domain IP for the deployment. |
+| `--domain-name NAME`      | Domain name for initialization and `--change-domain-name`. The change action supports security-intelligence and enterprise-container scan deployments. |
+| `--domain-ip IP`          | Domain IP for initialization and `--change-domain-ip`. The change action supports enterprise-container scan deployments only; only non-empty input is checked, not IP format. |
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
@@ -359,6 +337,21 @@ For an existing deployment:
 ```bash
 openvas-deployment --change-feed-sync-hour \
   --feed-sync-hour 4
+```
+
+Change the domain name on a security-intelligence or enterprise-container scan
+deployment:
+
+```bash
+openvas-deployment --change-domain-name \
+  --domain-name new.example.com
+```
+
+Change the domain IP on an enterprise-container scan deployment:
+
+```bash
+openvas-deployment --change-domain-ip \
+  --domain-ip IP
 ```
 
 Changing the feed synchronization hour also restarts the feed synchronization service. To avoid the prompt to follow its logs:

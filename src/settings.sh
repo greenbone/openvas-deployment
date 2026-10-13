@@ -157,3 +157,90 @@ load_settings() {
         load_settings_osi
     fi
 }
+
+# =============================================================================
+# change_domain_name()
+# =============================================================================
+# Persists DOMAIN_NAME, then deploys the configuration.
+#
+# Checks that DOMAIN_NAME is non-empty and that PRODUCT supports the action,
+# then loads product settings before writing DOMAIN_NAME with forced
+# initialization. The enterprise-container product must use scan deployment
+# mode. On successful validation, deploy is called; a deployment failure does
+# not undo the write.
+#
+# Arguments:
+#   $1
+#     Optional domain name.
+#     Defaults to DOMAIN_NAME.
+#
+#   Also uses MODE, DOMAIN_NAME, DOMAIN_IP, PRODUCT, and loaded product
+#   configuration globals.
+#
+# Returns:
+#   The status returned by deploy when deployment completes; does not return
+#   after a validation or settings-loading error.
+#
+# Exits:
+#   1 for an empty selected value, unsupported action/product or deployment
+#   mode, or a settings-loading error.
+change_domain_name() {
+    local setting_value="${1:-${DOMAIN_NAME}}"
+    if ! [ "${setting_value}" ]; then
+        echo 'Error: Domain name is empty! Provide --domain-name.' >&2
+        exit 1
+    fi
+
+    load_settings "${PRODUCT}"
+
+    if [ "${PRODUCT}" == 'enterprise-container' ] && [ "${DEPLOYMENT_MODE}" != 'scan' ]; then
+        echo "Info: Mode ${MODE} not supported for enterprise-container deployment mode ${DEPLOYMENT_MODE}" >&2
+        exit 1
+    fi
+
+    init_setting 'DOMAIN_NAME' "${setting_value}" "${SETTINGS_DIR}" 'y'
+    deploy
+}
+
+# =============================================================================
+# change_domain_ip()
+# =============================================================================
+# Persists DOMAIN_IP, then deploys the configuration.
+#
+# Checks that DOMAIN_IP is non-empty,
+# then loads product settings and requires scan deployment mode before writing
+# DOMAIN_IP with forced initialization. On successful validation, deploy is
+# called; a deployment failure does not undo the write.
+#
+# Arguments:
+#   $1
+#     Optional domain IP.
+#     Defaults to DOMAIN_IP.
+#
+#   Also uses MODE, DOMAIN_IP, PRODUCT, and loaded product configuration
+#   globals.
+#
+# Returns:
+#   The status returned by deploy when deployment completes; does not return
+#   after a validation or settings-loading error.
+#
+# Exits:
+#   1 for an empty DOMAIN_IP, unsupported product or deployment mode, or a
+#   settings-loading error.
+change_domain_ip() {
+    local setting_value="${1:-${DOMAIN_IP}}"
+    if ! [ "${setting_value}" ]; then
+        echo 'Error: Domain IP is empty! Provide --domain-ip.' >&2
+        exit 1
+    fi
+
+    load_settings "${PRODUCT}"
+
+    if [ "${DEPLOYMENT_MODE}" != 'scan' ]; then
+        echo "Info: Mode ${MODE} not supported for enterprise-container deployment mode ${DEPLOYMENT_MODE}" >&2
+        exit 1
+    fi
+
+    init_setting 'DOMAIN_IP' "${setting_value}" "${SETTINGS_DIR}" 'y'
+    deploy
+}

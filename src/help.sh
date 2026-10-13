@@ -23,7 +23,11 @@ Usage:
 
 
 Actions:
-  Use one action per invocation.
+  Multiple action selectors may be supplied, including mixed actions. The final
+  action selector in the command line executes. Domain change actions use the
+  value for their matching option (--domain-name or --domain-ip); values
+  consumed by options are not action selectors.
+  --skip-init-if-exist is an init-only modifier and has no effect here.
 
   --init                         Initialize deployment, certificates, and
                                  deployment settings
@@ -93,12 +97,16 @@ Deployment options:
                                   Explicit unavailable versions fail
 
   --domain-name NAME             Domain name for the deployment
-                                 Required for --init with security-intelligence
-                                 or enterprise-container scan mode
+                                  Required for --init with security-intelligence
+                                  or enterprise-container scan mode
+                                  Also used by --change-domain-name (OSI, or
+                                  enterprise-container scan deployment)
 
   --domain-ip IP                 Domain IP for the deployment
-                                 Required for --init in enterprise-container
-                                 scan mode (including agent support)
+                                  Required for --init in enterprise-container
+                                  scan mode (including agent support)
+                                  Also used by --change-domain-ip (enterprise-
+                                  container scan deployment only)
 
   --metafeed-cert FILE           Metafeed client certificate
                                  Only security-intelligence
@@ -154,6 +162,7 @@ Deployment options:
                                  Only enterprise-container
 
   --skip-init-if-exist           Exit with status 0 if already initialized
+                                  Init-only; ignored with domain change actions
 
 
 Log options:
@@ -301,6 +310,12 @@ Change the gvmd administrator password:
 Change the scheduled feed synchronization hour:
   $0 --change-feed-sync-hour --feed-sync-hour 4
 
+
+Change the domain name and redeploy (initialized deployment required):
+  $0 --change-domain-name --domain-name new.example.com
+
+Change the enterprise-container scan domain IP and redeploy:
+  $0 --change-domain-ip --domain-ip IP
 
 Restart feed synchronization immediately:
   $0 --force-feed-sync
