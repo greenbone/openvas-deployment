@@ -290,7 +290,6 @@ change_domain_name() {
     fi
 
     init_setting 'DOMAIN_NAME' "${setting_value}" "${SETTINGS_DIR}" 'y'
-    deploy
 }
 
 # =============================================================================
