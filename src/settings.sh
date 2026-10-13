@@ -232,14 +232,14 @@ load_bridge_subnet_settings() {
 #   init_setting() and deploy() failures are returned as their command status.
 change_bridge_subnet() {
     local setting_name="${1:?Error: Bridge subnet setting name is empty}"
-    local setting_value="${2:?Error: Bridge subnet setting value is empty}"
+    local setting_value="${2:?Error: Bridge subnet IP address is empty}"
 
     case "${setting_name}" in
         BRIDGE_INGRESS_SUBNET_IPV4|BRIDGE_INGRESS_SUBNET_IPV6|BRIDGE_BACKENDS_SUBNET_IPV4|BRIDGE_BACKENDS_SUBNET_IPV6)
             ;;
         *)
             echo "Error: Unsupported bridge subnet setting name: ${setting_name}" >&2
-            return 1
+            exit 1
             ;;
     esac
 
