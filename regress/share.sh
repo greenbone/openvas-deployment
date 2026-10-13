@@ -36,3 +36,13 @@ gen_certs_ingress() {
        -addext "basicConstraints=CA:FALSE" -addext "extendedKeyUsage=serverAuth" -addext "keyUsage=digitalSignature,keyEncipherment" \
        -subj "/CN=openvas-enterprise-container"
 }
+
+change_domain_name() {
+    echo_task 'Test change domain name'
+    openvas-deployment --change-domain-name --domain-name test2.test
+}
+
+change_domain_ip() {
+    echo_task 'Test change domain ip'
+    openvas-deployment --change-domain-ip --domain-ip 127.0.0.1
+}
