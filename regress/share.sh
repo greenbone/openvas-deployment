@@ -45,6 +45,7 @@ change_domain_name() {
 change_domain_ip() {
     echo_task 'Test change domain ip'
     openvas-deployment --change-domain-ip --domain-ip 127.0.0.1
+}
 
 list_versions() {
     echo_task 'Test list versions'
