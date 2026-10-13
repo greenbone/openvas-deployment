@@ -44,16 +44,16 @@ Actions:
                                  Only enterprise-container
 
   --change-bridge-ingress-subnet-ipv4
-                                  Change the bridge ingress IPv4 subnet and redeploy
+                                  Change the bridge ingress IPv4 subnet
 
   --change-bridge-ingress-subnet-ipv6
-                                  Change the bridge ingress IPv6 subnet and redeploy
+                                  Change the bridge ingress IPv6 subnet
 
   --change-bridge-backends-subnet-ipv4
-                                  Change the bridge backends IPv4 subnet and redeploy
+                                  Change the bridge backends IPv4 subnet
 
   --change-bridge-backends-subnet-ipv6
-                                  Change the bridge backends IPv6 subnet and redeploy
+                                  Change the bridge backends IPv6 subnet
 
   --update                       Download and extract the latest product version
 
