@@ -255,6 +255,8 @@ change_bridge_subnet() {
 # Checks that DOMAIN_NAME is non-empty and that PRODUCT supports the action,
 # then loads product settings before writing DOMAIN_NAME with forced
 # initialization. The enterprise-container product must use scan deployment
+# mode. On successful validation, deploy is called; a deployment failure does
+# not undo the write.
 # mode.
 #
 # Arguments:
@@ -297,6 +299,8 @@ change_domain_name() {
 #
 # Checks that DOMAIN_IP is non-empty,
 # then loads product settings and requires scan deployment mode before writing
+# DOMAIN_IP with forced initialization. On successful validation, deploy is
+# called; a deployment failure does not undo the write.
 # DOMAIN_IP with forced initialization.
 #
 # Arguments:
