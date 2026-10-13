@@ -43,6 +43,18 @@ Actions:
   --force-feed-sync              Restart feed synchronization immediately
                                  Only enterprise-container
 
+  --change-bridge-ingress-subnet-ipv4
+                                  Change the bridge ingress IPv4 subnet and redeploy
+
+  --change-bridge-ingress-subnet-ipv6
+                                  Change the bridge ingress IPv6 subnet and redeploy
+
+  --change-bridge-backends-subnet-ipv4
+                                  Change the bridge backends IPv4 subnet and redeploy
+
+  --change-bridge-backends-subnet-ipv6
+                                  Change the bridge backends IPv6 subnet and redeploy
+
   --update                       Download and extract the latest product version
 
   --list-versions                List valid remote product versions
@@ -109,6 +121,18 @@ Deployment options:
                                   scan mode (including agent support)
                                   Also used by --change-domain-ip (enterprise-
                                   container scan deployment only)
+
+  --bridge-ingress-subnet-ipv4 CIDR
+                                  IPv4 subnet for the bridge ingress network
+
+  --bridge-ingress-subnet-ipv6 CIDR
+                                  IPv6 subnet for the bridge ingress network
+
+  --bridge-backends-subnet-ipv4 CIDR
+                                  IPv4 subnet for the bridge backends network
+
+  --bridge-backends-subnet-ipv6 CIDR
+                                  IPv6 subnet for the bridge backends network
 
   --metafeed-cert FILE           Metafeed client certificate
                                  Only security-intelligence
