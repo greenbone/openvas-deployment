@@ -287,7 +287,7 @@ change_domain_name() {
     fi
 
     init_setting 'DOMAIN_NAME' "${setting_value}" "${SETTINGS_DIR}" 'y'
-    echo "Info: To apply the change, please run ${0} --run."
+    deploy
 }
 
 # =============================================================================
@@ -329,5 +329,5 @@ change_domain_ip() {
     fi
 
     init_setting 'DOMAIN_IP' "${setting_value}" "${SETTINGS_DIR}" 'y'
-    echo "Info: To apply the change, please run ${0} --run."
+    deploy
 }
