@@ -168,7 +168,6 @@ Use one action per invocation.
 | `--ccert-mode MODE`      | Client certificate mode: `ca` or `cert`. Default: `ca`. Only enterprise-container. |
 | `--ccert-path PATH`      | Host client-certificate directory for client certificate mode `mount`. The `mount` mode is currently not supported. Only enterprise-container. |
 | `--feed-sync-force-no-log` | With `--force-feed-sync` or `--change-feed-sync-hour`, do not prompt to follow the `feed-sync` service logs. Only enterprise-container. |
-| `--skip-init-if-exist`   | With `--init`, exit with status 0 without changing the existing `./product` directory if it already exists. |
 
 The active runtime defaults are shown by:
 
