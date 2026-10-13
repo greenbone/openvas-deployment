@@ -131,10 +131,10 @@ Use one action per invocation.
 | `--change-feed-sync-hour` | Change the daily scheduled feed synchronization hour and immediately restart feed synchronization. Requires `--feed-sync-hour`. Only enterprise-container. |
 | `--change-domain-name` | Change the domain name setting and deploy. Requires `--domain-name` and a successfully initialized deployment (all product settings must load). Supported for security-intelligence and enterprise-container scan deployments; not enterprise-container OpenVASD. The selected setting is saved before deployment and remains changed if deployment fails. |
 | `--change-domain-ip` | Change the domain IP setting and deploy. Requires `--domain-ip` and a successfully initialized enterprise-container scan deployment (all product settings must load). Not supported for security-intelligence or enterprise-container OpenVASD. The selected setting is saved before deployment and remains changed if deployment fails. Only a non-empty value is required; IP format is not validated. |
-| `--change-bridge-ingress-subnet-ipv4` | With `--bridge-ingress-subnet-ipv4` . |
-| `--change-bridge-ingress-subnet-ipv6` | With `--bridge-ingress-subnet-ipv6` . |
-| `--change-bridge-backends-subnet-ipv4` | With `--bridge-backends-subnet-ipv4` . |
-| `--change-bridge-backends-subnet-ipv6` | With `--bridge-backends-subnet-ipv6` . |
+| `--change-bridge-ingress-subnet-ipv4` | Save the bridge ingress IPv4 subnet; requires `--bridge-ingress-subnet-ipv4`. Run `--run` to apply. |
+| `--change-bridge-ingress-subnet-ipv6` | Save the bridge ingress IPv6 subnet; requires `--bridge-ingress-subnet-ipv6`. Run `--run` to apply. |
+| `--change-bridge-backends-subnet-ipv4` | Save the bridge backends IPv4 subnet; requires `--bridge-backends-subnet-ipv4`. Run `--run` to apply. |
+| `--change-bridge-backends-subnet-ipv6` | Save the bridge backends IPv6 subnet; requires `--bridge-backends-subnet-ipv6`. Run `--run` to apply. |
 | `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
 | `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
 | `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
