@@ -27,6 +27,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 - [Ingress certificate options](#ingress-certificate-options)
 - [OpenVASD options](#openvasd-options)
 - [Development options](#development-options)
+- [Product versions](#product-versions)
 - [Examples](#examples)
 - [Security considerations](#security-considerations)
 - [Troubleshooting](#troubleshooting)
@@ -115,6 +116,7 @@ openvas-deployment --down
 
 > [!WARNING]
 > `--down-volumes` stops the deployment and removes its Docker volumes. This can permanently delete persistent deployment data.
+
 
 ## Actions
 
@@ -253,6 +255,50 @@ If custom ingress certificates are not supplied during initialization, the utili
 | `--integration` | Use development stage URL prefix `-dev/integration` for the current registry operation, typically with `--update`. |
 | `--testing` | Use development stage URL prefix `-dev/testing` for the current registry operation, typically with `--update`. |
 | `--staging` | Use development stage URL prefix `-dev/staging` for the current registry operation, typically with `--update`. |
+
+## Product versions
+
+The standalone `--list-versions` action lists valid strict SemVer tags from the remote OCI registry for the selected product and stage. The standalone `--list-local-versions` action lists local versions under that product's `ARTIFACT_DIR`.
+
+List versions:
+
+```bash
+openvas-deployment --list-versions
+```
+
+List versions from the staging registry:
+
+```bash
+openvas-deployment --list-versions \
+  --staging
+```
+
+List versions already downloaded:
+
+```bash
+openvas-deployment --list-local-versions 
+```
+
+Download a product in version:
+
+```bash
+openvas-deployment --update --version 1.2.3
+```
+
+Run a product in version:
+
+```bash
+openvas-deployment --run --version v1.2.3
+```
+
+Include the selected local artifact in an OpenVASD deployment archive.
+
+```bash
+openvas-deployment --create-openvasd-tar \
+  --cn-openvasd sensor.example.com \
+  --version 1.2.3
+```
+
 
 ## Examples
 

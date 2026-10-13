@@ -49,6 +49,8 @@ run() {
 
 check_req
 init
+list_versions
+list_local_versions
 list 'security-intelligence'
 clean 'security-intelligence'
 init_license

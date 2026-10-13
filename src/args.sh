@@ -242,6 +242,14 @@ parse_args() {
                 MODE='update'
                 shift 1
                 ;;
+            --list-versions)
+                MODE='list-versions'
+                shift 1
+                ;;
+            --list-local-versions)
+                MODE='list-local-versions'
+                shift 1
+                ;;
             --logs)
                 MODE='logs'
                 shift 1
@@ -321,6 +329,13 @@ run() {
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
+        ;;
+       fi
+    list-versions)
+        list_remote_versions
+        ;;
+    list-local-versions)
+        list_local_versions
         ;;
     init)
         init

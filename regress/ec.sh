@@ -216,8 +216,10 @@ init_version
 if [ "${SKIP:-}" != 'run' ]; then
     run_version
 fi
-list 'Openvasd scan version 0.10.2'
-clean 'Openvasd scan version 0.10.2'
+list_versions
+list_local_versions
+list 'Openvasd scan version 0.10.1'
+clean 'Openvasd scan version 0.10.1'
 init
 list 'Openvasd scan'
 clean 'Openvasd scan'

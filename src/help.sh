@@ -45,6 +45,12 @@ Actions:
 
   --update                       Download and extract the latest product version
 
+  --list-versions                List valid remote product versions
+                                  Uses the selected product and stage, and the
+                                  configured OCI client certificate and key
+
+  --list-local-versions          List valid locally downloaded product versions
+
   --run                          Start or redeploy the configured deployment
                                  Uses the latest locally downloaded version;
                                  run --update first to download a new version
@@ -88,9 +94,9 @@ Deployment options:
                                    enterprise-container | security-intelligence
 
   --version VERSION              Select an artifact version using strict SemVer
-                                  2.0.0 (optional lowercase "v" prefix accepted)
-                                  Omitted: select the latest available version
-                                  Explicit unavailable versions fail
+                                   2.0.0 (optional lowercase "v" prefix accepted)
+                                   Omitted: select the latest available version
+                                   Explicit unavailable versions fail
 
   --domain-name NAME             Domain name for the deployment
                                   Required for --init with security-intelligence
@@ -297,6 +303,11 @@ Update and start the deployment:
 Select an artifact version:
   $0 --update --version 1.2.3
   $0 --run --version v1.2.3
+
+List remote and local versions:
+  $0 --list-versions --product enterprise-container
+  $0 --list-versions --product enterprise-container --staging
+  $0 --list-local-versions --product enterprise-container
 
 
 Change the gvmd administrator password:
