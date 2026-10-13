@@ -164,7 +164,7 @@ Deployment options:
                                  Only enterprise-container
 
   --skip-init-if-exist           Exit with status 0 if already initialized
-                                  Init-only; ignored with domain change actions
+                                  Deprecated!
 
 
 Log options:
