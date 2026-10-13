@@ -217,9 +217,7 @@ load_bridge_subnet_settings() {
 # change_bridge_subnet()
 # =============================================================================
 # Validates the setting name and requires a non-empty value, then forcibly
-# persists the setting with init_setting() and calls deploy(). Does not load
-# settings or validate PRODUCT, deployment mode, or CIDR syntax. A deployment
-# failure does not undo the persisted value.
+# persists the setting with init_setting().
 #
 # Arguments:
 #   $1  One of BRIDGE_INGRESS_SUBNET_IPV4, BRIDGE_INGRESS_SUBNET_IPV6,
@@ -246,7 +244,7 @@ change_bridge_subnet() {
     esac
 
     init_setting "${setting_name}" "${setting_value}" "${SETTINGS_DIR}" 'y'
-    deploy
+    echo "Info: To apply the change, please run ${0} --run."
 }
 
 # =============================================================================
@@ -257,8 +255,7 @@ change_bridge_subnet() {
 # Checks that DOMAIN_NAME is non-empty and that PRODUCT supports the action,
 # then loads product settings before writing DOMAIN_NAME with forced
 # initialization. The enterprise-container product must use scan deployment
-# mode. On successful validation, deploy is called; a deployment failure does
-# not undo the write.
+# mode.
 #
 # Arguments:
 #   $1
@@ -290,6 +287,7 @@ change_domain_name() {
     fi
 
     init_setting 'DOMAIN_NAME' "${setting_value}" "${SETTINGS_DIR}" 'y'
+    echo "Info: To apply the change, please run ${0} --run."
 }
 
 # =============================================================================
@@ -299,8 +297,7 @@ change_domain_name() {
 #
 # Checks that DOMAIN_IP is non-empty,
 # then loads product settings and requires scan deployment mode before writing
-# DOMAIN_IP with forced initialization. On successful validation, deploy is
-# called; a deployment failure does not undo the write.
+# DOMAIN_IP with forced initialization.
 #
 # Arguments:
 #   $1
@@ -332,5 +329,5 @@ change_domain_ip() {
     fi
 
     init_setting 'DOMAIN_IP' "${setting_value}" "${SETTINGS_DIR}" 'y'
-    deploy
+    echo "Info: To apply the change, please run ${0} --run."
 }
