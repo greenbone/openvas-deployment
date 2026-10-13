@@ -225,11 +225,10 @@ load_bridge_subnet_settings() {
 #   $2  Non-empty subnet value.
 #
 # Returns:
-#   The status returned by deploy after validation and persistence.
+#   The status of the final informational message; apply the change with --run.
 #
 # Exits:
-#   1 if either required argument is omitted. Invalid setting names return 1;
-#   init_setting() and deploy() failures are returned as their command status.
+#   1 if either required argument is omitted or the setting name is invalid.
 change_bridge_subnet() {
     local setting_name="${1:?Error: Bridge subnet setting name is empty}"
     local setting_value="${2:?Error: Bridge subnet IP address is empty}"
