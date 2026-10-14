@@ -426,10 +426,12 @@ create_openvasd_tar() {
         cp "${cert_dir_product}/feed.key" "${store_dir_name}/${cert_dir_name}/${product}/"
         cp -r "${settings_dir}" "${store_dir_name}/${settings_dir_name}/"
 
-        init_setting "PRODUCT" "enterprise-container" \
-            "${store_dir_name}" "y"
-        init_setting "DEPLOYMENT_MODE" "openvasd" \
-            "${store_dir_name}/${settings_dir_name}/${product}" "y"
+        init_setting "PRODUCT" 'enterprise-container' \
+            "${store_dir_name}" 'y'
+        init_setting 'DEPLOYMENT_MODE' 'openvasd' \
+            "${store_dir_name}/${settings_dir_name}/${product}" 'y'
+        init_setting 'OPENVASD_CN' "${cn_openvasd}" \
+            "${store_dir_name}/${settings_dir_name}/${product}" 'y'
     popd > /dev/null
 
     cp "${0}" "${tmp_dir}"
