@@ -30,6 +30,9 @@ init_settings_agent() {
     local domain_ip="${2:-$DOMAIN_IP}"
     local settings_dir="${3:-$SETTINGS_DIR}"
 
+    validate_domain_name "${domain_name}" 'Error: Invalid domain name.'
+    validate_domain_ip "${domain_ip}" 'Error: Invalid domain IP address.'
+
     if [ "${domain_name}" ]; then
         init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
     else
