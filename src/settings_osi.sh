@@ -28,13 +28,13 @@ init_settings_osi() {
     echo 'Info: Init settings OSI'
     init_bridge_subnet_settings "${settings_dir}"
 
-    validate_domain_name "${domain_name}" 'Error: Invalid domain name.'
-    if [ "${domain_name}" ]; then
-        init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
-    else
+    if ! [ "${domain_name}" ]; then
         echo "Error: Domain name not set! Run --init with --domain-name!"
         exit 1
     fi
+
+    validate_domain_name "${domain_name}" 'Error: Invalid domain name.'
+    init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
 }
 
 # =============================================================================
