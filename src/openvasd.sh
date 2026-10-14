@@ -384,6 +384,7 @@ create_openvasd_cert_tar() {
 #   1 if the OpenVASD common name is empty.
 #   Exits if changing to the temporary or artifact directory fails.
 create_openvasd_tar() {
+    load_settings
     local cn_openvasd="${1:-$CN_OPENVASD}"
     local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
     local openvasd_tar_with_images="${3:-$OPENVASD_TAR_WITH_IMAGES}"
