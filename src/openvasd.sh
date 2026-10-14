@@ -297,19 +297,19 @@ create_openvasd_cert_tar() {
 # =============================================================================
 # Creates a gzip-compressed deployment archive for an OpenVASD sensor.
 #
-# The function validates the OpenVASD common name, determines the latest
+# The function validates the OpenVASD common name, retrieves the latest
 # product version, and assembles a deployment directory in a temporary
-# location with restricted permissions.
+# location with restricted permissions (0700).
 #
 # The deployment directory contains:
 #   - OCI certificates.
 #   - OpenVASD-specific product certificates and the feed key.
 #   - Product artifacts for the latest version.
-#   - A complete copy of SETTINGS_DIR.
+#   - A copy of the configured settings directory.
 #   - The current deployment script.
 #   - Optionally, Docker images required for deployment.
 #
-# The settings directory is copied without modifying the original files.
+# The settings directory is copied without modifying the source files.
 # The archive's root PRODUCT setting is initialized to
 # "enterprise-container", while DEPLOYMENT_MODE is set to "openvasd"
 # in the product-specific settings directory.
@@ -329,21 +329,23 @@ create_openvasd_cert_tar() {
 # the current working directory, replacing an existing archive with
 # the same name.
 #
-# The temporary deployment directory is removed after archive creation.
+# Archive creation uses a restrictive umask (077). The temporary
+# deployment directory is removed after the archive command completes.
 #
 # Arguments:
 #   1. cn_openvasd:
 #      OpenVASD common name used for certificate lookup and archive naming.
 #      Defaults to CN_OPENVASD.
 #   2. cert_dir_product:
-#      Directory containing product certificates and the feed key.
+#      Source directory containing product certificates and the feed key.
 #      Defaults to CERT_DIR_PRODUCT.
 #   3. openvasd_tar_with_images:
 #      Controls whether Docker images are included ('y' to enable).
 #      Defaults to OPENVASD_TAR_WITH_IMAGES.
 #   4. feed_mode:
 #      Determines whether the feed-key-service image is included when
-#      image inclusion is enabled. Defaults to FEED_MODE.
+#      Docker image inclusion is enabled ('service' to enable).
+#      Defaults to FEED_MODE.
 #   5. store_dir_name:
 #      Name of the deployment store directory inside the archive.
 #      Defaults to STORE_DIR_NAME.
@@ -366,8 +368,13 @@ create_openvasd_cert_tar() {
 #       Name of the settings directory inside the archive.
 #       Defaults to SETTINGS_DIR_NAME.
 #   12. product:
-#       Product name used for the deployment directory layout.
+#       Product name used for the deployment directory layout and
+#       product-specific settings, certificates, artifacts, and images.
 #       Defaults to PRODUCT.
+#   13. settings_dir:
+#       Source directory containing deployment settings to be copied
+#       into the product-specific settings directory.
+#       Defaults to SETTINGS_DIR.
 #
 # Returns:
 #   No explicit return value. Creates a gzip-compressed tar archive
@@ -377,9 +384,6 @@ create_openvasd_cert_tar() {
 #   1 if the OpenVASD common name is empty.
 #   Exits if changing to the temporary or artifact directory fails.
 create_openvasd_tar() {
-    load_settings
-
-    local settings_dir="${SETTINGS_DIR}"
     local cn_openvasd="${1:-$CN_OPENVASD}"
     local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
     local openvasd_tar_with_images="${3:-$OPENVASD_TAR_WITH_IMAGES}"
@@ -392,6 +396,7 @@ create_openvasd_tar() {
     local image_dir_name="${10:-$IMAGE_DIR_NAME}"
     local settings_dir_name="${11:-$SETTINGS_DIR_NAME}"
     local product="${12:-$PRODUCT}"
+    local settings_dir="${13:-$SETTINGS_DIR}"
 
     if ! [ "${cn_openvasd}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
@@ -411,6 +416,7 @@ create_openvasd_tar() {
     local tmp_images="${tmp_dir}/${store_dir_name}/${image_dir_name}/${product}"
 
     pushd "${tmp_dir}" > /dev/null || exit
+        mkdir -p "${store_dir_name}/${settings_dir_name}/${product}"
         mkdir -p "${store_dir_name}/${cert_dir_name}/${product}"
         mkdir -p "${store_dir_name}/${artifact_dir_name}/${product}"
 
@@ -418,7 +424,7 @@ create_openvasd_tar() {
         cp -r "${artifact_dir}/${VERSION}" "${store_dir_name}/${artifact_dir_name}/${product}/"
         cp -r "${openvasd_cert_folder}" "${store_dir_name}/${cert_dir_name}/${product}/"
         cp "${cert_dir_product}/feed.key" "${store_dir_name}/${cert_dir_name}/${product}/"
-        cp -r "${settings_dir}" "${store_dir_name}/${settings_dir_name}/"
+        cp -r "${settings_dir}" "${store_dir_name}/${settings_dir_name}/${product}/"
 
         init_setting "PRODUCT" "enterprise-container" \
             "${store_dir_name}" "y"
