@@ -416,7 +416,7 @@ create_openvasd_tar() {
     local tmp_images="${tmp_dir}/${store_dir_name}/${image_dir_name}/${product}"
 
     pushd "${tmp_dir}" > /dev/null || exit
-        mkdir -p "${store_dir_name}/${settings_dir_name}/${product}"
+        mkdir -p "${store_dir_name}/${settings_dir_name}"
         mkdir -p "${store_dir_name}/${cert_dir_name}/${product}"
         mkdir -p "${store_dir_name}/${artifact_dir_name}/${product}"
 
@@ -424,7 +424,7 @@ create_openvasd_tar() {
         cp -r "${artifact_dir}/${VERSION}" "${store_dir_name}/${artifact_dir_name}/${product}/"
         cp -r "${openvasd_cert_folder}" "${store_dir_name}/${cert_dir_name}/${product}/"
         cp "${cert_dir_product}/feed.key" "${store_dir_name}/${cert_dir_name}/${product}/"
-        cp -r "${settings_dir}" "${store_dir_name}/${settings_dir_name}/${product}/"
+        cp -r "${settings_dir}" "${store_dir_name}/${settings_dir_name}/"
 
         init_setting "PRODUCT" "enterprise-container" \
             "${store_dir_name}" "y"
