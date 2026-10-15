@@ -153,13 +153,19 @@ ipv4_valid() {
     local octet
     local -a octets
 
-    [[ "${address}" && "${address}" != *[[:space:]]* ]] || return 1
+    [[ -n "${address}" &&
+       "${address}" != *[[:space:]]* &&
+       "${address}" != *. ]] || return 1
+
     IFS='.' read -r -a octets <<< "${address}"
     ((${#octets[@]} == 4)) || return 1
+
     for octet in "${octets[@]}"; do
         [[ "${octet}" =~ ^(0|[1-9][0-9]{0,2})$ ]] || return 1
         ((10#${octet} <= 255)) || return 1
     done
+
+    return 0
 }
 
 # =============================================================================
