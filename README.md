@@ -7,7 +7,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 
 > [!IMPORTANT]
 > - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
-> - Requires Docker Compose version 5.3.1 or higher.
+> - Requires Docker Compose version 2.40.3 or higher.
 > - Requires Bash version 5.1 or higher.
 > - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
 > - Starting with `openvas-deployment` version 0.0.8:
@@ -35,7 +35,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 
 ## Installation
 
-The utility requires Bash, a reachable Docker daemon, Docker Compose 5.3.1 or newer, ORAS, OpenSSL, `tar`, `curl`, `less`, `awk`, and standard core utilities such as `install`, `grep`, `sed`, `sort`, `base64`, and `chmod`. The release archive also requires `zstd`/`unzstd` for extraction.
+The utility requires Bash, a reachable Docker daemon, Docker Compose 2.40.3 or newer, ORAS, OpenSSL, `tar`, `curl`, `less`, `awk`, and standard core utilities such as `install`, `grep`, `sed`, `sort`, `base64`, and `chmod`. The release archive also requires `zstd`/`unzstd` for extraction.
 
 The deployment state is stored in `./product` relative to the directory from which `openvas-deployment` is run. Run subsequent `--update`, `--run`, `--logs`, `--ps`, `--down`, and management commands from the same directory used for `--init`.
 
