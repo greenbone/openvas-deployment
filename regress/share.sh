@@ -47,6 +47,18 @@ change_domain_ip() {
     openvas-deployment --change-domain-ip --domain-ip 127.0.0.1
 }
 
+change_bridge_backends() {
+    echo_task 'Test change bridge backends'
+    openvas-deployment --change-bridge-backends-subnet-ipv4 --bridge-backends-subnet-ipv4 '100.104.99.128/26'
+    openvas-deployment --change-bridge-backends-subnet-ipv6 --bridge-backends-subnet-ipv6 'fd7a:9133:4e82:3::/64'
+}
+
+change_bridge_ingress() {
+    echo_task 'Test change bridge backends'
+    openvas-deployment --change-bridge-ingress-subnet-ipv4 --bridge-ingress-subnet-ipv4 '100.104.89.128/26'
+    openvas-deployment --change-bridge-ingress-subnet-ipv6 --bridge-ingress-subnet-ipv6 'fd7a:9138:4e82:3::/64'
+}
+
 list_versions() {
     echo_task 'Test list versions'
     openvas-deployment --list-versions
