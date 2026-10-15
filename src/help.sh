@@ -8,7 +8,7 @@ OpenVAS Deployment
 
 Support for enterprise-container and security-intelligence
 
-Requires Bash 5.1+, Docker Compose 5.3.1+, ORAS, and a reachable Docker daemon.
+Requires Bash 5.1+, Docker Compose 2.40.3+, ORAS, and a reachable Docker daemon.
 
 Info:
   There are several examples further down.
