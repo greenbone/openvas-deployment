@@ -61,7 +61,7 @@ pushd "$tmp" > /dev/null
     install -m 0755 docker/docker /usr/local/bin/docker
 
     # Compose
-    compose_version=5.3.1
+    compose_version=2.40.3
     compose_file="docker-compose-linux-${docker_arch}"
     compose_url="https://github.com/docker/compose/releases/download/v${compose_version}"
     curl -fsSL --retry 3 -o "$compose_file" "${compose_url}/${compose_file}"
