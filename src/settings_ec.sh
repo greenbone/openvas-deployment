@@ -13,6 +13,8 @@
 #
 # If DEPLOYMENT_MODE is set to 'openvasd', the corresponding openvasd settings
 # are initialized as well.
+# Bridge subnet settings are initialized with EC ingress and backends defaults;
+# EC does not initialize VI-proxy subnets.
 #
 # Arguments:
 #   $1  Deployment mode. Defaults to DEPLOYMENT_MODE.
@@ -31,6 +33,64 @@
 #   1 if CCERT_MODE is not supported.
 #   1 if FEED_MODE is set to 'mount'.
 #   1 if CCERT_MODE is set to 'mount'.
+# =============================================================================
+# init_bridge_subnet_settings_ec()
+# =============================================================================
+# Validates and initializes the EC ingress and backends bridge subnet settings.
+# IPv4/IPv6 values default to the EC subnets; explicit environment values take
+# precedence, while existing nonempty setting files are preserved.
+# EC does not initialize VI-proxy subnet settings.
+#
+# Arguments:
+#   $1 - Settings directory. Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if any ingress or backends subnet CIDR is invalid.
+# =============================================================================
+init_bridge_subnet_settings_ec() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
+    local bridge_ingress_subnet_ipv4="${BRIDGE_INGRESS_SUBNET_IPV4:-100.104.0.0/26}"
+    local bridge_ingress_subnet_ipv6="${BRIDGE_INGRESS_SUBNET_IPV6:-fd7a:91c3:4e82:1::/64}"
+    local bridge_backends_subnet_ipv4="${BRIDGE_BACKENDS_SUBNET_IPV4:-100.104.0.64/26}"
+    local bridge_backends_subnet_ipv6="${BRIDGE_BACKENDS_SUBNET_IPV6:-fd7a:91c3:4e82:2::/64}"
+
+    validate_bridge_cidr "${bridge_ingress_subnet_ipv4}" ipv4 'Error: Invalid BRIDGE_INGRESS_SUBNET_IPV4 CIDR.'
+    validate_bridge_cidr "${bridge_ingress_subnet_ipv6}" ipv6 'Error: Invalid BRIDGE_INGRESS_SUBNET_IPV6 CIDR.'
+    validate_bridge_cidr "${bridge_backends_subnet_ipv4}" ipv4 'Error: Invalid BRIDGE_BACKENDS_SUBNET_IPV4 CIDR.'
+    validate_bridge_cidr "${bridge_backends_subnet_ipv6}" ipv6 'Error: Invalid BRIDGE_BACKENDS_SUBNET_IPV6 CIDR.'
+
+    init_setting 'BRIDGE_INGRESS_SUBNET_IPV4' "${bridge_ingress_subnet_ipv4}" "${settings_dir}"
+    init_setting 'BRIDGE_INGRESS_SUBNET_IPV6' "${bridge_ingress_subnet_ipv6}" "${settings_dir}"
+    init_setting 'BRIDGE_BACKENDS_SUBNET_IPV4' "${bridge_backends_subnet_ipv4}" "${settings_dir}"
+    init_setting 'BRIDGE_BACKENDS_SUBNET_IPV6' "${bridge_backends_subnet_ipv6}" "${settings_dir}"
+}
+
+# =============================================================================
+# load_bridge_subnet_settings_ec()
+# =============================================================================
+# Loads and exports the required EC ingress and backends bridge subnet settings.
+# VI-proxy subnet settings are not read or exported for EC.
+#
+# Arguments:
+#   $1 - Settings directory. Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   None.
+#
+# Exits:
+#   1 if a required bridge subnet setting is missing or empty.
+load_bridge_subnet_settings_ec() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
+
+    load_setting 'BRIDGE_INGRESS_SUBNET_IPV4' 'BRIDGE_INGRESS_SUBNET_IPV4' "${settings_dir}"
+    load_setting 'BRIDGE_INGRESS_SUBNET_IPV6' 'BRIDGE_INGRESS_SUBNET_IPV6' "${settings_dir}"
+    load_setting 'BRIDGE_BACKENDS_SUBNET_IPV4' 'BRIDGE_BACKENDS_SUBNET_IPV4' "${settings_dir}"
+    load_setting 'BRIDGE_BACKENDS_SUBNET_IPV6' 'BRIDGE_BACKENDS_SUBNET_IPV6' "${settings_dir}"
+}
+
 init_settings_ec() {
     local deployment_mode="${1:-$DEPLOYMENT_MODE}"
     local feed_mode="${2:-$FEED_MODE}"
@@ -40,7 +100,7 @@ init_settings_ec() {
     local settings_dir="${6:-$SETTINGS_DIR}"
 
     echo 'Info: Init settings EC'
-    init_bridge_subnet_settings "${settings_dir}"
+    init_bridge_subnet_settings_ec "${settings_dir}"
 
     if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${deployment_mode} " ]]; then
         init_setting "DEPLOYMENT_MODE" "${deployment_mode}" "${settings_dir}"
@@ -101,6 +161,9 @@ init_settings_ec() {
 # =============================================================================
 # Loads the enterprise-container deployment settings.
 #
+# The function loads and exports EC ingress and backends bridge subnet settings;
+# VI-proxy subnet settings are not loaded or exported for EC.
+#
 # The function loads the persisted deployment configuration values from the
 # settings directory and exports them as environment variables using the
 # generic load_setting() helper.
@@ -119,7 +182,7 @@ init_settings_ec() {
 #   1 if a required setting file is missing or empty.
 load_settings_ec() {
     echo 'Info: Load settings EC'
-    load_bridge_subnet_settings
+    load_bridge_subnet_settings_ec
 
     load_setting "DEPLOYMENT_MODE" "DEPLOYMENT_MODE"
     load_setting "FEED_MODE" "FEED_MODE"

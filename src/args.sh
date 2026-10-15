@@ -66,6 +66,14 @@ parse_args() {
                 MODE='change-bridge-backends-subnet-ipv6'
                 shift 1
                 ;;
+            --change-bridge-vi-proxy-subnet-ipv4)
+                MODE='change-bridge-vi-proxy-subnet-ipv4'
+                shift 1
+                ;;
+            --change-bridge-vi-proxy-subnet-ipv6)
+                MODE='change-bridge-vi-proxy-subnet-ipv6'
+                shift 1
+                ;;
             --domain-name)
                 DOMAIN_NAME="$2"
                 shift 2
@@ -88,6 +96,14 @@ parse_args() {
                 ;;
             --bridge-backends-subnet-ipv6)
                 BRIDGE_BACKENDS_SUBNET_IPV6="$2"
+                shift 2
+                ;;
+            --bridge-vi-proxy-subnet-ipv4)
+                BRIDGE_VI_PROXY_SUBNET_IPV4="$2"
+                shift 2
+                ;;
+            --bridge-vi-proxy-subnet-ipv6)
+                BRIDGE_VI_PROXY_SUBNET_IPV6="$2"
                 shift 2
                 ;;
             --init-openvasd-tar)
@@ -479,6 +495,22 @@ run() {
         ;;
     change-bridge-backends-subnet-ipv6)
         change_bridge_subnet 'BRIDGE_BACKENDS_SUBNET_IPV6' "${BRIDGE_BACKENDS_SUBNET_IPV6}"
+        ;;
+    change-bridge-vi-proxy-subnet-ipv4)
+        if [ "${PRODUCT}" == 'security-intelligence' ]; then
+            change_bridge_subnet 'BRIDGE_VI_PROXY_SUBNET_IPV4' "${BRIDGE_VI_PROXY_SUBNET_IPV4}"
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
+        ;;
+    change-bridge-vi-proxy-subnet-ipv6)
+        if [ "${PRODUCT}" == 'security-intelligence' ]; then
+            change_bridge_subnet 'BRIDGE_VI_PROXY_SUBNET_IPV6' "${BRIDGE_VI_PROXY_SUBNET_IPV6}"
+        else
+            echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
         ;;
     list-versions)
         list_remote_versions

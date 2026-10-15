@@ -131,10 +131,12 @@ Use one action per invocation.
 | `--change-feed-sync-hour` | Change the daily scheduled feed synchronization hour and immediately restart feed synchronization. Requires `--feed-sync-hour`. Only enterprise-container. |
 | `--change-domain-name` | Change the domain name setting and deploy. Requires `--domain-name` and a successfully initialized deployment (all product settings must load). Supported for security-intelligence and enterprise-container scan deployments; not enterprise-container OpenVASD. The selected setting is saved before deployment and remains changed if deployment fails. |
 | `--change-domain-ip` | Change the domain IP setting and deploy. Requires `--domain-ip` containing an IPv4 or IPv6 address literal, and a successfully initialized enterprise-container scan deployment (all product settings must load). Not supported for security-intelligence or enterprise-container OpenVASD. The selected setting is saved before deployment and remains changed if deployment fails. |
-| `--change-bridge-ingress-subnet-ipv4` | Save the bridge ingress IPv4 subnet; requires `--bridge-ingress-subnet-ipv4`. Run `--run` to apply. |
-| `--change-bridge-ingress-subnet-ipv6` | Save the bridge ingress IPv6 subnet; requires `--bridge-ingress-subnet-ipv6`. Run `--run` to apply. |
-| `--change-bridge-backends-subnet-ipv4` | Save the bridge backends IPv4 subnet; requires `--bridge-backends-subnet-ipv4`. Run `--run` to apply. |
-| `--change-bridge-backends-subnet-ipv6` | Save the bridge backends IPv6 subnet; requires `--bridge-backends-subnet-ipv6`. Run `--run` to apply. |
+| `--change-bridge-ingress-subnet-ipv4` | Save the selected product's ingress bridge IPv4 subnet; requires `--bridge-ingress-subnet-ipv4`. Run `--run` to apply. |
+| `--change-bridge-ingress-subnet-ipv6` | Save the selected product's ingress bridge IPv6 subnet; requires `--bridge-ingress-subnet-ipv6`. Run `--run` to apply. |
+| `--change-bridge-backends-subnet-ipv4` | Save the selected product's backends bridge IPv4 subnet; requires `--bridge-backends-subnet-ipv4`. Run `--run` to apply. |
+| `--change-bridge-backends-subnet-ipv6` | Save the selected product's backends bridge IPv6 subnet; requires `--bridge-backends-subnet-ipv6`. Run `--run` to apply. |
+| `--change-bridge-vi-proxy-subnet-ipv4` | Save the VI-proxy IPv4 subnet; requires `--bridge-vi-proxy-subnet-ipv4`. Only security-intelligence, run `--run` to apply. |
+| `--change-bridge-vi-proxy-subnet-ipv6` | Save the VI-proxy IPv6 subnet; requires `--bridge-vi-proxy-subnet-ipv6`. Only security-intelligence, run `--run` to apply. |
 | `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
 | `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
 | `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
@@ -159,10 +161,12 @@ Use one action per invocation.
 | `--version VERSION`       | Select an artifact version using strict SemVer 2.0.0, with an optional lowercase `v` prefix. Omitted selects the latest; an explicit unavailable version fails. Accepted and ignored by non-artifact actions. |
 | `--domain-name NAME`      | Domain name for initialization and `--change-domain-name`. The change action supports security-intelligence and enterprise-container scan deployments. |
 | `--domain-ip IP`          | IPv4 or IPv6 address literal for initialization and `--change-domain-ip`. The change action supports enterprise-container scan deployments only. |
-| `--bridge-ingress-subnet-ipv4 CIDR` | Ingress bridge IPv4 subnet. Default: `100.104.0.0/26`. Use with `--init` or `--change-bridge-ingress-subnet-ipv4`. |
-| `--bridge-ingress-subnet-ipv6 CIDR` | Ingress bridge IPv6 subnet. Default: `fd7a:91c3:4e82:1::/64`. Use with `--init` or `--change-bridge-ingress-subnet-ipv6`. |
-| `--bridge-backends-subnet-ipv4 CIDR` | Backends bridge IPv4 subnet. Default: `100.104.0.64/26`. Use with `--init` or `--change-bridge-backends-subnet-ipv4`. |
-| `--bridge-backends-subnet-ipv6 CIDR` | Backends bridge IPv6 subnet. Default: `fd7a:91c3:4e82:2::/64`. Use with `--init` or `--change-bridge-backends-subnet-ipv6`. |
+| `--bridge-ingress-subnet-ipv4 CIDR` | Ingress bridge IPv4 subnet. Defaults: enterprise-container `100.104.0.0/26`; security-intelligence `100.104.1.0/26`. Use with `--init` or the matching `--change-bridge-ingress-subnet-ipv4` action. |
+| `--bridge-ingress-subnet-ipv6 CIDR` | Ingress bridge IPv6 subnet. Defaults: enterprise-container `fd7a:91c3:4e82:1::/64`; security-intelligence `fd7a:91c3:4e83:1::/64`. Use with `--init` or the matching `--change-bridge-ingress-subnet-ipv6` action. |
+| `--bridge-backends-subnet-ipv4 CIDR` | Backends bridge IPv4 subnet. Defaults: enterprise-container `100.104.0.64/26`; security-intelligence `100.104.1.64/26`. Use with `--init` or the matching `--change-bridge-backends-subnet-ipv4` action. |
+| `--bridge-backends-subnet-ipv6 CIDR` | Backends bridge IPv6 subnet. Defaults: enterprise-container `fd7a:91c3:4e82:2::/64`; security-intelligence `fd7a:91c3:4e83:2::/64`. Use with `--init` or the matching `--change-bridge-backends-subnet-ipv6` action. |
+| `--bridge-vi-proxy-subnet-ipv4 CIDR` | VI-proxy bridge IPv4 subnet. Default: `100.104.1.128/26`. Only security-intelligence. Use with `--init` or the matching `--change-bridge-vi-proxy-subnet-ipv4` action. |
+| `--bridge-vi-proxy-subnet-ipv6 CIDR` | VI-proxy bridge IPv6 subnet. Default: `fd7a:91c3:4e83:3::/64`. Only security-intelligence. Use with `--init` or the matching `--change-bridge-vi-proxy-subnet-ipv6` action. |
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
