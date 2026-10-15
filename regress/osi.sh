@@ -21,6 +21,12 @@ check_req() {
     fi
 }
 
+change_bridge_vi_proxy() {
+    echo_task 'Test change bridge backends'
+    openvas-deployment --change-bridge-vi-proxy-subnet-ipv4 --bridge-vi-proxy-subnet-ipv4 '100.104.79.128/26'
+    openvas-deployment --change-bridge-vi-proxy-subnet-ipv6 --bridge-vi-proxy-subnet-ipv6 'fd7a:9438:4e82:3::/64'
+}
+
 init() {
     echo_task 'Test Init'
     openvas-deployment --init --init-docker-oci \
@@ -49,6 +55,9 @@ run() {
 
 check_req
 init
+change_bridge_backends
+change_bridge_ingress
+change_bridge_vi_proxy
 list_versions
 list_local_versions
 list 'security-intelligence'

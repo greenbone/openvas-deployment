@@ -55,6 +55,14 @@ Actions:
   --change-bridge-backends-subnet-ipv6
                                   Change the bridge backends IPv6 subnet
 
+  --change-bridge-vi-proxy-subnet-ipv4
+                                   Change and persist the VI-proxy bridge IPv4
+                                   subnet (used by security-intelligence)
+
+  --change-bridge-vi-proxy-subnet-ipv6
+                                   Change and persist the VI-proxy bridge IPv6
+                                   subnet (used by security-intelligence)
+
   --update                       Download and extract the latest product version
 
   --list-versions                List valid remote product versions
@@ -133,6 +141,14 @@ Deployment options:
 
   --bridge-backends-subnet-ipv6 CIDR
                                   IPv6 subnet for the bridge backends network
+
+  --bridge-vi-proxy-subnet-ipv4 CIDR
+                                   IPv4 subnet for the VI-proxy bridge network
+                                   Used by security-intelligence.
+
+  --bridge-vi-proxy-subnet-ipv6 CIDR
+                                   IPv6 subnet for the VI-proxy bridge network
+                                   Used by security-intelligence.
 
   --metafeed-cert FILE           Metafeed client certificate
                                  Only security-intelligence
@@ -347,6 +363,11 @@ Change the domain name and redeploy (initialized deployment required):
 
 Change the enterprise-container scan domain IP and redeploy:
   $0 --change-domain-ip --domain-ip IP
+
+Change and persist a VI-proxy bridge subnet for security-intelligence, then
+apply it in a separate invocation:
+  $0 --change-bridge-vi-proxy-subnet-ipv4 --bridge-vi-proxy-subnet-ipv4 CIDR
+  $0 --run
 
 Restart feed synchronization immediately:
   $0 --force-feed-sync

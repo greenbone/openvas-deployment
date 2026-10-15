@@ -213,6 +213,8 @@ run_openvasd_tar_with_images() {
 
 check_req
 init_version
+change_bridge_backends
+change_bridge_ingress
 if [ "${SKIP:-}" != 'run' ]; then
     run_version
 fi
