@@ -30,19 +30,20 @@ init_settings_agent() {
     local domain_ip="${2:-$DOMAIN_IP}"
     local settings_dir="${3:-$SETTINGS_DIR}"
 
-    if [ "${domain_name}" ]; then
-        init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
-    else
+    if ! [ "${domain_name}" ]; then
         echo "Error: Domain name not set! Run --init with --domain-name!"
         exit 1
     fi
 
-    if [ "${domain_ip}" ]; then
-        init_setting "DOMAIN_IP" "${domain_ip}" "${settings_dir}"
-    else
+    if ! [ "${domain_ip}" ]; then
         echo "Error: Domain ip not set! Run --init with --domain-ip!"
         exit 1
     fi
+
+    validate_domain_ip "${domain_ip}" 'Error: Invalid domain IP address.'
+    validate_domain_name "${domain_name}" 'Error: Invalid domain name.'
+    init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
+    init_setting "DOMAIN_IP" "${domain_ip}" "${settings_dir}"
 }
 
 # =============================================================================

@@ -159,15 +159,111 @@ load_settings() {
 }
 
 # =============================================================================
+# init_bridge_subnet_settings()
+# =============================================================================
+# Initializes and persists the four bridge subnet settings.
+#
+# Uses the corresponding environment value or built-in default for each
+# setting. The values are passed to init_setting(), which persists them unless
+# a non-empty setting file already exists and applies its standard permissions.
+#
+# Arguments:
+#   $1  Settings directory. Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   The status of the final init_setting() call.
+#
+# Exits:
+#   1 if a selected subnet value is empty.
+init_bridge_subnet_settings() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
+    local bridge_ingress_subnet_ipv4="${BRIDGE_INGRESS_SUBNET_IPV4:-100.104.0.0/26}"
+    local bridge_ingress_subnet_ipv6="${BRIDGE_INGRESS_SUBNET_IPV6:-fd7a:91c3:4e82:1::/64}"
+    local bridge_backends_subnet_ipv4="${BRIDGE_BACKENDS_SUBNET_IPV4:-100.104.0.64/26}"
+    local bridge_backends_subnet_ipv6="${BRIDGE_BACKENDS_SUBNET_IPV6:-fd7a:91c3:4e82:2::/64}"
+
+    validate_bridge_cidr "${bridge_ingress_subnet_ipv4}" ipv4 'Error: Invalid BRIDGE_INGRESS_SUBNET_IPV4 CIDR.'
+    validate_bridge_cidr "${bridge_ingress_subnet_ipv6}" ipv6 'Error: Invalid BRIDGE_INGRESS_SUBNET_IPV6 CIDR.'
+    validate_bridge_cidr "${bridge_backends_subnet_ipv4}" ipv4 'Error: Invalid BRIDGE_BACKENDS_SUBNET_IPV4 CIDR.'
+    validate_bridge_cidr "${bridge_backends_subnet_ipv6}" ipv6 'Error: Invalid BRIDGE_BACKENDS_SUBNET_IPV6 CIDR.'
+
+    init_setting 'BRIDGE_INGRESS_SUBNET_IPV4' "${bridge_ingress_subnet_ipv4}" "${settings_dir}"
+    init_setting 'BRIDGE_INGRESS_SUBNET_IPV6' "${bridge_ingress_subnet_ipv6}" "${settings_dir}"
+    init_setting 'BRIDGE_BACKENDS_SUBNET_IPV4' "${bridge_backends_subnet_ipv4}" "${settings_dir}"
+    init_setting 'BRIDGE_BACKENDS_SUBNET_IPV6' "${bridge_backends_subnet_ipv6}" "${settings_dir}"
+}
+
+# =============================================================================
+# load_bridge_subnet_settings()
+# =============================================================================
+# Loads and exports the four persisted bridge subnet settings.
+#
+# Each setting is required to have a non-empty file; loading stops at the first
+# missing or empty file. Uses load_setting() for file reads and exports.
+#
+# Arguments:
+#   $1  Settings directory. Defaults to SETTINGS_DIR.
+#
+# Returns:
+#   The status of the final load_setting() call.
+#
+# Exits:
+#   1 if any required bridge subnet setting file is missing or empty.
+load_bridge_subnet_settings() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
+
+    load_setting 'BRIDGE_INGRESS_SUBNET_IPV4' 'BRIDGE_INGRESS_SUBNET_IPV4' "${settings_dir}"
+    load_setting 'BRIDGE_INGRESS_SUBNET_IPV6' 'BRIDGE_INGRESS_SUBNET_IPV6' "${settings_dir}"
+    load_setting 'BRIDGE_BACKENDS_SUBNET_IPV4' 'BRIDGE_BACKENDS_SUBNET_IPV4' "${settings_dir}"
+    load_setting 'BRIDGE_BACKENDS_SUBNET_IPV6' 'BRIDGE_BACKENDS_SUBNET_IPV6' "${settings_dir}"
+}
+
+# =============================================================================
+# change_bridge_subnet()
+# =============================================================================
+# Validates the setting name and requires a non-empty value, then forcibly
+# persists the setting with init_setting().
+#
+# Arguments:
+#   $1  One of BRIDGE_INGRESS_SUBNET_IPV4, BRIDGE_INGRESS_SUBNET_IPV6,
+#       BRIDGE_BACKENDS_SUBNET_IPV4, or BRIDGE_BACKENDS_SUBNET_IPV6.
+#   $2  Non-empty subnet value.
+#
+# Returns:
+#   The status of the final informational message; apply the change with --run.
+#
+# Exits:
+#   1 if either required argument is omitted or the setting name is invalid.
+change_bridge_subnet() {
+    local setting_name="${1:?Error: Bridge subnet setting name is empty}"
+    local setting_value="${2:?Error: Bridge subnet IP address is empty}"
+
+    case "${setting_name}" in
+        BRIDGE_INGRESS_SUBNET_IPV4|BRIDGE_BACKENDS_SUBNET_IPV4)
+            validate_bridge_cidr "${setting_value}" ipv4 "Error: Invalid ${setting_name} CIDR."
+            ;;
+        BRIDGE_INGRESS_SUBNET_IPV6|BRIDGE_BACKENDS_SUBNET_IPV6)
+            validate_bridge_cidr "${setting_value}" ipv6 "Error: Invalid ${setting_name} CIDR."
+            ;;
+        *)
+            echo "Error: Unsupported bridge subnet setting name: ${setting_name}" >&2
+            exit 1
+            ;;
+    esac
+
+    init_setting "${setting_name}" "${setting_value}" "${SETTINGS_DIR}" 'y'
+    echo "Info: To apply the change, please run ${0} --run."
+}
+
+# =============================================================================
 # change_domain_name()
 # =============================================================================
 # Persists DOMAIN_NAME, then deploys the configuration.
 #
-# Checks that DOMAIN_NAME is non-empty and that PRODUCT supports the action,
-# then loads product settings before writing DOMAIN_NAME with forced
-# initialization. The enterprise-container product must use scan deployment
-# mode. On successful validation, deploy is called; a deployment failure does
-# not undo the write.
+# Checks that the selected domain name is valid, then loads product settings
+# before writing DOMAIN_NAME with forced initialization. For
+# enterprise-container, the deployment mode must be scan. On success, deploy
+# is called; a deployment failure does not undo the write.
 #
 # Arguments:
 #   $1
@@ -190,6 +286,7 @@ change_domain_name() {
         echo 'Error: Domain name is empty! Provide --domain-name.' >&2
         exit 1
     fi
+    validate_domain_name "${setting_value}" 'Error: Invalid domain name.'
 
     load_settings "${PRODUCT}"
 
@@ -207,10 +304,10 @@ change_domain_name() {
 # =============================================================================
 # Persists DOMAIN_IP, then deploys the configuration.
 #
-# Checks that DOMAIN_IP is non-empty,
-# then loads product settings and requires scan deployment mode before writing
-# DOMAIN_IP with forced initialization. On successful validation, deploy is
-# called; a deployment failure does not undo the write.
+# Checks that the selected value is a valid IP literal, then loads product
+# settings and requires scan deployment mode before writing DOMAIN_IP with
+# forced initialization. On success, deploy is called; a deployment failure
+# does not undo the write.
 #
 # Arguments:
 #   $1
@@ -233,6 +330,7 @@ change_domain_ip() {
         echo 'Error: Domain IP is empty! Provide --domain-ip.' >&2
         exit 1
     fi
+    validate_domain_ip "${setting_value}" 'Error: Invalid domain IP address.'
 
     load_settings "${PRODUCT}"
 

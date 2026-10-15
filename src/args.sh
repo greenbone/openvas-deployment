@@ -50,12 +50,44 @@ parse_args() {
                 MODE='change-domain-ip'
                 shift 1
                 ;;
+            --change-bridge-ingress-subnet-ipv4)
+                MODE='change-bridge-ingress-subnet-ipv4'
+                shift 1
+                ;;
+            --change-bridge-ingress-subnet-ipv6)
+                MODE='change-bridge-ingress-subnet-ipv6'
+                shift 1
+                ;;
+            --change-bridge-backends-subnet-ipv4)
+                MODE='change-bridge-backends-subnet-ipv4'
+                shift 1
+                ;;
+            --change-bridge-backends-subnet-ipv6)
+                MODE='change-bridge-backends-subnet-ipv6'
+                shift 1
+                ;;
             --domain-name)
                 DOMAIN_NAME="$2"
                 shift 2
                 ;;
             --domain-ip)
                 DOMAIN_IP="$2"
+                shift 2
+                ;;
+            --bridge-ingress-subnet-ipv4)
+                BRIDGE_INGRESS_SUBNET_IPV4="$2"
+                shift 2
+                ;;
+            --bridge-ingress-subnet-ipv6)
+                BRIDGE_INGRESS_SUBNET_IPV6="$2"
+                shift 2
+                ;;
+            --bridge-backends-subnet-ipv4)
+                BRIDGE_BACKENDS_SUBNET_IPV4="$2"
+                shift 2
+                ;;
+            --bridge-backends-subnet-ipv6)
+                BRIDGE_BACKENDS_SUBNET_IPV6="$2"
                 shift 2
                 ;;
             --init-openvasd-tar)
@@ -435,6 +467,18 @@ run() {
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
             exit 1
         fi
+        ;;
+    change-bridge-ingress-subnet-ipv4)
+        change_bridge_subnet 'BRIDGE_INGRESS_SUBNET_IPV4' "${BRIDGE_INGRESS_SUBNET_IPV4}"
+        ;;
+    change-bridge-ingress-subnet-ipv6)
+        change_bridge_subnet 'BRIDGE_INGRESS_SUBNET_IPV6' "${BRIDGE_INGRESS_SUBNET_IPV6}"
+        ;;
+    change-bridge-backends-subnet-ipv4)
+        change_bridge_subnet 'BRIDGE_BACKENDS_SUBNET_IPV4' "${BRIDGE_BACKENDS_SUBNET_IPV4}"
+        ;;
+    change-bridge-backends-subnet-ipv6)
+        change_bridge_subnet 'BRIDGE_BACKENDS_SUBNET_IPV6' "${BRIDGE_BACKENDS_SUBNET_IPV6}"
         ;;
     list-versions)
         list_remote_versions

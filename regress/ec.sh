@@ -123,8 +123,8 @@ run_openvasd_cert_tar() {
         echo_task 'Test openvasd cert tar update'
         openvas-deployment --update
         echo_task 'Test openvasd cert tar run'
-        export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.0.128/26'
-        export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:3::/64'
+        openvas-deployment --change-bridge-backends-subnet-ipv4 --bridge-backends-subnet-ipv4 '100.104.0.128/26'
+        openvas-deployment --change-bridge-backends-subnet-ipv6 --bridge-backends-subnet-ipv6 'fd7a:91c3:4e82:3::/64'
         openvas-deployment --run --openvasd-port '1337'
         if ! ss -ltn | grep -q ':1337 '; then
             echo_error 'Error openvasd sensor setup port test failed!'
@@ -158,8 +158,8 @@ run_openvasd_tar() {
         echo_task 'Test Openvasd tar init'
         openvas-deployment --init-openvasd-tar --init-docker-oci
         echo_task 'Test openvasd run'
-        export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.0.192/26'
-        export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:4::/64'
+        openvas-deployment --change-bridge-backends-subnet-ipv4 --bridge-backends-subnet-ipv4 '100.104.0.192/26'
+        openvas-deployment --change-bridge-backends-subnet-ipv6 --bridge-backends-subnet-ipv6 'fd7a:91c3:4e82:4::/64'
         openvas-deployment --run --openvasd-port '2337'
         if ! ss -ltn | grep -q ':2337 '; then
             echo_error 'Error openvasd sensor setup port test failed!'
@@ -193,8 +193,8 @@ run_openvasd_tar_with_images() {
         echo_task 'Test Openvasd tar init'
         openvas-deployment --init-openvasd-tar --init-docker-oci
         echo_task 'Test openvasd run with load images from tar'
-        export BRIDGE_BACKENDS_SUBNET_IPV4='100.104.1.192/26'
-        export BRIDGE_BACKENDS_SUBNET_IPV6='fd7a:91c3:4e82:5::/64'
+        openvas-deployment --change-bridge-backends-subnet-ipv4 --bridge-backends-subnet-ipv4 '100.104.1.192/26'
+        openvas-deployment --change-bridge-backends-subnet-ipv6 --bridge-backends-subnet-ipv6 'fd7a:91c3:4e82:5::/64'
         openvas-deployment --run --openvasd-load-images-from-tar --openvasd-port '3337'
         if ! ss -ltn | grep -q ':3337 '; then
             echo_error 'Error openvasd sensor setup port test failed!'

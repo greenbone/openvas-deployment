@@ -40,6 +40,7 @@ init_settings_ec() {
     local settings_dir="${6:-$SETTINGS_DIR}"
 
     echo 'Info: Init settings EC'
+    init_bridge_subnet_settings "${settings_dir}"
 
     if [[ " ${DEPLOYMENT_MODE_OPTIONS[*]} " =~ " ${deployment_mode} " ]]; then
         init_setting "DEPLOYMENT_MODE" "${deployment_mode}" "${settings_dir}"
@@ -118,6 +119,7 @@ init_settings_ec() {
 #   1 if a required setting file is missing or empty.
 load_settings_ec() {
     echo 'Info: Load settings EC'
+    load_bridge_subnet_settings
 
     load_setting "DEPLOYMENT_MODE" "DEPLOYMENT_MODE"
     load_setting "FEED_MODE" "FEED_MODE"

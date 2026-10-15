@@ -295,107 +295,115 @@ create_openvasd_cert_tar() {
 # =============================================================================
 # create_openvasd_tar()
 # =============================================================================
-# Creates a portable archive for deploying an OpenVASD sensor.
+# Creates a gzip-compressed deployment archive for an OpenVASD sensor.
 #
-# The function validates the OpenVASD common name, loads the current settings,
-# and creates a temporary deployment directory containing the required product
-# artifacts, OCI certificates, OpenVASD certificates, feed key, deployment
-# settings, and the current deployment script.
+# The function validates the OpenVASD common name, retrieves the latest
+# product version, and assembles a deployment directory in a temporary
+# location with restricted permissions (0700).
 #
-# The archive configuration can be customized through optional arguments,
-# including certificate paths, feed configuration, artifact locations, image
-# inclusion, and deployment metadata. If arguments are not provided, the
-# corresponding environment variables are used as defaults.
+# The deployment directory contains:
+#   - OCI certificates.
+#   - OpenVASD-specific product certificates and the feed key.
+#   - Product artifacts for the latest version.
+#   - A copy of the configured settings directory.
+#   - The current deployment script.
+#   - Optionally, Docker images required for deployment.
 #
-# If OPENVASD_TAR_WITH_IMAGES is set to 'y', the function loads the required
-# secrets and certificates, determines the current product version, and stores
-# the required Docker images in the archive. The feed key service image is also
-# included when FEED_MODE is set to 'service'.
+# The settings directory is copied without modifying the source files.
+# The archive's root PRODUCT setting is initialized to
+# "enterprise-container", while DEPLOYMENT_MODE is set to "openvasd"
+# in the product-specific settings directory.
 #
-# The assembled deployment directory is compressed into a gzip-compressed tar
-# archive named after the OpenVASD common name, with dots replaced by dashes.
+# If image inclusion is enabled, the function loads the required secrets
+# and certificates and exports the following Docker images:
+#   - openvas-scanner
+#   - gpg-data
+#   - greenbone-feed-sync
+#   - redis-server
+#
+# The feed-key-service image is additionally exported when feed_mode is
+# set to "service".
+#
+# The resulting archive is named <openvasd_name>.tar.gz, where dots in
+# the OpenVASD common name are replaced with dashes. It is written to
+# the current working directory, replacing an existing archive with
+# the same name.
+#
+# Archive creation uses a restrictive umask (077). The temporary
+# deployment directory is removed after the archive command completes.
 #
 # Arguments:
 #   1. cn_openvasd:
-#      OpenVASD common name used for certificate lookup, configuration, and
-#      archive naming. Defaults to CN_OPENVASD.
+#      OpenVASD common name used for certificate lookup and archive naming.
+#      Defaults to CN_OPENVASD.
 #   2. cert_dir_product:
-#      Directory containing product certificates and the feed key.
+#      Source directory containing product certificates and the feed key.
 #      Defaults to CERT_DIR_PRODUCT.
 #   3. openvasd_tar_with_images:
-#      Controls whether Docker images are included in the archive ('y'/'n').
+#      Controls whether Docker images are included ('y' to enable).
 #      Defaults to OPENVASD_TAR_WITH_IMAGES.
 #   4. feed_mode:
-#      Feed synchronization mode. Defaults to FEED_MODE.
-#   5. ccert_mode:
-#      Client certificate mode. Defaults to CCERT_MODE.
-#   6. feed_path:
-#      Feed path configuration value. Defaults to FEED_PATH.
-#   7. ccert_path:
-#      Client certificate path configuration value. Defaults to CCERT_PATH.
-#   8. ccert_type:
-#      Client certificate type configuration value. Defaults to CCERT_TYPE.
-#   9. greenbone_feed_sync_job_hour:
-#      Scheduled feed synchronization hour. Defaults to
-#      GREENBONE_FEED_SYNC_JOB_HOUR.
-#   10. store_dir_name:
-#       Name of the deployment store directory. Defaults to STORE_DIR_NAME.
-#   11. cert_dir_name:
-#       Name of the certificate directory inside the archive. Defaults to
-#       CERT_DIR_NAME.
-#   12. cert_dir_oci:
-#       OCI certificate directory to include in the archive. Defaults to
-#       CERT_DIR_OCI.
-#   13. artifact_dir:
-#       Product artifact directory. Defaults to ARTIFACT_DIR.
-#   14. artifact_dir_name:
-#       Name of the artifact directory inside the archive. Defaults to
-#       ARTIFACT_DIR_NAME.
-#   15. image_dir_name:
-#       Name of the image directory inside the archive. Defaults to
-#       IMAGE_DIR_NAME.
-#   16. settings_dir_name:
-#       Name of the settings directory inside the archive. Defaults to
-#       SETTINGS_DIR_NAME.
-#   17. product:
-#       Product name used for directory layout and settings. Defaults to
-#       PRODUCT.
+#      Determines whether the feed-key-service image is included when
+#      Docker image inclusion is enabled ('service' to enable).
+#      Defaults to FEED_MODE.
+#   5. store_dir_name:
+#      Name of the deployment store directory inside the archive.
+#      Defaults to STORE_DIR_NAME.
+#   6. cert_dir_name:
+#      Name of the certificate directory inside the archive.
+#      Defaults to CERT_DIR_NAME.
+#   7. cert_dir_oci:
+#      Source directory containing OCI certificates.
+#      Defaults to CERT_DIR_OCI.
+#   8. artifact_dir:
+#      Source directory containing versioned product artifacts.
+#      Defaults to ARTIFACT_DIR.
+#   9. artifact_dir_name:
+#      Name of the artifact directory inside the archive.
+#      Defaults to ARTIFACT_DIR_NAME.
+#   10. image_dir_name:
+#       Name of the Docker image directory inside the archive.
+#       Defaults to IMAGE_DIR_NAME.
+#   11. settings_dir_name:
+#       Name of the settings directory inside the archive.
+#       Defaults to SETTINGS_DIR_NAME.
+#   12. product:
+#       Product name used for the deployment directory layout and
+#       product-specific settings, certificates, artifacts, and images.
+#       Defaults to PRODUCT.
+#   13. settings_dir:
+#       Source directory containing deployment settings to be copied
+#       into the product-specific settings directory.
+#       Defaults to SETTINGS_DIR.
 #
 # Returns:
-#   None.
+#   No explicit return value. Creates a gzip-compressed tar archive
+#   in the current working directory.
 #
 # Exits:
-#   1 if the OpenVASD common name is not set.
-#   Exits if changing to a required temporary or artifact directory fails.
+#   1 if the OpenVASD common name is empty.
+#   Exits if changing to the temporary or artifact directory fails.
 create_openvasd_tar() {
     load_settings
-
     local cn_openvasd="${1:-$CN_OPENVASD}"
     local cert_dir_product="${2:-$CERT_DIR_PRODUCT}"
     local openvasd_tar_with_images="${3:-$OPENVASD_TAR_WITH_IMAGES}"
     local feed_mode="${4:-$FEED_MODE}"
-    local ccert_mode="${5:-$CCERT_MODE}"
-    local feed_path="${6:-$FEED_PATH}"
-    local ccert_path="${7:-$CCERT_PATH}"
-    local ccert_type="${8:-$CCERT_TYPE}"
-    local greenbone_feed_sync_job_hour="${9:-$GREENBONE_FEED_SYNC_JOB_HOUR}"
-    local store_dir_name="${10:-$STORE_DIR_NAME}"
-    local cert_dir_name="${11:-$CERT_DIR_NAME}"
-    local cert_dir_oci="${12:-$CERT_DIR_OCI}"
-    local artifact_dir="${13:-$ARTIFACT_DIR}"
-    local ARTIFACT_DIR="${artifact_dir}"
-    local artifact_dir_name="${14:-$ARTIFACT_DIR_NAME}"
-    local image_dir_name="${15:-$IMAGE_DIR_NAME}"
-    local settings_dir_name="${16:-$SETTINGS_DIR_NAME}"
-    local product="${17:-$PRODUCT}"
+    local store_dir_name="${5:-$STORE_DIR_NAME}"
+    local cert_dir_name="${6:-$CERT_DIR_NAME}"
+    local cert_dir_oci="${7:-$CERT_DIR_OCI}"
+    local artifact_dir="${8:-$ARTIFACT_DIR}"
+    local artifact_dir_name="${9:-$ARTIFACT_DIR_NAME}"
+    local image_dir_name="${10:-$IMAGE_DIR_NAME}"
+    local settings_dir_name="${11:-$SETTINGS_DIR_NAME}"
+    local product="${12:-$PRODUCT}"
+    local settings_dir="${13:-$SETTINGS_DIR}"
 
     if ! [ "${cn_openvasd}" ]; then
         echo "Error: --cn-openvasd argument missing. Required for --create-openvasd-certs !"
         exit 1
     fi
 
-    # Resolve the requested artifact before creating the temporary archive
-    # directory so an unavailable explicit version cannot leave an archive.
     get_latest_version
 
     local openvasd_name="${cn_openvasd//./-}"
@@ -409,7 +417,7 @@ create_openvasd_tar() {
     local tmp_images="${tmp_dir}/${store_dir_name}/${image_dir_name}/${product}"
 
     pushd "${tmp_dir}" > /dev/null || exit
-        mkdir -p "${store_dir_name}/${settings_dir_name}/${product}"
+        mkdir -p "${store_dir_name}/${settings_dir_name}"
         mkdir -p "${store_dir_name}/${cert_dir_name}/${product}"
         mkdir -p "${store_dir_name}/${artifact_dir_name}/${product}"
 
@@ -417,44 +425,14 @@ create_openvasd_tar() {
         cp -r "${artifact_dir}/${VERSION}" "${store_dir_name}/${artifact_dir_name}/${product}/"
         cp -r "${openvasd_cert_folder}" "${store_dir_name}/${cert_dir_name}/${product}/"
         cp "${cert_dir_product}/feed.key" "${store_dir_name}/${cert_dir_name}/${product}/"
+        cp -r "${settings_dir}" "${store_dir_name}/${settings_dir_name}/"
 
-        init_setting "PRODUCT" "enterprise-container" \
-            "${store_dir_name}" "y"
-
-        init_setting "DEPLOYMENT_MODE" "openvasd" \
-            "${store_dir_name}/${settings_dir_name}/${product}" "y"
-
-        init_setting "GREENBONE_FEED_SYNC_JOB_HOUR" \
-            "${greenbone_feed_sync_job_hour}" \
-            "${store_dir_name}/${settings_dir_name}/${product}" "y"
-
-        init_setting "OPENVASD_CN" \
-            "${cn_openvasd}" \
-            "${store_dir_name}/${settings_dir_name}/${product}" "y"
-
-        init_setting "FEED_MODE" \
-            "${feed_mode}" \
-            "${store_dir_name}/${settings_dir_name}/${product}" "y"
-
-        init_setting "CCERT_MODE" \
-            "${ccert_mode}" \
-            "${store_dir_name}/${settings_dir_name}/${product}" "y"
-
-        if [ "${FEED_MODE}" == 'mount' ]; then
-            init_setting "FEED_PATH" \
-                "${feed_path}" \
-                "${store_dir_name}/${settings_dir_name}/${product}" "y"
-        fi
-
-        if [ "${CCERT_MODE}" == 'mount' ]; then
-            init_setting "CCERT_PATH" \
-                "${ccert_path}" \
-                "${store_dir_name}/${settings_dir_name}/${product}" "y"
-        fi
-
-        init_setting "CCERT_TYPE" \
-            "${ccert_type}" \
-            "${store_dir_name}/${settings_dir_name}/${product}" "y"
+        init_setting "PRODUCT" 'enterprise-container' \
+            "${store_dir_name}" 'y'
+        init_setting 'DEPLOYMENT_MODE' 'openvasd' \
+            "${store_dir_name}/${settings_dir_name}/${product}" 'y'
+        init_setting 'OPENVASD_CN' "${cn_openvasd}" \
+            "${store_dir_name}/${settings_dir_name}/${product}" 'y'
     popd > /dev/null
 
     cp "${0}" "${tmp_dir}"

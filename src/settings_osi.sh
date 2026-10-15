@@ -26,13 +26,15 @@ init_settings_osi() {
     local settings_dir="${2:-$SETTINGS_DIR}"
 
     echo 'Info: Init settings OSI'
+    init_bridge_subnet_settings "${settings_dir}"
 
-    if [ "${domain_name}" ]; then
-        init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
-    else
+    if ! [ "${domain_name}" ]; then
         echo "Error: Domain name not set! Run --init with --domain-name!"
         exit 1
     fi
+
+    validate_domain_name "${domain_name}" 'Error: Invalid domain name.'
+    init_setting "DOMAIN_NAME" "${domain_name}" "${settings_dir}"
 }
 
 # =============================================================================
@@ -54,6 +56,7 @@ init_settings_osi() {
 #   1 if the domain name settings file is missing or empty.
 load_settings_osi() {
     echo 'Info: Load settings OSI'
+    load_bridge_subnet_settings
 
     load_setting "DOMAIN_NAME" "DOMAIN_NAME"
 }
