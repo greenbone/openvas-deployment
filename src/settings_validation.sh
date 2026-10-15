@@ -176,7 +176,7 @@ ipv4_valid() {
 #   0 when valid; 1 when invalid. Does not print an error or exit.
 ipv6_valid() {
     local address="${1-}"
-    local left right ipv4_part left_count=0 right_count=0 ipv4_groups=0
+    local left right ipv4_part group left_count=0 right_count=0
     local -a groups
 
     [[ "${address}" && "${address}" == *:* && "${address}" != *[[:space:]]* ]] || return 1
@@ -184,11 +184,9 @@ ipv6_valid() {
     [[ "${address}" != *:::* ]] || return 1
 
     if [[ "${address}" == *.* ]]; then
-        [[ "${address}" == *:* ]] || return 1
         ipv4_part="${address##*:}"
         ipv4_valid "${ipv4_part}" || return 1
         address="${address%:*}:0:0"
-        ipv4_groups=2
     fi
 
     if [[ "${address}" == *::* ]]; then
@@ -196,30 +194,31 @@ ipv6_valid() {
         right="${address#*::}"
         [[ -z "${left}" || "${left}" != :* && "${left}" != *: ]] || return 1
         [[ -z "${right}" || "${right}" != :* && "${right}" != *: ]] || return 1
-        groups=()
+
         if [[ "${left}" ]]; then
             IFS=':' read -r -a groups <<< "${left}"
-            for ipv4_part in "${groups[@]}"; do
-                [[ "${ipv4_part}" =~ ^[0-9A-Fa-f]{1,4}$ ]] || return 1
+            left_count=${#groups[@]}
+            for group in "${groups[@]}"; do
+                [[ "${group}" =~ ^[0-9A-Fa-f]{1,4}$ ]] || return 1
             done
         fi
+
         if [[ "${right}" ]]; then
             IFS=':' read -r -a groups <<< "${right}"
-            for ipv4_part in "${groups[@]}"; do
-                [[ "${ipv4_part}" =~ ^[0-9A-Fa-f]{1,4}$ ]] || return 1
+            right_count=${#groups[@]}
+            for group in "${groups[@]}"; do
+                [[ "${group}" =~ ^[0-9A-Fa-f]{1,4}$ ]] || return 1
             done
-            ((${#groups[@]} < 8)) || return 1
         fi
-        [[ "${left}" ]] && { IFS=':' read -r -a groups <<< "${left}"; left_count=${#groups[@]}; }
-        [[ "${right}" ]] && { IFS=':' read -r -a groups <<< "${right}"; right_count=${#groups[@]}; }
-        ((left_count + right_count + ipv4_groups < 8))
+
+        ((left_count + right_count < 8))
         return
     fi
 
     [[ "${address}" != :* && "${address}" != *: ]] || return 1
     IFS=':' read -r -a groups <<< "${address}"
-    ((${#groups[@]} + ipv4_groups == 8)) || return 1
-    for ipv4_part in "${groups[@]}"; do
-        [[ "${ipv4_part}" =~ ^[0-9A-Fa-f]{1,4}$ ]] || return 1
+    ((${#groups[@]} == 8)) || return 1
+    for group in "${groups[@]}"; do
+        [[ "${group}" =~ ^[0-9A-Fa-f]{1,4}$ ]] || return 1
     done
 }
