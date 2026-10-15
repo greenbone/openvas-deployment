@@ -43,6 +43,12 @@ Actions:
   --force-feed-sync              Restart feed synchronization immediately
                                  Only enterprise-container
 
+  --change-domain-name
+                                 Change domain name for product
+
+  --change-domain-ip
+                                 Change domain ip for enterprise-container
+
   --change-bridge-ingress-subnet-ipv4
                                   Change the bridge ingress IPv4 subnet
 
