@@ -33,14 +33,14 @@ case "$(uname -m)" in
         arch=amd64
         docker_arch=x86_64
         docker_sum=ea90cfd12e1eeb12aa1c971741adb8bd4ed88e2a574eaac13f5029a1dbc6300d
-        compose_sum=f9ebc6ebdb19d769b793c245a736caaeb198c62587f13b25c660c13b4987f959
+        compose_sum=dba9d98e1ba5bfe11d88c99b9bd32fc4a0624a30fafe68eea34d61a3e42fd372
         oras_sum=f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454
         ;;
     aarch64)
         arch=arm64
         docker_arch=aarch64
         docker_sum=9e4f82996ab790724094475ebed33a736434bfe5d45231b676fef22ffb80044d
-        compose_sum=aa611e811d0ea25897839c404bfb5bf93ce706dc51c500a4457890f5d0606a86
+        compose_sum=d26373b19e89160546d15407516cc59f453030d9bc5b43ba7faf16f7b4980137
         oras_sum=15702c6e3a4a56a8bd8ac5c17efdbcab56d9bada661ccbcf017f5b10c1d89399
         ;;
     *)
