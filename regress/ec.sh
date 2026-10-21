@@ -226,6 +226,7 @@ init
 list 'Openvasd scan'
 clean 'Openvasd scan'
 init_license
+certinfo 'product/certs/oci/client.key' 'product/certs/oci/client.crt'
 if [ "${SKIP:-}" != 'run' ]; then
     run
     change_admin_pw
