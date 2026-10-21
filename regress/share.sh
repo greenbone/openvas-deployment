@@ -68,3 +68,16 @@ list_local_versions() {
     echo_task 'Test list local versions'
     openvas-deployment --list-local-versions
 }
+
+certinfo() {
+    local key="$1"
+    local cert="$2"
+
+    echo_task 'Test certn info'
+
+    echo_task '=== Private Key ==='
+    openssl pkey -in "$key" -text -noout
+
+    echo_task '=== Certificate ==='
+    openssl x509 -in "$cert" -text -noout
+}
