@@ -82,6 +82,8 @@ read_license_file() {
     local section key value line
 
     while IFS= read -r line; do
+        line="${line%$'\r'}"
+
         [[ $line =~ ^[[:space:]]*(#|$) ]] && continue
 
         if [[ $line =~ ^\[([^]]+)\]$ ]]; then
@@ -94,6 +96,7 @@ read_license_file() {
 
             while [[ $value != *'"""' ]]; do
                 IFS= read -r line || return 1
+                line="${line%$'\r'}"
                 value+="${value:+$'\n'}${line}"
             done
 
