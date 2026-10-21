@@ -63,6 +63,7 @@ list_local_versions
 list 'security-intelligence'
 clean 'security-intelligence'
 init_license
+certinfo 'product/certs/oci/client.key' 'product/certs/oci/client.crt'
 run
 gen_certs_ingress
 update_ingress_certs
