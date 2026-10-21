@@ -73,11 +73,8 @@ certinfo() {
     local key="$1"
     local cert="$2"
 
-    echo_task 'Test certn info'
+    echo_task 'Test cert info'
 
-    echo_task '=== Private Key ==='
-    openssl pkey -in "$key" -text -noout
-
-    echo_task '=== Certificate ==='
-    openssl x509 -in "$cert" -text -noout
+    openssl pkey -in "$key" -text -noout >/dev/null
+    openssl x509 -in "$cert" -text -noout >/dev/null
 }
