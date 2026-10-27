@@ -16,7 +16,7 @@ jobs:
           # OEC
           - product: ec
             image: fedora:43
-            runner: self-hosted-generic-vm-amd64
+            runner: ubuntu-latest
             skip: run
           - product: ec
             image: fedora:44
