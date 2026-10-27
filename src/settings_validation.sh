@@ -1,15 +1,22 @@
 # =============================================================================
 # validate_domain_name()
 # =============================================================================
-# Validates a DNS fully-qualified domain name without changing its spelling.
+# Validates a DNS-style hostname, including single-label names such as
+# "localhost" and "server", without changing its spelling.
+#
+# Hostnames must contain one or more dot-separated labels consisting of ASCII
+# letters, digits, or hyphens. Each label must start and end with a letter or
+# digit and must not exceed 63 characters. The complete hostname must not
+# exceed 253 characters. Empty labels, whitespace, and trailing dots are
+# not permitted.
 #
 # Arguments:
-#   $1  Domain name to validate.
+#   $1  Hostname to validate.
 #   $2  Error message to print on failure.
 #
 # Returns:
 #   0 when valid.
-#   Does not normalize or modify the supplied domain name.
+#   Does not normalize or modify the supplied hostname.
 #
 # Exits:
 #   1 when invalid; prints the supplied error message.
