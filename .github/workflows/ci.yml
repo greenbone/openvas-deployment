@@ -42,7 +42,7 @@ jobs:
           # OSI
           - product: osi
             image: debian:12
-            runner: self-hosted-generic-vm-amd64
+            runner: ubuntu-latest
           - product: osi
             image: archlinux:latest
             runner: self-hosted-generic-vm-amd64
