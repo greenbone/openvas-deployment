@@ -21,8 +21,8 @@ validate_domain_name() {
     local -a labels
 
     [[ "${domain_name}" && "${#domain_name}" -le 253 && "${domain_name}" != *[[:space:]]* && "${domain_name}" != *. ]] || { echo "${error_message}"; exit 1; }
+
     IFS='.' read -r -a labels <<< "${domain_name}"
-    ((${#labels[@]} >= 2)) || { echo "${error_message}"; exit 1; }
 
     for label in "${labels[@]}"; do
         [[ "${#label}" -le 63 && "${label}" =~ ^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$ ]] || { echo "${error_message}"; exit 1; }
