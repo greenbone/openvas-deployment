@@ -7,6 +7,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 
 > [!IMPORTANT]
 > - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
+> - OSI release >= 1.7.0 requires openvas-deployment version >= 0.0.8-alpha.9.
 > - Requires Docker Compose version 2.40.3 or higher.
 > - Requires Bash version 5.1 or higher.
 > - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
@@ -16,22 +17,36 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 
 ## Table of contents
 
-- [Installation](#installation)
-- [Download](#download)
-- [Quick start](#quick-start)
-- [Actions](#actions)
-- [Deployment options](#deployment-options)
-- [Log options](#log-options)
-- [Administrator options](#administrator-options)
-- [OCI client certificate options](#oci-client-certificate-options)
-- [Ingress certificate options](#ingress-certificate-options)
-- [OpenVASD options](#openvasd-options)
-- [Development options](#development-options)
-- [Product versions](#product-versions)
-- [Examples](#examples)
-- [Security considerations](#security-considerations)
-- [Troubleshooting](#troubleshooting)
-- [Support](#support)
+- [openvas-deployment](#openvas-deployment)
+  - [Table of contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Download](#download)
+  - [Quick start](#quick-start)
+  - [Actions](#actions)
+  - [Deployment options](#deployment-options)
+  - [Log options](#log-options)
+  - [Administrator options](#administrator-options)
+  - [OCI client certificate options](#oci-client-certificate-options)
+  - [Ingress certificate options](#ingress-certificate-options)
+  - [OpenVASD options](#openvasd-options)
+  - [Development options](#development-options)
+  - [Product versions](#product-versions)
+  - [Examples](#examples)
+    - [Initialize using a certs](#initialize-using-a-certs)
+    - [Initialize with separate OCI credentials](#initialize-with-separate-oci-credentials)
+    - [Initialize with a predefined administrator password](#initialize-with-a-predefined-administrator-password)
+    - [Initialize security-intelligence with metafeed certificates](#initialize-security-intelligence-with-metafeed-certificates)
+    - [Configure the feed synchronization hour](#configure-the-feed-synchronization-hour)
+    - [Change the administrator password](#change-the-administrator-password)
+    - [Initialize with custom ingress certificates](#initialize-with-custom-ingress-certificates)
+    - [Replace ingress certificates](#replace-ingress-certificates)
+    - [Inspect the deployment](#inspect-the-deployment)
+    - [External OpenVASD sensor setup with certificate archive](#external-openvasd-sensor-setup-with-certificate-archive)
+    - [Create an OpenVASD deployment archive](#create-an-openvasd-deployment-archive)
+    - [Manage OpenVASD scanner registrations](#manage-openvasd-scanner-registrations)
+  - [Security considerations](#security-considerations)
+  - [Troubleshooting](#troubleshooting)
+  - [Support](#support)
 
 ## Installation
 

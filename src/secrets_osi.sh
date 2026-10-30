@@ -28,6 +28,11 @@ init_secrets_osi() {
     init_secret "KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD" gen_password
     init_secret "KEYCLOAK_NOTIFICATION_USER_PASSWORD" gen_password
     init_secret "KEYCLOAK_REPORT_USER_PASSWORD" gen_password
+    init_secret "ASSET_BACKEND_CLIENT_SECRET" gen_password
+    init_secret "VI_BACKEND_CLIENT_SECRET" gen_password
+
+    # Shared PostgreSQL
+    init_secret "OSI_POSTGRES_ADMIN_PASSWORD" gen_password
 
     # OpenSearch
     init_secret "OPENSEARCH_ADMIN_PASSWORD" gen_password
@@ -86,6 +91,11 @@ load_secrets_osi() {
     load_secret "KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD" "KEYCLOAK_MC_BACKEND_CLIENT_PASSWORD" "${secrets_dir}"
     load_secret "KEYCLOAK_NOTIFICATION_USER_PASSWORD" "KEYCLOAK_NOTIFICATION_USER_PASSWORD" "${secrets_dir}"
     load_secret "KEYCLOAK_REPORT_USER_PASSWORD" "KEYCLOAK_REPORT_USER_PASSWORD" "${secrets_dir}"
+    load_secret "ASSET_BACKEND_CLIENT_SECRET" "ASSET_BACKEND_CLIENT_SECRET" "${secrets_dir}"
+    load_secret "VI_BACKEND_CLIENT_SECRET" "VI_BACKEND_CLIENT_SECRET" "${secrets_dir}"
+
+    # Shared PostgreSQL
+    load_secret "OSI_POSTGRES_ADMIN_PASSWORD" "OSI_POSTGRES_ADMIN_PASSWORD" "${secrets_dir}"
 
     # OpenSearch
     load_secret "OPENSEARCH_ADMIN_PASSWORD" "OPENSEARCH_ADMIN_PASSWORD" "${secrets_dir}"
