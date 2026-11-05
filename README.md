@@ -557,7 +557,7 @@ openvas-deployment --create-openvasd-tar \
   --cn-openvasd sensor.example.com
 ```
 
-Create an archive containing the deployment and locally available Docker images:
+Create an archive containing the deployment and locally available Docker images. **A brief connection to our registry is still required during the initial installation to retrieve and verify the container image digests**:
 
 ```bash
 openvas-deployment --create-openvasd-tar \
@@ -573,7 +573,7 @@ cd sensor-example-com
 tar xzf ../sensor-example-com.tar.gz
 ```
 
-If the target Docker daemon still needs the registry client certificate contained in the archive, install it with:
+Docker daemon still needs the registry client certificate contained in the archive, install it with:
 
 ```bash
 ./openvas-deployment --init-openvasd-tar \
