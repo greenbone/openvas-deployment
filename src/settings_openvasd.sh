@@ -63,5 +63,6 @@ load_settings_openvasd() {
 
     if [ "${OPENVASD_PORT}" ]; then
         export OPENVAS_SCANNER_HOST_LISTEN_PORT="${OPENVASD_PORT}"
+        export DEPLOYMENT_PREFIX="openvasd-${OPENVASD_PORT}"
     fi
 }
