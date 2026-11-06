@@ -87,8 +87,12 @@ load_bridge_subnet_settings_ec() {
 
     load_setting 'BRIDGE_INGRESS_SUBNET_IPV4' 'BRIDGE_INGRESS_SUBNET_IPV4' "${settings_dir}"
     load_setting 'BRIDGE_INGRESS_SUBNET_IPV6' 'BRIDGE_INGRESS_SUBNET_IPV6' "${settings_dir}"
-    load_setting 'BRIDGE_BACKENDS_SUBNET_IPV4' 'BRIDGE_BACKENDS_SUBNET_IPV4' "${settings_dir}"
-    load_setting 'BRIDGE_BACKENDS_SUBNET_IPV6' 'BRIDGE_BACKENDS_SUBNET_IPV6' "${settings_dir}"
+    if ! [ "$BRIDGE_BACKENDS_SUBNET_IPV4" ]; then
+        load_setting 'BRIDGE_BACKENDS_SUBNET_IPV4' 'BRIDGE_BACKENDS_SUBNET_IPV4' "${settings_dir}"
+    fi
+    if ! [ "$BRIDGE_BACKENDS_SUBNET_IPV6" ]; then
+        load_setting 'BRIDGE_BACKENDS_SUBNET_IPV6' 'BRIDGE_BACKENDS_SUBNET_IPV6' "${settings_dir}"
+    fi
 }
 
 init_settings_ec() {
