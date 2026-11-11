@@ -152,6 +152,7 @@ init_settings_ec() {
     if [ "${deployment_mode}" == 'openvasd' ]; then
         init_settings_openvasd
     else
+        init_settings_scan
         init_settings_agent
     fi
 }
@@ -202,6 +203,7 @@ load_settings_ec() {
     if [ "${DEPLOYMENT_MODE}" == 'openvasd' ]; then
         load_settings_openvasd
     else
+        load_settings_scan
         load_settings_agent
     fi
 }

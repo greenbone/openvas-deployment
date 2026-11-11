@@ -122,6 +122,34 @@ parse_args() {
                 DEPLOYMENT_MODE="$2"
                 shift 2
                 ;;
+            --gmp-sshd-enable)
+                GMP_SSHD_ENABLE="$2"
+                shift 2
+                ;;
+            --openvas-gmp-sshd-listen-addr)
+                OPENVAS_GMP_SSHD_LISTEN_ADDR="$2"
+                shift 2
+                ;;
+            --openvas-gmp-sshd-listen-addr-ipv6)
+                OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6="$2"
+                shift 2
+                ;;
+            --openvas-gmp-sshd-listen-port)
+                OPENVAS_GMP_SSHD_LISTEN_PORT="$2"
+                shift 2
+                ;;
+            --logging-backend)
+                LOGGING_BACKEND="$2"
+                shift 2
+                ;;
+            --logging-backend-json-file-max-size)
+                LOGGING_BACKEND_JSON_FILE_MAX_SIZE="$2"
+                shift 2
+                ;;
+            --logging-backend-json-file-max-file)
+                LOGGING_BACKEND_JSON_FILE_MAX_FILE="$2"
+                shift 2
+                ;;
             --openvasd-client-ca)
                 OPENVASD_CLIENT_CA="$2"
                 shift 2

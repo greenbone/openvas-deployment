@@ -179,6 +179,25 @@ Deployment options:
                                  --init --deployment-mode openvasd
                                  Only enterprise-container
 
+  --logging-backend BACKEND      EC scan only: default|json|journald (default: default).
+
+  --gmp-sshd-enable BOOL         EC scan only: true|false (default: true).
+
+  --openvas-gmp-sshd-listen-addr IPv4
+                                EC scan only: IPv4 literal (default: 0.0.0.0).
+
+  --openvas-gmp-sshd-listen-addr-ipv6 IPv6
+                                EC scan only: IPv6 literal (default: ::).
+
+  --openvas-gmp-sshd-listen-port PORT
+                                EC scan only (default: 2222).
+
+  --logging-backend-json-file-max-size VALUE
+                                EC scan json rotation size at initialization (default: 50m).
+
+  --logging-backend-json-file-max-file VALUE
+                                EC scan json rotation file count at initialization (default: 3).
+
   --feed-mode MODE               Feed mode:
                                    volume | service
                                  Default: ${FEED_MODE}
