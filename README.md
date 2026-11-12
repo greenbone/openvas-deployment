@@ -171,13 +171,13 @@ Use one action per invocation.
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
-| `--logging-backend BACKEND` | EC scan only: `default`, `json`, or `journald`. Default: `default`. Requires a compatible downloaded Compose artifact. |
+| `--logging-backend BACKEND` | EC scan only: `default`, `json`, or `journald`. Default: `default`. |
 | `--gmp-sshd-enable BOOL` | EC scan only: literal `true` or `false`. Default: `true`. |
 | `--openvas-gmp-sshd-listen-addr IPv4` | EC scan only: IPv4 literal. Default: `0.0.0.0`. |
 | `--openvas-gmp-sshd-listen-addr-ipv6 IPv6` | EC scan only: IPv6 literal. Default: `::`. |
 | `--openvas-gmp-sshd-listen-port PORT` | EC scan only: Default: `2222`. |
-| `--logging-backend-json-file-max-size VALUE` | EC scan JSON rotation size at initialization. Default: `50m`. Existing nonempty settings are preserved. |
-| `--logging-backend-json-file-max-file VALUE` | EC scan JSON rotation file count at initialization. Default: `3`. Existing nonempty settings are preserved. |
+| `--logging-backend-json-file-max-size VALUE` | EC scan JSON rotation size at initialization. Default: `50m`. |
+| `--logging-backend-json-file-max-file VALUE` | EC scan JSON rotation file count at initialization. Default: `3`. |
 | `--openvasd-client-ca FILE` | OpenVASD client CA certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-cert FILE` | OpenVASD server certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-key FILE` | OpenVASD server private key required for `--init --deployment-mode openvasd`. Only enterprise-container. |

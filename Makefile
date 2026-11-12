@@ -31,6 +31,7 @@ SOURCES := \
 	src/settings_validation.sh \
 	src/settings_openvasd.sh \
 	src/settings_osi.sh \
+	src/settings_scan_validation.sh \
 	src/settings_scan.sh \
 	src/main.sh
 
