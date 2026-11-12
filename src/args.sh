@@ -122,6 +122,62 @@ parse_args() {
                 DEPLOYMENT_MODE="$2"
                 shift 2
                 ;;
+            --change-gmp-sshd-enable)
+                MODE='change-gmp-sshd-enable'
+                shift 1
+                ;;
+            --change-openvas-gmp-sshd-listen-addr)
+                MODE='change-openvas-gmp-sshd-listen-addr'
+                shift 1
+                ;;
+            --change-openvas-gmp-sshd-listen-addr-ipv6)
+                MODE='change-openvas-gmp-sshd-listen-addr-ipv6'
+                shift 1
+                ;;
+            --change-openvas-gmp-sshd-listen-port)
+                MODE='change-openvas-gmp-sshd-listen-port'
+                shift 1
+                ;;
+            --change-logging-backend)
+                MODE='change-logging-backend'
+                shift 1
+                ;;
+            --change-logging-backend-json-file-max-size)
+                MODE='change-logging-backend-json-file-max-size'
+                shift 1
+                ;;
+            --change-logging-backend-json-file-max-file)
+                MODE='change-logging-backend-json-file-max-file'
+                shift 1
+                ;;
+            --gmp-sshd-enable)
+                GMP_SSHD_ENABLE="$2"
+                shift 2
+                ;;
+            --openvas-gmp-sshd-listen-addr)
+                OPENVAS_GMP_SSHD_LISTEN_ADDR="$2"
+                shift 2
+                ;;
+            --openvas-gmp-sshd-listen-addr-ipv6)
+                OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6="$2"
+                shift 2
+                ;;
+            --openvas-gmp-sshd-listen-port)
+                OPENVAS_GMP_SSHD_LISTEN_PORT="$2"
+                shift 2
+                ;;
+            --logging-backend)
+                LOGGING_BACKEND="$2"
+                shift 2
+                ;;
+            --logging-backend-json-file-max-size)
+                LOGGING_BACKEND_JSON_FILE_MAX_SIZE="$2"
+                shift 2
+                ;;
+            --logging-backend-json-file-max-file)
+                LOGGING_BACKEND_JSON_FILE_MAX_FILE="$2"
+                shift 2
+                ;;
             --openvasd-client-ca)
                 OPENVASD_CLIENT_CA="$2"
                 shift 2
@@ -350,7 +406,7 @@ parse_args() {
 # and dispatches execution to the handler associated with MODE.
 #
 # The OpenVASD management, administrator password, and feed synchronization
-# modes are supported only for the enterprise-container product.
+# and scan logging/SSHD change modes require the enterprise-container product.
 #
 # Arguments:
 #   None.
@@ -360,7 +416,7 @@ parse_args() {
 #
 # Notes:
 #   If MODE is empty, show_help is called. Unsupported product-specific modes
-#   print an informational message and terminate with exit status 1.
+#   print a diagnostic and terminate with exit status 1.
 run() {
     check_requirements
 
@@ -481,6 +537,62 @@ run() {
             change_domain_ip
         else
             echo "Info: Mode ${MODE} not supported for product ${PRODUCT}"
+            exit 1
+        fi
+        ;;
+    change-gmp-sshd-enable)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_gmp_sshd_setting 'GMP_SSHD_ENABLE' "${GMP_SSHD_ENABLE}"
+        else
+            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
+            exit 1
+        fi
+        ;;
+    change-openvas-gmp-sshd-listen-addr)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR' "${OPENVAS_GMP_SSHD_LISTEN_ADDR}"
+        else
+            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
+            exit 1
+        fi
+        ;;
+    change-openvas-gmp-sshd-listen-addr-ipv6)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6' "${OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6}"
+        else
+            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
+            exit 1
+        fi
+        ;;
+    change-openvas-gmp-sshd-listen-port)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_PORT' "${OPENVAS_GMP_SSHD_LISTEN_PORT}"
+        else
+            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
+            exit 1
+        fi
+        ;;
+    change-logging-backend)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_logging_setting 'LOGGING_BACKEND' "${LOGGING_BACKEND}"
+        else
+            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
+            exit 1
+        fi
+        ;;
+    change-logging-backend-json-file-max-size)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_logging_setting 'LOGGING_BACKEND_JSON_FILE_MAX_SIZE' "${LOGGING_BACKEND_JSON_FILE_MAX_SIZE}"
+        else
+            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
+            exit 1
+        fi
+        ;;
+    change-logging-backend-json-file-max-file)
+        if [ "${PRODUCT}" == 'enterprise-container' ]; then
+            change_logging_setting 'LOGGING_BACKEND_JSON_FILE_MAX_FILE' "${LOGGING_BACKEND_JSON_FILE_MAX_FILE}"
+        else
+            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
             exit 1
         fi
         ;;

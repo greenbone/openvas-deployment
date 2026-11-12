@@ -80,6 +80,41 @@ change_admin_pw() {
     openvas-deployment --change-admin-password --admin-password 'admin'
 }
 
+change_gmp_sshd_enable() {
+    echo_task 'Test change GMP SSHD enable'
+    openvas-deployment --change-gmp-sshd-enable --gmp-sshd-enable true
+}
+
+change_openvas_gmp_sshd_listen_addr() {
+    echo_task 'Test change OpenVAS GMP SSHD listen address'
+    openvas-deployment --change-openvas-gmp-sshd-listen-addr --openvas-gmp-sshd-listen-addr 0.0.0.0
+}
+
+change_openvas_gmp_sshd_listen_addr_ipv6() {
+    echo_task 'Test change OpenVAS GMP SSHD listen IPv6 address'
+    openvas-deployment --change-openvas-gmp-sshd-listen-addr-ipv6 --openvas-gmp-sshd-listen-addr-ipv6 '::'
+}
+
+change_openvas_gmp_sshd_listen_port() {
+    echo_task 'Test change OpenVAS GMP SSHD listen port'
+    openvas-deployment --change-openvas-gmp-sshd-listen-port --openvas-gmp-sshd-listen-port 2222
+}
+
+change_logging_backend() {
+    echo_task 'Test change logging backend'
+    openvas-deployment --change-logging-backend --logging-backend json
+}
+
+change_logging_backend_json_file_max_size() {
+    echo_task 'Test change logging backend JSON file max size'
+    openvas-deployment --change-logging-backend-json-file-max-size --logging-backend-json-file-max-size 25m
+}
+
+change_logging_backend_json_file_max_file() {
+    echo_task 'Test change logging backend JSON file max file'
+    openvas-deployment --change-logging-backend-json-file-max-file --logging-backend-json-file-max-file 5
+}
+
 change_feed_sync_hour() {
     echo_task 'Test change feed sync hour'
     openvas-deployment --change-feed-sync-hour --feed-sync-hour 4 --feed-sync-force-no-log
@@ -230,6 +265,13 @@ certinfo 'product/certs/oci/client.key' 'product/certs/oci/client.crt'
 if [ "${SKIP:-}" != 'run' ]; then
     run
     change_admin_pw
+    change_gmp_sshd_enable
+    change_openvas_gmp_sshd_listen_addr
+    change_openvas_gmp_sshd_listen_addr_ipv6
+    change_openvas_gmp_sshd_listen_port
+    change_logging_backend
+    change_logging_backend_json_file_max_size
+    change_logging_backend_json_file_max_file
     change_feed_sync_hour
     change_force_feed_sync
     gen_certs_ingress

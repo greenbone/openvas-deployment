@@ -138,6 +138,13 @@ Use one action per invocation.
 | `--change-bridge-backends-subnet-ipv6` | Save the selected product's backends bridge IPv6 subnet; requires `--bridge-backends-subnet-ipv6`. Run `--run` to apply. |
 | `--change-bridge-vi-proxy-subnet-ipv4` | Save the VI-proxy IPv4 subnet; requires `--bridge-vi-proxy-subnet-ipv4`. Only security-intelligence, run `--run` to apply. |
 | `--change-bridge-vi-proxy-subnet-ipv6` | Save the VI-proxy IPv6 subnet; requires `--bridge-vi-proxy-subnet-ipv6`. Only security-intelligence, run `--run` to apply. |
+| `--change-gmp-sshd-enable` | Save whether GMP SSHD is enabled; requires `--gmp-sshd-enable`. |
+| `--change-openvas-gmp-sshd-listen-addr` | Save the GMP SSHD IPv4 listen address; requires `--openvas-gmp-sshd-listen-addr`. |
+| `--change-openvas-gmp-sshd-listen-addr-ipv6` | Save the GMP SSHD IPv6 listen address; requires `--openvas-gmp-sshd-listen-addr-ipv6`. |
+| `--change-openvas-gmp-sshd-listen-port` | Save the GMP SSHD listen port; requires `--openvas-gmp-sshd-listen-port`. |
+| `--change-logging-backend` | Save the logging backend; requires `--logging-backend`. |
+| `--change-logging-backend-json-file-max-size` | Save the JSON log rotation size; requires `--logging-backend-json-file-max-size`. |
+| `--change-logging-backend-json-file-max-file` | Save the JSON log rotation file count; requires `--logging-backend-json-file-max-file`. |
 | `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
 | `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
 | `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
@@ -171,6 +178,13 @@ Use one action per invocation.
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
+| `--logging-backend BACKEND` | EC scan only: `default`, `json`, or `journald`. Default: `default`. Requires a compatible downloaded Compose artifact. Use with `--init` or `--change-logging-backend`. |
+| `--gmp-sshd-enable BOOL` | EC scan only: literal `true` or `false`. Default: `true`. Use with `--init` or `--change-gmp-sshd-enable`. |
+| `--openvas-gmp-sshd-listen-addr IPv4` | EC scan only: IPv4 literal. Default: `0.0.0.0`. Use with `--init` or `--change-openvas-gmp-sshd-listen-addr`. |
+| `--openvas-gmp-sshd-listen-addr-ipv6 IPv6` | EC scan only: IPv6 literal. Default: `::`. Use with `--init` or `--change-openvas-gmp-sshd-listen-addr-ipv6`. |
+| `--openvas-gmp-sshd-listen-port PORT` | EC scan only: Default: `2222`. Use with `--init` or `--change-openvas-gmp-sshd-listen-port`. |
+| `--logging-backend-json-file-max-size VALUE` | EC scan JSON rotation size. Default: `50m`. Use with `--init` or `--change-logging-backend-json-file-max-size`. During `--init`, existing nonempty settings are preserved. |
+| `--logging-backend-json-file-max-file VALUE` | EC scan JSON rotation file count. Default: `3`. Use with `--init` or `--change-logging-backend-json-file-max-file`. During `--init`, existing nonempty settings are preserved. |
 | `--openvasd-client-ca FILE` | OpenVASD client CA certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-cert FILE` | OpenVASD server certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-key FILE` | OpenVASD server private key required for `--init --deployment-mode openvasd`. Only enterprise-container. |
@@ -377,6 +391,16 @@ openvas-deployment --init \
 ```
 
 The metafeed certificate and key are optional; missing files produce warnings and the deployment is configured with empty metafeed certificate values.
+
+### Change the logging backend
+
+For an initialized enterprise-container scan deployment with an existing nonempty
+logging backend setting, persist the change and redeploy separately:
+
+```bash
+openvas-deployment --change-logging-backend --logging-backend json
+openvas-deployment --run
+```
 
 ### Configure the feed synchronization hour
 

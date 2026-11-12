@@ -87,6 +87,13 @@ load_bridge_subnet_settings_osi() {
     load_setting 'BRIDGE_BACKENDS_SUBNET_IPV6' 'BRIDGE_BACKENDS_SUBNET_IPV6' "${settings_dir}"
     load_setting 'BRIDGE_VI_PROXY_SUBNET_IPV4' 'BRIDGE_VI_PROXY_SUBNET_IPV4' "${settings_dir}"
     load_setting 'BRIDGE_VI_PROXY_SUBNET_IPV6' 'BRIDGE_VI_PROXY_SUBNET_IPV6' "${settings_dir}"
+
+    validate_bridge_cidr "${BRIDGE_INGRESS_SUBNET_IPV4}" ipv4 'Error: Invalid BRIDGE_INGRESS_SUBNET_IPV4 CIDR.'
+    validate_bridge_cidr "${BRIDGE_INGRESS_SUBNET_IPV6}" ipv6 'Error: Invalid BRIDGE_INGRESS_SUBNET_IPV6 CIDR.'
+    validate_bridge_cidr "${BRIDGE_BACKENDS_SUBNET_IPV4}" ipv4 'Error: Invalid BRIDGE_BACKENDS_SUBNET_IPV4 CIDR.'
+    validate_bridge_cidr "${BRIDGE_BACKENDS_SUBNET_IPV6}" ipv6 'Error: Invalid BRIDGE_BACKENDS_SUBNET_IPV6 CIDR.'
+    validate_bridge_cidr "${BRIDGE_VI_PROXY_SUBNET_IPV4}" ipv4 'Error: Invalid BRIDGE_VI_PROXY_SUBNET_IPV4 CIDR.'
+    validate_bridge_cidr "${BRIDGE_VI_PROXY_SUBNET_IPV6}" ipv6 'Error: Invalid BRIDGE_VI_PROXY_SUBNET_IPV6 CIDR.'
 }
 
 init_settings_osi() {

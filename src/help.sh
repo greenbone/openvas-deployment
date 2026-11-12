@@ -69,6 +69,34 @@ Actions:
                                    Change and persist the VI-proxy bridge IPv6
                                    subnet (used by security-intelligence)
 
+  --change-gmp-sshd-enable
+                                 Change and persist whether GMP SSHD is enabled
+                                 Requires --gmp-sshd-enable BOOL
+
+  --change-openvas-gmp-sshd-listen-addr
+                                 Change and persist the GMP SSHD IPv4 listen address
+                                 Requires --openvas-gmp-sshd-listen-addr IPv4
+
+  --change-openvas-gmp-sshd-listen-addr-ipv6
+                                 Change and persist the GMP SSHD IPv6 listen address
+                                 Requires --openvas-gmp-sshd-listen-addr-ipv6 IPv6
+
+  --change-openvas-gmp-sshd-listen-port
+                                 Change and persist the GMP SSHD listen port
+                                 Requires --openvas-gmp-sshd-listen-port PORT
+
+  --change-logging-backend
+                                 Change and persist the logging backend
+                                 Requires --logging-backend BACKEND
+
+  --change-logging-backend-json-file-max-size
+                                 Change and persist the JSON log rotation size
+                                 Requires --logging-backend-json-file-max-size VALUE
+
+  --change-logging-backend-json-file-max-file
+                                 Change and persist the JSON log rotation file count
+                                 Requires --logging-backend-json-file-max-file VALUE
+
   --update                       Download and extract the latest product version
 
   --list-versions                List valid remote product versions
@@ -178,6 +206,48 @@ Deployment options:
   --openvasd-server-key FILE     OpenVASD server private key used for
                                  --init --deployment-mode openvasd
                                  Only enterprise-container
+
+  --logging-backend BACKEND      Logging backend: default | json | journald
+                                 Default: default
+                                 Use with --init or the matching change action
+                                 Only enterprise-container scan
+
+  --gmp-sshd-enable BOOL         Enable GMP SSHD: true | false
+                                 Default: true
+                                 Use with --init or the matching change action
+                                 Only enterprise-container scan
+
+  --openvas-gmp-sshd-listen-addr IPv4
+                                 GMP SSHD IPv4 listen address (IPv4 literal)
+                                 Default: 0.0.0.0
+                                 Use with --init or the matching change action
+                                 Only enterprise-container scan
+
+  --openvas-gmp-sshd-listen-addr-ipv6 IPv6
+                                 GMP SSHD IPv6 listen address (IPv6 literal)
+                                 Default: ::
+                                 Use with --init or the matching change action
+                                 Only enterprise-container scan
+
+  --openvas-gmp-sshd-listen-port PORT
+                                 GMP SSHD listen port
+                                 Default: 2222
+                                 Use with --init or the matching change action
+                                 Only enterprise-container scan
+
+  --logging-backend-json-file-max-size VALUE
+                                 JSON log rotation size
+                                 Default: 50m
+                                 Use with --init or the matching change action
+                                 --init preserves existing nonempty settings
+                                 Only enterprise-container scan
+
+  --logging-backend-json-file-max-file VALUE
+                                 JSON log rotation file count
+                                 Default: 3
+                                 Use with --init or the matching change action
+                                 --init preserves existing nonempty settings
+                                 Only enterprise-container scan
 
   --feed-mode MODE               Feed mode:
                                    volume | service
@@ -373,6 +443,11 @@ Change the enterprise-container scan domain IP and redeploy:
 Change and persist a VI-proxy bridge subnet for security-intelligence, then
 apply it in a separate invocation:
   $0 --change-bridge-vi-proxy-subnet-ipv4 --bridge-vi-proxy-subnet-ipv4 CIDR
+  $0 --run
+
+Change and persist the logging backend for an initialized enterprise-container
+scan deployment with an existing nonempty setting, then redeploy separately:
+  $0 --change-logging-backend --logging-backend json
   $0 --run
 
 Restart feed synchronization immediately:
