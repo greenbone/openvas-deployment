@@ -60,18 +60,21 @@ change_gmp_sshd_setting() {
 # defaults. Only unset values fall through, preserving empties for validation.
 # Exits: 1 if the selector or SSHD inputs are invalid, or a setting is empty.
 init_settings_scan() {
-    local logging_backend="${1-${LOGGING_BACKEND-default}}"
+    local logging_backend="${1:-${LOGGING_BACKEND:-default}}"
     local settings_dir="${2:-$SETTINGS_DIR}"
-    local logging_backend_json_file_max_size="${3-${LOGGING_BACKEND_JSON_FILE_MAX_SIZE-50m}}"
-    local logging_backend_json_file_max_file="${4-${LOGGING_BACKEND_JSON_FILE_MAX_FILE-3}}"
-    local gmp_sshd_enable="${5-${GMP_SSHD_ENABLE-true}}"
-    local openvas_gmp_sshd_listen_addr="${6-${OPENVAS_GMP_SSHD_LISTEN_ADDR-0.0.0.0}}"
-    local openvas_gmp_sshd_listen_addr_ipv6="${7-${OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6-::}}"
-    local openvas_gmp_sshd_listen_port="${8-${OPENVAS_GMP_SSHD_LISTEN_PORT-2222}}"
+    local logging_backend_json_file_max_size="${3:-${LOGGING_BACKEND_JSON_FILE_MAX_SIZE:-50m}}"
+    local logging_backend_json_file_max_file="${4:-${LOGGING_BACKEND_JSON_FILE_MAX_FILE:-3}}"
+    local gmp_sshd_enable="${5:-${GMP_SSHD_ENABLE:-true}}"
+    local openvas_gmp_sshd_listen_addr="${6:-${OPENVAS_GMP_SSHD_LISTEN_ADDR:-0.0.0.0}}"
+    local openvas_gmp_sshd_listen_addr_ipv6="${7:-${OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6:-::}}"
+    local openvas_gmp_sshd_listen_port="${8:-${OPENVAS_GMP_SSHD_LISTEN_PORT:-2222}}"
 
     validate_logging_backend "${logging_backend}"
-    validate_gmp_sshd_settings "${gmp_sshd_enable}" "${openvas_gmp_sshd_listen_addr}" \
-        "${openvas_gmp_sshd_listen_addr_ipv6}" "${openvas_gmp_sshd_listen_port}"
+    validate_gmp_sshd_setting 'GMP_SSHD_ENABLE' "${gmp_sshd_enable}"
+    validate_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR' "${openvas_gmp_sshd_listen_addr}"
+    validate_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6' "${openvas_gmp_sshd_listen_addr_ipv6}"
+    validate_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_PORT' "${openvas_gmp_sshd_listen_port}"
+
     init_setting 'LOGGING_BACKEND' "${logging_backend}" "${settings_dir}"
 
     init_setting 'LOGGING_BACKEND_JSON_FILE_MAX_SIZE' "${logging_backend_json_file_max_size}" "${settings_dir}"
@@ -99,8 +102,11 @@ load_settings_scan() {
     load_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR' 'OPENVAS_GMP_SSHD_LISTEN_ADDR' "${settings_dir}"
     load_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6' 'OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6' "${settings_dir}"
     load_setting 'OPENVAS_GMP_SSHD_LISTEN_PORT' 'OPENVAS_GMP_SSHD_LISTEN_PORT' "${settings_dir}"
-    validate_gmp_sshd_settings "${GMP_SSHD_ENABLE}" "${OPENVAS_GMP_SSHD_LISTEN_ADDR}" \
-        "${OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6}" "${OPENVAS_GMP_SSHD_LISTEN_PORT}"
+
+    validate_gmp_sshd_setting 'GMP_SSHD_ENABLE' "${GMP_SSHD_ENABLE}"
+    validate_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR' "${OPENVAS_GMP_SSHD_LISTEN_ADDR}"
+    validate_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6' "${OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6}"
+    validate_gmp_sshd_setting 'OPENVAS_GMP_SSHD_LISTEN_PORT' "${OPENVAS_GMP_SSHD_LISTEN_PORT}"
 
     # Only json requires rotation files, load_setting enforces explicit migration.
     if [ "${LOGGING_BACKEND}" == 'json' ]; then
