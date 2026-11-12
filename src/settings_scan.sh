@@ -1,4 +1,52 @@
 # =============================================================================
+# change_logging_setting()
+# =============================================================================
+# Changes one existing scan logging setting without loading unrelated settings.
+# Arguments: $1 - logging key; $2 - nonempty value.
+# Exits: 1 on invalid input/context or missing settings.
+# Side effects: overwrites only the target with mode 0600; prints --run advice.
+change_logging_setting() {
+    local setting_name="${1-}"
+    local setting_value="${2-}"
+    local persisted_deployment_mode
+
+    validate_logging_setting "${setting_name}" "${setting_value}"
+    # Persisted mode, not a CLI override, controls eligibility.
+    load_setting DEPLOYMENT_MODE persisted_deployment_mode "${SETTINGS_DIR}"
+    if [ "${persisted_deployment_mode}" != scan ]; then
+        printf 'Error: Scan setting changes require scan deployment mode.\n' >&2
+        exit 1
+    fi
+
+    init_setting "${setting_name}" "${setting_value}" "${SETTINGS_DIR}" y
+    echo "Info: To apply the change, please run ${0} --run."
+}
+
+# =============================================================================
+# change_gmp_sshd_setting()
+# =============================================================================
+# Changes one existing scan SSHD setting without loading unrelated settings.
+# Arguments: $1 - SSHD key; $2 - nonempty value.
+# Exits: 1 on invalid input/context or missing settings.
+# Side effects: overwrites only the target with mode 0600; prints --run advice.
+change_gmp_sshd_setting() {
+    local setting_name="${1-}"
+    local setting_value="${2-}"
+    local persisted_deployment_mode
+
+    validate_gmp_sshd_setting "${setting_name}" "${setting_value}"
+    # Persisted mode, not a CLI override, controls eligibility.
+    load_setting DEPLOYMENT_MODE persisted_deployment_mode "${SETTINGS_DIR}"
+    if [ "${persisted_deployment_mode}" != scan ]; then
+        printf 'Error: Scan setting changes require scan deployment mode.\n' >&2
+        exit 1
+    fi
+
+    init_setting "${setting_name}" "${setting_value}" "${SETTINGS_DIR}" y
+    echo "Info: To apply the change, please run ${0} --run."
+}
+
+# =============================================================================
 # init_settings_scan()
 # =============================================================================
 # Validates and persists EC scan configuration without overwriting an
