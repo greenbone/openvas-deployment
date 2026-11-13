@@ -6,23 +6,25 @@ This script is intended for demonstration purposes until the standard deployment
 The utility initializes, updates, starts, stops, and manages an enterprise-container or security-intelligence deployment. It also supports feed synchronization, TLS certificate management, administrator password changes, deployment logs and status, and OpenVASD scanner registration.
 
 > [!IMPORTANT]
-> - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
-> - OSI release >= 1.7.0 requires openvas-deployment version >= 0.0.8-alpha.9.
 > - Requires Docker Compose version 2.40.3 or higher.
 > - Requires Bash version 5.1 or higher.
-> - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
+
+> [!IMPORTANT]
+> - OEC:
+>   - A forced feed sync still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run.
+>   - Check https://localhost/feed-status and wait until the `Status` field shows `Current`.
+> - OSI:
+>   - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
+>   - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
+>   - OSI release >= 1.7.0 requires openvas-deployment version >= 0.0.8-alpha.9.
 
 > [!IMPORTANT]
 > - Starting with `openvas-deployment` version 0.0.8:
 >   - On `--init` with product enterprise-container `--domain-name DOMAIN` and `--domain-ip IP` must be set. These options are not required for versions earlier than 0.0.8.
-> - Requires OEC v0.11.0 or higher for the following features:
+> - Requires OEC v0.11.0(not released) or higher for the following features:
 >   - Support for OpenVAS Enterprise Container Agent component.
 >   - Support for OpenVAS GMP-SSHD
 >   - Support for Logging Backend
-
-> [!IMPORTANT]
-> - A forced feed sync still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run.
-> - Check https://localhost/feed-status and wait until the `Status` field shows `Current`.
 
 ## Table of contents
 
