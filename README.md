@@ -11,9 +11,18 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 > - Requires Docker Compose version 2.40.3 or higher.
 > - Requires Bash version 5.1 or higher.
 > - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
+
+> [!IMPORTANT]
 > - Starting with `openvas-deployment` version 0.0.8:
 >   - On `--init` with product enterprise-container `--domain-name DOMAIN` and `--domain-ip IP` must be set. These options are not required for versions earlier than 0.0.8.
+> - Requires OEC v0.11.0 or higher for the following features:
 >   - Support for OpenVAS Enterprise Container Agent component.
+>   - Support for OpenVAS GMP-SSHD
+>   - Support for Logging Backend
+
+> [!IMPORTANT]
+> - A forced feed sync still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run.
+> - Check https://localhost/feed-status and wait until the `Status` field shows `Current`.
 
 ## Table of contents
 
@@ -148,7 +157,7 @@ Use one action per invocation.
 | `--change-logging-backend` | Save the logging backend; requires `--logging-backend`. |
 | `--change-logging-backend-json-file-max-size` | Save the JSON log rotation size; requires `--logging-backend-json-file-max-size`. |
 | `--change-logging-backend-json-file-max-file` | Save the JSON log rotation file count; requires `--logging-backend-json-file-max-file`. |
-| `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
+| `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container. It still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run. |
 | `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
 | `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
 | `--logs`                  | Show deployment logs. Optionally restrict the output to one service with `--service-name`. |

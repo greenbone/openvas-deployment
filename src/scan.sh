@@ -86,6 +86,13 @@ change_feed_sync_hour() {
 force_feed_sync() {
     local feed_sync_force_log="${1:-$FEED_SYNC_FORCE_LOG}"
 
+    echo "Info: Feed sync may still be waiting for gvmd and openvasd to finish synchronization."
+    echo "Info: This is indicated by the following log messages:"
+    echo "      Trying to acquire lock on /var/lib/gvm/feed-update.lock"
+    echo "      /var/lib/gvm/feed-update.lock is locked by another process."
+    echo "      Waiting 5 seconds before next try."
+    echo "Info: To trigger another feed sync immediately, run the script with --run."
+
     if ! [ "${feed_sync_force_log}" ]; then
         read -r -p "Info: Do you want to watch the feed sync container logs? (y/n)" feed_sync_force_log
     fi

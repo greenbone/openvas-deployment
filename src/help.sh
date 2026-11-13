@@ -42,6 +42,8 @@ Actions:
 
   --force-feed-sync              Restart feed synchronization immediately
                                  Only enterprise-container
+                                 It still waits for gvmd and openvasd to finish processing.
+                                 To trigger a new feed sync immediately, run the script with --run.
 
   --change-domain-name
                                  Change domain name for product
