@@ -250,6 +250,9 @@ check_req
 init_version
 change_bridge_backends
 change_bridge_ingress
+change_ingress_listen_addr
+change_ingress_listen_addr_ipv6
+change_ingress_listen_port
 if [ "${SKIP:-}" != 'run' ]; then
     run_version
 fi
