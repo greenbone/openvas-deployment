@@ -42,6 +42,21 @@ change_domain_name() {
     openvas-deployment --change-domain-name --domain-name test2.test
 }
 
+change_ingress_listen_addr() {
+    echo_task 'Test change ingress listen address'
+    openvas-deployment --change-ingress-listen-addr --ingress-listen-addr 127.0.0.1
+}
+
+change_ingress_listen_addr_ipv6() {
+    echo_task 'Test change ingress listen IPv6 address'
+    openvas-deployment --change-ingress-listen-addr-ipv6 --ingress-listen-addr-ipv6 ::1
+}
+
+change_ingress_listen_port() {
+    echo_task 'Test change ingress listen port'
+    openvas-deployment --change-ingress-listen-port --ingress-listen-port 8443
+}
+
 change_domain_ip() {
     echo_task 'Test change domain ip'
     openvas-deployment --change-domain-ip --domain-ip 127.0.0.1

@@ -6,14 +6,25 @@ This script is intended for demonstration purposes until the standard deployment
 The utility initializes, updates, starts, stops, and manages an enterprise-container or security-intelligence deployment. It also supports feed synchronization, TLS certificate management, administrator password changes, deployment logs and status, and OpenVASD scanner registration.
 
 > [!IMPORTANT]
-> - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
-> - OSI release >= 1.7.0 requires openvas-deployment version >= 0.0.8-alpha.9.
 > - Requires Docker Compose version 2.40.3 or higher.
 > - Requires Bash version 5.1 or higher.
-> - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
+
+> [!IMPORTANT]
+> - OEC:
+>   - After deployment, check https://localhost/feed-status (adjust hostname if needed) and wait until the Status field shows Current.
+>   - A forced feed sync still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run.
+> - OSI:
+>   - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
+>   - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
+>   - OSI release >= 1.7.0 requires openvas-deployment version >= 0.0.8-alpha.9.
+
+> [!IMPORTANT]
 > - Starting with `openvas-deployment` version 0.0.8:
 >   - On `--init` with product enterprise-container `--domain-name DOMAIN` and `--domain-ip IP` must be set. These options are not required for versions earlier than 0.0.8.
+> - Requires OEC v0.11.0(not released) or higher for the following features:
 >   - Support for OpenVAS Enterprise Container Agent component.
+>   - Support for OpenVAS GMP-SSHD
+>   - Support for Logging Backend
 
 ## Table of contents
 
@@ -138,6 +149,9 @@ Use one action per invocation.
 | `--change-bridge-backends-subnet-ipv6` | Save the selected product's backends bridge IPv6 subnet; requires `--bridge-backends-subnet-ipv6`. Run `--run` to apply. |
 | `--change-bridge-vi-proxy-subnet-ipv4` | Save the VI-proxy IPv4 subnet; requires `--bridge-vi-proxy-subnet-ipv4`. Only security-intelligence, run `--run` to apply. |
 | `--change-bridge-vi-proxy-subnet-ipv6` | Save the VI-proxy IPv6 subnet; requires `--bridge-vi-proxy-subnet-ipv6`. Only security-intelligence, run `--run` to apply. |
+| `--change-ingress-listen-addr` | All products/modes: persist IPv4; requires `--ingress-listen-addr`. Apply separately with `--run`. |
+| `--change-ingress-listen-port` | All products/modes: persist port; requires `--ingress-listen-port`. Apply separately with `--run`. |
+| `--change-ingress-listen-addr-ipv6` | All products/modes: persist IPv6; requires `--ingress-listen-addr-ipv6`. Apply separately with `--run`. |
 | `--change-gmp-sshd-enable` | Save whether GMP SSHD is enabled; requires `--gmp-sshd-enable`. |
 | `--change-openvas-gmp-sshd-listen-addr` | Save the GMP SSHD IPv4 listen address; requires `--openvas-gmp-sshd-listen-addr`. |
 | `--change-openvas-gmp-sshd-listen-addr-ipv6` | Save the GMP SSHD IPv6 listen address; requires `--openvas-gmp-sshd-listen-addr-ipv6`. |
@@ -145,7 +159,7 @@ Use one action per invocation.
 | `--change-logging-backend` | Save the logging backend; requires `--logging-backend`. |
 | `--change-logging-backend-json-file-max-size` | Save the JSON log rotation size; requires `--logging-backend-json-file-max-size`. |
 | `--change-logging-backend-json-file-max-file` | Save the JSON log rotation file count; requires `--logging-backend-json-file-max-file`. |
-| `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container.                       |
+| `--force-feed-sync`       | Restart feed synchronization immediately. Only enterprise-container. It still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run. |
 | `--update`                | Download and extract the latest product version from the configured OCI registry. If the latest version is already present locally, no download is performed. |
 | `--run`                   | Start or redeploy the configured deployment using the latest locally downloaded product version. |
 | `--logs`                  | Show deployment logs. Optionally restrict the output to one service with `--service-name`. |
@@ -178,13 +192,16 @@ Use one action per invocation.
 | `--metafeed-cert FILE`    | Optional metafeed client certificate for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--metafeed-key FILE`     | Optional metafeed client private key for security-intelligence. If omitted or missing, initialization continues with a warning. |
 | `--deployment-mode MODE` | Enterprise-container deployment mode: `scan` or `openvasd`. Default: `scan`. |
-| `--logging-backend BACKEND` | EC scan only: `default`, `json`, or `journald`. Default: `default`. Requires a compatible downloaded Compose artifact. Use with `--init` or `--change-logging-backend`. |
+| `--logging-backend BACKEND` | All products/modes: `default`, `json`, or `journald`. Default: `default`. Requires a compatible downloaded Compose artifact. Use with `--init` or `--change-logging-backend`. Initialization preserves existing nonempty values. |
+| `--ingress-listen-addr IPv4` | All products/modes: IPv4 literal, default `0.0.0.0`. Use with `--init` or `--change-ingress-listen-addr`. Existing installs of either product (including EC scan/openvasd) must run non-overwriting `--init` to add required ingress files; loading does not supply defaults. |
+| `--ingress-listen-port PORT` | All products/modes: canonical decimal 1–65535, default `443`. Use with `--init` or `--change-ingress-listen-port`. |
+| `--ingress-listen-addr-ipv6 IPv6` | All products/modes: IPv6 literal, default `::`. Use with `--init` or `--change-ingress-listen-addr-ipv6`. |
 | `--gmp-sshd-enable BOOL` | EC scan only: literal `true` or `false`. Default: `true`. Use with `--init` or `--change-gmp-sshd-enable`. |
 | `--openvas-gmp-sshd-listen-addr IPv4` | EC scan only: IPv4 literal. Default: `0.0.0.0`. Use with `--init` or `--change-openvas-gmp-sshd-listen-addr`. |
 | `--openvas-gmp-sshd-listen-addr-ipv6 IPv6` | EC scan only: IPv6 literal. Default: `::`. Use with `--init` or `--change-openvas-gmp-sshd-listen-addr-ipv6`. |
 | `--openvas-gmp-sshd-listen-port PORT` | EC scan only: Default: `2222`. Use with `--init` or `--change-openvas-gmp-sshd-listen-port`. |
-| `--logging-backend-json-file-max-size VALUE` | EC scan JSON rotation size. Default: `50m`. Use with `--init` or `--change-logging-backend-json-file-max-size`. During `--init`, existing nonempty settings are preserved. |
-| `--logging-backend-json-file-max-file VALUE` | EC scan JSON rotation file count. Default: `3`. Use with `--init` or `--change-logging-backend-json-file-max-file`. During `--init`, existing nonempty settings are preserved. |
+| `--logging-backend-json-file-max-size VALUE` | All products/modes: rotation size, applies to `json`. Default: `50m`. Use with `--init` or `--change-logging-backend-json-file-max-size`. During `--init`, existing nonempty settings are preserved. |
+| `--logging-backend-json-file-max-file VALUE` | All products/modes: rotation file count, applies to `json`. Default: `3`. Use with `--init` or `--change-logging-backend-json-file-max-file`. During `--init`, existing nonempty settings are preserved. |
 | `--openvasd-client-ca FILE` | OpenVASD client CA certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-cert FILE` | OpenVASD server certificate required for `--init --deployment-mode openvasd`. Only enterprise-container. |
 | `--openvasd-server-key FILE` | OpenVASD server private key required for `--init --deployment-mode openvasd`. Only enterprise-container. |
@@ -394,8 +411,13 @@ The metafeed certificate and key are optional; missing files produce warnings an
 
 ### Change the logging backend
 
-For an initialized enterprise-container scan deployment with an existing nonempty
-logging backend setting, persist the change and redeploy separately:
+For all products and deployment modes, logging change actions persist only the
+requested key (creating an absent target), then apply separately with `--run`.
+Existing installations missing common logging settings must explicitly run
+`--init`; it adds missing values without overwriting existing nonempty values.
+Only `json` requires both rotation settings when loading. Actual logging behavior
+requires a compatible downloaded Compose artifact; settings checks do not verify
+runtime logging-driver behavior.
 
 ```bash
 openvas-deployment --change-logging-backend --logging-backend json

@@ -1,4 +1,150 @@
 # =============================================================================
+# init_settings_logging()
+# =============================================================================
+# Initializes all three logging keys for every product and deployment mode.
+# Validates the exact backend selector before writes; rotation strings remain
+# opaque. Preserves nonempty files, but enforces mode 0600 even when skipped.
+# Empty files are rewritten. The settings directory must already exist.
+#
+# Arguments:
+#   $1  Backend; unset/empty uses LOGGING_BACKEND, then default.
+#   $2  Directory; unset/empty uses SETTINGS_DIR.
+#   $3  JSON max size; unset/empty uses LOGGING_BACKEND_JSON_FILE_MAX_SIZE,
+#       then 50m.
+#   $4  JSON max files; unset/empty uses LOGGING_BACKEND_JSON_FILE_MAX_FILE,
+#       then 3.
+#
+# Returns:
+#   The final init_setting status; I/O failures follow strict-shell behavior.
+#
+# Exits:
+#   1 for an unsupported backend.
+#
+# Outputs:
+#   Skip notices on stdout for existing nonempty files.
+#
+# Side effects:
+#   Writes logging setting files and applies mode 0600.
+init_settings_logging() {
+    local logging_backend="${1:-${LOGGING_BACKEND:-default}}"
+    local settings_dir="${2:-$SETTINGS_DIR}"
+    local logging_backend_json_file_max_size="${3:-${LOGGING_BACKEND_JSON_FILE_MAX_SIZE:-50m}}"
+    local logging_backend_json_file_max_file="${4:-${LOGGING_BACKEND_JSON_FILE_MAX_FILE:-3}}"
+
+    validate_logging_backend "${logging_backend}"
+    init_setting LOGGING_BACKEND "${logging_backend}" "${settings_dir}"
+    init_setting LOGGING_BACKEND_JSON_FILE_MAX_SIZE "${logging_backend_json_file_max_size}" "${settings_dir}"
+    init_setting LOGGING_BACKEND_JSON_FILE_MAX_FILE "${logging_backend_json_file_max_file}" "${settings_dir}"
+}
+
+# =============================================================================
+# load_settings_logging()
+# =============================================================================
+# Requires, exports, and validates the persisted backend without fallback or
+# migration. Only json requires and exports rotation values; their syntax is
+# not validated. Other backends neither load nor clear rotation globals.
+#
+# Arguments:
+#   $1  Directory; unset/empty uses SETTINGS_DIR.
+#
+# Returns:
+#   0 on success.
+#
+# Exits:
+#   1 for a missing/empty required file or unsupported backend.
+#
+# Outputs:
+#   Missing/empty-file diagnostics on stdout; unsupported-backend diagnostics
+#   on stderr.
+#
+# Side effects:
+#   Exports logging globals, possibly before failure. Does not write files.
+load_settings_logging() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
+
+    load_setting LOGGING_BACKEND LOGGING_BACKEND "${settings_dir}"
+    validate_logging_backend "${LOGGING_BACKEND}"
+    # Other backends do not consume rotation files.
+    if [ "${LOGGING_BACKEND}" == json ]; then
+        load_setting LOGGING_BACKEND_JSON_FILE_MAX_SIZE LOGGING_BACKEND_JSON_FILE_MAX_SIZE "${settings_dir}"
+        load_setting LOGGING_BACKEND_JSON_FILE_MAX_FILE LOGGING_BACKEND_JSON_FILE_MAX_FILE "${settings_dir}"
+    fi
+}
+
+# =============================================================================
+# change_logging_setting()
+# =============================================================================
+# Validates and force-writes only the requested logging key for any product or
+# mode. Rotation values are opaque. Does not load unrelated settings or deploy.
+#
+# Arguments:
+#   $1  Required key: LOGGING_BACKEND, LOGGING_BACKEND_JSON_FILE_MAX_SIZE,
+#       or LOGGING_BACKEND_JSON_FILE_MAX_FILE. No default.
+#   $2  Required nonempty value. No default.
+#
+# Returns:
+#   The final echo status; I/O failures follow strict-shell behavior.
+#
+# Exits:
+#   1 for an invalid key or value, before writes.
+#
+# Outputs:
+#   Advice to apply the change with --run on stdout.
+#
+# Side effects:
+#   Overwrites the selected file under SETTINGS_DIR and applies mode 0600.
+change_logging_setting() {
+    local setting_name="${1-}"
+    local setting_value="${2-}"
+
+    validate_logging_setting "${setting_name}" "${setting_value}"
+    init_setting "${setting_name}" "${setting_value}" "${SETTINGS_DIR}" y
+    echo "Info: To apply the change, please run ${0} --run."
+}
+
+# Common ingress settings belong to every product and deployment mode.
+# Arguments: $1 IPv4, $2 port, $3 IPv6, $4 directory; empty inputs use globals
+# then init-only defaults. Validate all values before writing any ingress file.
+init_settings_ingress() {
+    local ingress_listen_addr="${1:-${INGRESS_LISTEN_ADDR:-0.0.0.0}}"
+    local ingress_listen_port="${2:-${INGRESS_LISTEN_PORT:-443}}"
+    local ingress_listen_addr_ipv6="${3:-${INGRESS_LISTEN_ADDR_IPV6:-::}}"
+    local settings_dir="${4:-$SETTINGS_DIR}"
+
+    validate_ingress_setting INGRESS_LISTEN_ADDR "${ingress_listen_addr}"
+    validate_ingress_setting INGRESS_LISTEN_PORT "${ingress_listen_port}"
+    validate_ingress_setting INGRESS_LISTEN_ADDR_IPV6 "${ingress_listen_addr_ipv6}"
+    init_setting INGRESS_LISTEN_ADDR "${ingress_listen_addr}" "${settings_dir}"
+    init_setting INGRESS_LISTEN_PORT "${ingress_listen_port}" "${settings_dir}"
+    init_setting INGRESS_LISTEN_ADDR_IPV6 "${ingress_listen_addr_ipv6}" "${settings_dir}"
+}
+
+# Require persisted values rather than silently migrating an existing install.
+# Arguments: $1 directory, default SETTINGS_DIR. Exits 1 on missing/invalid data.
+# Side effects: exports all three validated ingress settings.
+load_settings_ingress() {
+    local settings_dir="${1:-$SETTINGS_DIR}"
+    local key
+
+    for key in INGRESS_LISTEN_ADDR INGRESS_LISTEN_PORT INGRESS_LISTEN_ADDR_IPV6; do
+        load_setting "${key}" "${key}" "${settings_dir}"
+        validate_ingress_setting "${key}" "${!key}"
+    done
+}
+
+# Persist only the requested ingress key, without loading unrelated settings.
+# Arguments: $1 key, $2 nonempty value. Exits 1 on invalid input.
+# Side effects: writes mode 0600 and prints separate --run advice; never deploys.
+change_ingress_setting() {
+    local setting_name="${1-}"
+    local setting_value="${2-}"
+
+    validate_ingress_setting "${setting_name}" "${setting_value}"
+    init_setting "${setting_name}" "${setting_value}" "${SETTINGS_DIR}" y
+    echo "Info: To apply the change, please run ${0} --run."
+}
+
+# =============================================================================
 # init_setting()
 # =============================================================================
 # Initializes a single setting file with the provided value.
@@ -48,7 +194,7 @@ init_setting() {
 # =============================================================================
 # init_settings()
 # =============================================================================
-# Validates the selected product and initializes the product settings.
+# Validates the product and initializes common ingress/logging/product settings.
 #
 # The function verifies that the provided product is included in
 # PRODUCT_OPTIONS. If supported, the product identifier is stored in the
@@ -82,6 +228,9 @@ init_settings() {
         echo "Error: Product ${product} is not supported only ${PRODUCT_OPTIONS[*]}."
         exit 1
     fi
+
+    init_settings_ingress
+    init_settings_logging
 
     if [ "${product}" == 'enterprise-container' ]; then
         init_settings_ec
@@ -133,7 +282,7 @@ load_setting() {
 # =============================================================================
 # load_settings()
 # =============================================================================
-# Loads product-specific settings for the selected OpenVAS product.
+# Loads common ingress/logging and product-specific settings for the product.
 #
 # The function dispatches settings loading to the corresponding
 # product-specific helper based on the provided product name.
@@ -150,6 +299,9 @@ load_setting() {
 #   None.
 load_settings() {
     local product="${1:-$PRODUCT}"
+
+    load_settings_ingress
+    load_settings_logging
 
     if [ "${product}" == 'enterprise-container' ]; then
         load_settings_ec

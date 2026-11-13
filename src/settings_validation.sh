@@ -1,4 +1,76 @@
 # =============================================================================
+# validate_logging_backend()
+# =============================================================================
+# Checks exact, case-sensitive membership in LOGGING_BACKEND_OPTIONS (currently
+# default, json, journald). Does not normalize selectors or translate Docker
+# drivers; the artifact interprets the logical selector.
+#
+# Arguments:
+#   $1  Required nonempty backend. No default.
+#
+# Returns:
+#   0 silently when valid.
+#
+# Exits:
+#   1 with a stderr diagnostic for missing, empty, or unsupported input under
+#   project execution.
+#
+# Side effects:
+#   No persistence or global mutation.
+validate_logging_backend() {
+    local backend="${1:?Error: Logging backend is a empty value}"
+    local option
+
+    for option in "${LOGGING_BACKEND_OPTIONS[@]}"; do
+        if [ "${backend}" == "${option}" ]; then
+            return 0
+        fi
+    done
+    printf 'Error: Unsupported logging backend: %s. Expected one of: %s.\n' \
+        "${backend}" "${LOGGING_BACKEND_OPTIONS[*]}" >&2
+    exit 1
+}
+
+# =============================================================================
+# validate_logging_setting()
+# =============================================================================
+# Validates logging changes independently of product, mode, or persistence.
+# Delegates backend validation and accepts opaque nonempty rotation strings.
+# Rejects keys other than the three logging settings.
+#
+# Arguments:
+#   $1  Required key: LOGGING_BACKEND, LOGGING_BACKEND_JSON_FILE_MAX_SIZE,
+#       or LOGGING_BACKEND_JSON_FILE_MAX_FILE. No default.
+#   $2  Required nonempty value. No default.
+#
+# Returns:
+#   0 silently when valid.
+#
+# Exits:
+#   1 with a stderr diagnostic for missing/empty arguments, an unsupported key,
+#   or an invalid backend under project execution.
+#
+# Side effects:
+#   No persistence or global mutation.
+validate_logging_setting() {
+    local setting_name="${1:?Error: Logging setting name is empty}"
+    local setting_value="${2:?Error: Logging setting value is empty}"
+
+    case "${setting_name}" in
+        LOGGING_BACKEND)
+            validate_logging_backend "${setting_value}"
+            ;;
+        LOGGING_BACKEND_JSON_FILE_MAX_SIZE|LOGGING_BACKEND_JSON_FILE_MAX_FILE)
+            # Rotation values remain opaque nonempty strings, as during init.
+            ;;
+        *)
+            printf 'Error: Unsupported logging setting: %s\n' "${setting_name}" >&2
+            exit 1
+            ;;
+    esac
+}
+
+# =============================================================================
 # validate_domain_name()
 # =============================================================================
 # Validates a DNS-style hostname, including single-label names such as
@@ -234,4 +306,47 @@ ipv6_valid() {
     for group in "${groups[@]}"; do
         [[ "${group}" =~ ^[0-9A-Fa-f]{1,4}$ ]] || return 1
     done
+}
+
+# =============================================================================
+# validate_port()
+# =============================================================================
+# Validates a canonical decimal port without normalization or writes.
+# Arguments: $1 - Port (unset defaults to empty); $2 - Required error message.
+# Returns: 0 silently when valid; 1 with the supplied message on stderr otherwise.
+# Exits: 1 if the error-message argument is unset or empty.
+validate_port() {
+    local port="${1-}"
+    local error_message="${2:?Error: Validation error message is empty}"
+
+    # Bound the string before arithmetic to avoid overflow and octal ambiguity.
+    if [[ ! "${port}" =~ ^[1-9][0-9]{0,4}$ ]] ||
+        (( 10#${port} > 65535 )); then
+        printf '%s\n' "${error_message}" >&2
+        return 1
+    fi
+    return 0
+}
+
+# Shares ingress rules between initialization, loading, and changes.
+# Arguments: $1 - ingress setting name; $2 - value. Exits: 1 on invalid input.
+validate_ingress_setting() {
+    local setting_name="${1:?Error: Ingress setting name is empty}"
+    local setting_value="${2:?Error: Ingress setting value is empty}"
+
+    case "${setting_name}" in
+    INGRESS_LISTEN_ADDR)
+        validate_ipv4_address "${setting_value}" 'Error: INGRESS_LISTEN_ADDR must be an IPv4 literal.'
+        ;;
+    INGRESS_LISTEN_ADDR_IPV6)
+        validate_ipv6_address "${setting_value}" 'Error: INGRESS_LISTEN_ADDR_IPV6 must be an IPv6 literal.'
+        ;;
+    INGRESS_LISTEN_PORT)
+        validate_port "${setting_value}" 'Error: INGRESS_LISTEN_PORT must be a canonical decimal port from 1 to 65535.' || exit 1
+        ;;
+    *)
+        printf 'Error: Unsupported ingress setting: %s\n' "${setting_name}" >&2
+        exit 1
+        ;;
+    esac
 }

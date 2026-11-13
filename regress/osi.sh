@@ -57,6 +57,9 @@ check_req
 init
 change_bridge_backends
 change_bridge_ingress
+change_ingress_listen_addr
+change_ingress_listen_addr_ipv6
+change_ingress_listen_port
 change_bridge_vi_proxy
 list_versions
 list_local_versions

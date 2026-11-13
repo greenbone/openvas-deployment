@@ -1,24 +1,3 @@
-# =============================================================================
-# validate_logging_backend()
-# =============================================================================
-# Checks exact membership in LOGGING_BACKEND_OPTIONS; no whitespace or composite
-# selectors are accepted. The logical selector is interpreted by the artifact.
-# Arguments: $1 - Backend selector (required).
-# Exits: 1 if the selector is unsupported, including empty.
-validate_logging_backend() {
-    local backend="${1:?Error: Logging backend is a empty value}"
-    local option
-
-    for option in "${LOGGING_BACKEND_OPTIONS[@]}"; do
-        if [ "${backend}" == "${option}" ]; then
-            return 0
-        fi
-    done
-    printf 'Error: Unsupported logging backend: %s. Expected one of: %s.\n' \
-        "${backend}" "${LOGGING_BACKEND_OPTIONS[*]}" >&2
-    exit 1
-}
-
 # Shares rules between initialization and single-setting changes.
 # Arguments: $1 - SSHD setting name; $2 - value. Exits: 1 on invalid input.
 validate_gmp_sshd_setting() {
@@ -39,40 +18,11 @@ validate_gmp_sshd_setting() {
         validate_ipv6_address "${setting_value}" 'Error: OPENVAS_GMP_SSHD_LISTEN_ADDR_IPV6 must be an IPv6 literal.'
         ;;
     OPENVAS_GMP_SSHD_LISTEN_PORT)
-        # Bound the string before arithmetic to avoid overflow and octal ambiguity.
-        if [[ ! "${setting_value}" =~ ^[1-9][0-9]{0,4}$ ]] ||
-            (( 10#${setting_value} > 65535 )); then
-            printf 'Error: OPENVAS_GMP_SSHD_LISTEN_PORT must be a canonical decimal port from 1 to 65535.\n' >&2
-            exit 1
-        fi
+        validate_port "${setting_value}" 'Error: OPENVAS_GMP_SSHD_LISTEN_PORT must be a canonical decimal port from 1 to 65535.' || exit 1
         ;;
     *)
         printf 'Error: Unsupported SSHD setting: %s\n' "${setting_name}" >&2
         exit 1
         ;;
-    esac
-}
-
-# =============================================================================
-# validate_logging_setting()
-# =============================================================================
-# Validate change inputs independently of persistence context before any writes.
-# Arguments: $1 - Logging setting name; $2 - Nonempty setting value.
-# Exits: 1 on missing, empty, unsupported, or invalid input.
-validate_logging_setting() {
-    local setting_name="${1:?Error: Logging setting name is empty}"
-    local setting_value="${2:?Error: Logging setting value is empty}"
-
-    case "${setting_name}" in
-        LOGGING_BACKEND)
-            validate_logging_backend "${setting_value}"
-            ;;
-        LOGGING_BACKEND_JSON_FILE_MAX_SIZE|LOGGING_BACKEND_JSON_FILE_MAX_FILE)
-            # Rotation values remain opaque nonempty strings, as during init.
-            ;;
-        *)
-            printf 'Error: Unsupported logging setting: %s\n' "${setting_name}" >&2
-            exit 1
-            ;;
     esac
 }
