@@ -30,18 +30,38 @@ change_admin_password_scan() {
 # =============================================================================
 # change_feed_sync_hour()
 # =============================================================================
-# Updates the configured feed synchronization hour and triggers a feed sync.
+# Updates the configured feed synchronization hour and triggers a forced sync.
 #
-# The function initializes the feed synchronization schedule using
-# init_feed_sync_hour and then immediately starts a forced feed synchronization.
+# Validates the GREENBONE_FEED_SYNC_JOB_HOUR environment variable to ensure
+# it is set and contains a value between 0 and 23 (inclusive).
+# If valid, writes the hour to the corresponding settings file and starts
+# a forced feed synchronization using force_feed_sync.
+#
+# If the hour is missing or outside the allowed range, prints an error
+# message and exits with status code 1.
 #
 # Arguments:
 #   None.
 #
 # Returns:
 #   None.
+#
+# Side effects:
+#   - Updates the GREENBONE_FEED_SYNC_JOB_HOUR settings file.
+#   - Triggers a forced feed synchronization.
+#   - Terminates the script if validation fails.
 change_feed_sync_hour() {
-    init_feed_sync_hour
+    if [ "${GREENBONE_FEED_SYNC_JOB_HOUR}" ]; then
+        if (( GREENBONE_FEED_SYNC_JOB_HOUR >= 0 && GREENBONE_FEED_SYNC_JOB_HOUR <= 23 )); then
+            echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR"
+        else
+            echo "Error: No feed sync hour ${GREENBONE_FEED_SYNC_JOB_HOUR} needs to be between 0 and 23. Please run --change-feed-sync-hour or --init with --feed-sync-hour."
+            exit 1
+        fi
+    else
+        echo "Error: No feed sync hour set. Please run --change-feed-sync-hour or --init with --feed-sync-hour."
+        exit 1
+    fi
 
     force_feed_sync
 }
@@ -75,22 +95,34 @@ force_feed_sync() {
 # =============================================================================
 # init_feed_sync_hour()
 # =============================================================================
-# Validates and stores the configured feed synchronization hour.
+# Initializes the configured feed synchronization hour.
 #
-# The function verifies that GREENBONE_FEED_SYNC_JOB_HOUR is set and contains
-# a value between 0 and 23. If valid, the value is written to the product
-# settings directory for use by the feed synchronization schedule.
+# Checks whether the GREENBONE_FEED_SYNC_JOB_HOUR settings file exists and
+# is non-empty. If so, returns successfully without modifying the file.
+#
+# Otherwise, validates the GREENBONE_FEED_SYNC_JOB_HOUR environment variable
+# to ensure it is set and contains a value between 0 and 23 (inclusive).
+# If valid, writes the configured hour to the settings file.
+#
+# If the hour is missing or outside the allowed range, prints an error
+# message and exits with status code 1.
 #
 # Arguments:
 #   None.
 #
 # Returns:
-#   None.
+#   0 if the settings file already exists and is non-empty, or if the
+#   feed synchronization hour is successfully initialized.
 #
-# Exits:
-#   1 if GREENBONE_FEED_SYNC_JOB_HOUR is not set.
-#   1 if GREENBONE_FEED_SYNC_JOB_HOUR is outside the range 0 through 23.
+# Side effects:
+#   - Creates or overwrites the GREENBONE_FEED_SYNC_JOB_HOUR settings file
+#     if it is missing or empty.
+#   - Terminates the script if validation fails.
 init_feed_sync_hour() {
+    if [ -s "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR" ]; then
+        return 0
+    fi
+
     if [ "${GREENBONE_FEED_SYNC_JOB_HOUR}" ]; then
         if (( GREENBONE_FEED_SYNC_JOB_HOUR >= 0 && GREENBONE_FEED_SYNC_JOB_HOUR <= 23 )); then
             echo "${GREENBONE_FEED_SYNC_JOB_HOUR}" > "${SETTINGS_DIR}/GREENBONE_FEED_SYNC_JOB_HOUR"
