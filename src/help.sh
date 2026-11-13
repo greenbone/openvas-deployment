@@ -69,6 +69,16 @@ Actions:
                                    Change and persist the VI-proxy bridge IPv6
                                    subnet (used by security-intelligence)
 
+  --change-ingress-listen-addr
+                                 All products/modes; requires --ingress-listen-addr IPv4
+  --change-ingress-listen-port
+                                 All products/modes; requires --ingress-listen-port PORT
+  --change-ingress-listen-addr-ipv6
+                                 All products/modes; requires --ingress-listen-addr-ipv6 IPv6
+                                 Persist only; apply separately with --run.
+                                 Existing installs: --init adds missing files
+                                 without overwriting nonempty settings.
+
   --change-gmp-sshd-enable
                                  Change and persist whether GMP SSHD is enabled
                                  Requires --gmp-sshd-enable BOOL
@@ -86,15 +96,15 @@ Actions:
                                  Requires --openvas-gmp-sshd-listen-port PORT
 
   --change-logging-backend
-                                 Change and persist the logging backend
+                                 All products/modes: persist the logging backend
                                  Requires --logging-backend BACKEND
 
   --change-logging-backend-json-file-max-size
-                                 Change and persist the JSON log rotation size
+                                 All products/modes: persist JSON log rotation size
                                  Requires --logging-backend-json-file-max-size VALUE
 
   --change-logging-backend-json-file-max-file
-                                 Change and persist the JSON log rotation file count
+                                 All products/modes: persist JSON rotation file count
                                  Requires --logging-backend-json-file-max-file VALUE
 
   --update                       Download and extract the latest product version
@@ -210,7 +220,16 @@ Deployment options:
   --logging-backend BACKEND      Logging backend: default | json | journald
                                  Default: default
                                  Use with --init or the matching change action
-                                 Only enterprise-container scan
+                                 All products/modes; compatible Compose artifact required
+                                 --init preserves existing nonempty settings
+                                 Missing logging settings require explicit --init
+
+  --ingress-listen-addr IPv4     All products/modes: IPv4 literal; default: 0.0.0.0
+  --ingress-listen-port PORT     All products/modes: canonical decimal port 1–65535;
+                                 default: 443
+  --ingress-listen-addr-ipv6 IPv6
+                                 All products/modes: IPv6 literal; default: ::
+                                 Use with --init or corresponding change mode.
 
   --gmp-sshd-enable BOOL         Enable GMP SSHD: true | false
                                  Default: true
@@ -236,18 +255,16 @@ Deployment options:
                                  Only enterprise-container scan
 
   --logging-backend-json-file-max-size VALUE
-                                 JSON log rotation size
+                                 All products/modes: rotation size, applies to json
                                  Default: 50m
                                  Use with --init or the matching change action
                                  --init preserves existing nonempty settings
-                                 Only enterprise-container scan
 
   --logging-backend-json-file-max-file VALUE
-                                 JSON log rotation file count
+                                 All products/modes: rotation count, applies to json
                                  Default: 3
                                  Use with --init or the matching change action
                                  --init preserves existing nonempty settings
-                                 Only enterprise-container scan
 
   --feed-mode MODE               Feed mode:
                                    volume | service
@@ -445,8 +462,8 @@ apply it in a separate invocation:
   $0 --change-bridge-vi-proxy-subnet-ipv4 --bridge-vi-proxy-subnet-ipv4 CIDR
   $0 --run
 
-Change and persist the logging backend for an initialized enterprise-container
-scan deployment with an existing nonempty setting, then redeploy separately:
+Persist logging for any product/mode (creates an absent target setting).
+Use --init to add missing common settings; apply separately with --run:
   $0 --change-logging-backend --logging-backend json
   $0 --run
 

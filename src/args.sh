@@ -122,6 +122,30 @@ parse_args() {
                 DEPLOYMENT_MODE="$2"
                 shift 2
                 ;;
+            --change-ingress-listen-addr)
+                MODE='change-ingress-listen-addr'
+                shift
+                ;;
+            --change-ingress-listen-port)
+                MODE='change-ingress-listen-port'
+                shift
+                ;;
+            --change-ingress-listen-addr-ipv6)
+                MODE='change-ingress-listen-addr-ipv6'
+                shift
+                ;;
+            --ingress-listen-addr)
+                INGRESS_LISTEN_ADDR="$2"
+                shift 2
+                ;;
+            --ingress-listen-port)
+                INGRESS_LISTEN_PORT="$2"
+                shift 2
+                ;;
+            --ingress-listen-addr-ipv6)
+                INGRESS_LISTEN_ADDR_IPV6="$2"
+                shift 2
+                ;;
             --change-gmp-sshd-enable)
                 MODE='change-gmp-sshd-enable'
                 shift 1
@@ -406,7 +430,7 @@ parse_args() {
 # and dispatches execution to the handler associated with MODE.
 #
 # The OpenVASD management, administrator password, and feed synchronization
-# and scan logging/SSHD change modes require the enterprise-container product.
+# and scan SSHD change modes require the enterprise-container product.
 #
 # Arguments:
 #   None.
@@ -540,6 +564,15 @@ run() {
             exit 1
         fi
         ;;
+    change-ingress-listen-addr)
+        change_ingress_setting 'INGRESS_LISTEN_ADDR' "${INGRESS_LISTEN_ADDR}"
+        ;;
+    change-ingress-listen-port)
+        change_ingress_setting 'INGRESS_LISTEN_PORT' "${INGRESS_LISTEN_PORT}"
+        ;;
+    change-ingress-listen-addr-ipv6)
+        change_ingress_setting 'INGRESS_LISTEN_ADDR_IPV6' "${INGRESS_LISTEN_ADDR_IPV6}"
+        ;;
     change-gmp-sshd-enable)
         if [ "${PRODUCT}" == 'enterprise-container' ]; then
             change_gmp_sshd_setting 'GMP_SSHD_ENABLE' "${GMP_SSHD_ENABLE}"
@@ -573,28 +606,13 @@ run() {
         fi
         ;;
     change-logging-backend)
-        if [ "${PRODUCT}" == 'enterprise-container' ]; then
-            change_logging_setting 'LOGGING_BACKEND' "${LOGGING_BACKEND}"
-        else
-            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
-            exit 1
-        fi
+        change_logging_setting 'LOGGING_BACKEND' "${LOGGING_BACKEND}"
         ;;
     change-logging-backend-json-file-max-size)
-        if [ "${PRODUCT}" == 'enterprise-container' ]; then
-            change_logging_setting 'LOGGING_BACKEND_JSON_FILE_MAX_SIZE' "${LOGGING_BACKEND_JSON_FILE_MAX_SIZE}"
-        else
-            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
-            exit 1
-        fi
+        change_logging_setting 'LOGGING_BACKEND_JSON_FILE_MAX_SIZE' "${LOGGING_BACKEND_JSON_FILE_MAX_SIZE}"
         ;;
     change-logging-backend-json-file-max-file)
-        if [ "${PRODUCT}" == 'enterprise-container' ]; then
-            change_logging_setting 'LOGGING_BACKEND_JSON_FILE_MAX_FILE' "${LOGGING_BACKEND_JSON_FILE_MAX_FILE}"
-        else
-            printf 'Error: Scan setting changes require enterprise-container.\n' >&2
-            exit 1
-        fi
+        change_logging_setting 'LOGGING_BACKEND_JSON_FILE_MAX_FILE' "${LOGGING_BACKEND_JSON_FILE_MAX_FILE}"
         ;;
     change-bridge-ingress-subnet-ipv4)
         change_bridge_subnet 'BRIDGE_INGRESS_SUBNET_IPV4' "${BRIDGE_INGRESS_SUBNET_IPV4}"
