@@ -51,6 +51,9 @@ deploy() {
         docker compose --env-file settings.env down --remove-orphans 2>/dev/null || true
         if docker compose --env-file settings.env up -d --wait --wait-timeout 7200 --quiet-pull --remove-orphans ; then
             echo "OpenVAS ${PRODUCT} deployment successful!"
+            if [ "${PRODUCT}" == "enterprise-container" ] && [ "${DEPLOYMENT_MODE}" == "openvasd" ]; then
+                echo 'Check https://localhost/feed-status (adjust hostname if needed) and wait until `Status` shows `Current`.'
+            fi
             echo "Service status: $0 --ps"
             echo "For support, visit: https://www.greenbone.net/support/"
         else
