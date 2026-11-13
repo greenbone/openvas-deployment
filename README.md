@@ -11,8 +11,8 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 
 > [!IMPORTANT]
 > - OEC:
+>   - After deployment, check https://localhost/feed-status (adjust hostname if needed) and wait until the Status field shows Current.
 >   - A forced feed sync still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run.
->   - Check https://localhost/feed-status and wait until the `Status` field shows `Current`.
 > - OSI:
 >   - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
 >   - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
