@@ -77,7 +77,7 @@ add_openvasd() {
         "/tmp/openvasd_crt/ca.crt"
 
     docker exec -u "${GVMD_CONTAINER_UID}" "${GVMD_CONTAINER}" gvmd \
-        --create-scanner="${OPENVASD_NAME}" \
+        --create-scanner="${OPENVASD_NAME}-${OPENVASD_PORT}" \
         --scanner-host="${CN_OPENVASD}" \
         --scanner-port="${OPENVASD_PORT}" \
         --scanner-type="OPENVASD" \
