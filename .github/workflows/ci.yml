@@ -80,6 +80,7 @@ jobs:
             -e HOME=/root \
             -e MHOSTS=yes \
             -e SKIP=${{ matrix.skip }} \
+            -e RUNNER=${{ matrix.runner }} \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v /etc/docker/certs.d:/etc/docker/certs.d \
             -v /etc/ssl/certs/ca-certificates.crt:/host-ca-certificates.crt:ro \
