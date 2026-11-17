@@ -45,7 +45,7 @@ init() {
     openvas-deployment --update
 }
 
-init_dev() {
+init_testing() {
     echo_task 'Test Init dev'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
         --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
@@ -298,7 +298,7 @@ if [ "${SKIP:-}" != 'run' ]; then
     list 'Openvasd scan'
     clean 'Openvasd scan'
     if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
-        init_dev
+        init_testing
         run
         list 'Openvasd scan dev'
         clean 'Openvasd scan dev'

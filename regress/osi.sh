@@ -38,7 +38,7 @@ init() {
     openvas-deployment --update
 }
 
-init_dev() {
+init_testing() {
     echo_task 'Test Init dev'
     openvas-deployment --init --init-docker-oci \
         --oci-client-cert oci-client.cert \
@@ -85,7 +85,7 @@ if [ "${SKIP:-}" != 'run' ]; then
     list 'security-intelligence'
     clean 'security-intelligence'
     if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
-        init_dev
+        init_testing
         run
         list 'security-intelligence dev'
         clean 'security-intelligence dev'
