@@ -55,6 +55,16 @@ init_testing() {
     openvas-deployment --update --testing
 }
 
+init_integration() {
+    echo_task 'Test Init integration'
+    openvas-deployment --init --init-docker-oci --feed-key gsf.key \
+        --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
+        --product enterprise-container --deployment-mode scan \
+        --domain-name oec.test.test --domain-ip 127.0.0.1
+    echo_task 'Test Update integration'
+    openvas-deployment --update --integration
+}
+
 init_version() {
     echo_task 'Test Init version 0.10.1'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
@@ -302,6 +312,10 @@ if [ "${SKIP:-}" != 'run' ]; then
         run
         list 'Openvasd scan testing'
         clean 'Openvasd scan testing'
+        init_integration
+        run
+        list 'Openvasd scan integration'
+        clean 'Openvasd scan integration'
     fi
 else
     list 'Openvasd scan'
