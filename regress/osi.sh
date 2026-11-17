@@ -49,6 +49,17 @@ init_testing() {
     openvas-deployment --update --testing
 }
 
+init_integration() {
+    echo_task 'Test Init integration'
+    openvas-deployment --init --init-docker-oci \
+        --oci-client-cert oci-client.cert \
+        --oci-client-key oci-client.key \
+        --product security-intelligence \
+        --domain-name test.test.test
+    echo_task 'Test Update integration'
+    openvas-deployment --update --integration
+}
+
 init_license() {
     echo_task 'Test Init license file'
     openvas-deployment --init --init-docker-oci \
@@ -89,6 +100,10 @@ if [ "${SKIP:-}" != 'run' ]; then
         run
         list 'security-intelligence testing'
         clean 'security-intelligence testing'
+        init_integration
+        run
+        list 'security-intelligence integration'
+        clean 'security-intelligence integration'
     fi
 else
     list 'security-intelligence'
