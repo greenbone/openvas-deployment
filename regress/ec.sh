@@ -295,12 +295,15 @@ if [ "${SKIP:-}" != 'run' ]; then
     run_openvasd_cert_tar
     run_openvasd_tar
     run_openvasd_tar_with_images
-fi
-list 'Openvasd scan'
-clean 'Openvasd scan'
-if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
-    init_dev
-    run
-    list 'Openvasd scan dev'
-    clean 'Openvasd scan dev'
+    list 'Openvasd scan'
+    clean 'Openvasd scan'
+    if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
+        init_dev
+        run
+        list 'Openvasd scan dev'
+        clean 'Openvasd scan dev'
+    fi
+else
+    list 'Openvasd scan'
+    clean 'Openvasd scan'
 fi
