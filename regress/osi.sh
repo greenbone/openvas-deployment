@@ -38,6 +38,17 @@ init() {
     openvas-deployment --update
 }
 
+init_testing() {
+    echo_task 'Test Init dev'
+    openvas-deployment --init --init-docker-oci \
+        --oci-client-cert oci-client.cert \
+        --oci-client-key oci-client.key \
+        --product security-intelligence \
+        --domain-name test.test.test
+    echo_task 'Test Update dev'
+    openvas-deployment --update --testing
+}
+
 init_license() {
     echo_task 'Test Init license file'
     openvas-deployment --init --init-docker-oci \
@@ -67,8 +78,19 @@ list 'security-intelligence'
 clean 'security-intelligence'
 init_license
 certinfo 'product/certs/oci/client.key' 'product/certs/oci/client.crt'
-run
-gen_certs_ingress
-update_ingress_certs
-list 'security-intelligence'
-clean 'security-intelligence'
+if [ "${SKIP:-}" != 'run' ]; then
+    run
+    gen_certs_ingress
+    update_ingress_certs
+    list 'security-intelligence'
+    clean 'security-intelligence'
+    if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
+        init_testing
+        run
+        list 'security-intelligence testing'
+        clean 'security-intelligence testing'
+    fi
+else
+    list 'security-intelligence'
+    clean 'security-intelligence'
+fi

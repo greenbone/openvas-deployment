@@ -45,6 +45,16 @@ init() {
     openvas-deployment --update
 }
 
+init_testing() {
+    echo_task 'Test Init dev'
+    openvas-deployment --init --init-docker-oci --feed-key gsf.key \
+        --oci-client-cert oci-client.cert --oci-client-key oci-client.key \
+        --product enterprise-container --deployment-mode scan \
+        --domain-name oec.test.test --domain-ip 127.0.0.1
+    echo_task 'Test Update dev'
+    openvas-deployment --update --testing
+}
+
 init_version() {
     echo_task 'Test Init version 0.10.1'
     openvas-deployment --init --init-docker-oci --feed-key gsf.key \
@@ -285,6 +295,15 @@ if [ "${SKIP:-}" != 'run' ]; then
     run_openvasd_cert_tar
     run_openvasd_tar
     run_openvasd_tar_with_images
+    list 'Openvasd scan'
+    clean 'Openvasd scan'
+    if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
+        init_testing
+        run
+        list 'Openvasd scan testing'
+        clean 'Openvasd scan testing'
+    fi
+else
+    list 'Openvasd scan'
+    clean 'Openvasd scan'
 fi
-list 'Openvasd scan'
-clean 'Openvasd scan'
