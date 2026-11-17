@@ -46,7 +46,7 @@ init_dev() {
         --product security-intelligence \
         --domain-name test.test.test
     echo_task 'Test Update dev'
-    openvas-deployment --update --integration
+    openvas-deployment --update --testing
 }
 
 init_license() {
