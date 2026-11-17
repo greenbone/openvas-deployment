@@ -52,7 +52,7 @@ init_dev() {
         --product enterprise-container --deployment-mode scan \
         --domain-name oec.test.test --domain-ip 127.0.0.1
     echo_task 'Test Update dev'
-    openvas-deployment --update --dev
+    openvas-deployment --update --integration
 }
 
 init_version() {
