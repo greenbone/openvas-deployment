@@ -298,7 +298,7 @@ if [ "${SKIP:-}" != 'run' ]; then
 fi
 list 'Openvasd scan'
 clean 'Openvasd scan'
-if [ "${SKIP:-}" != 'selfhosted' ]; then
+if [ "${RUNNER:-}" = 'selfhosted' ]; then
     init_dev
     run
     list 'Openvasd scan dev'
