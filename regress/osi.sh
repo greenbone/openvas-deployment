@@ -87,8 +87,8 @@ if [ "${SKIP:-}" != 'run' ]; then
     if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
         init_testing
         run
-        list 'security-intelligence dev'
-        clean 'security-intelligence dev'
+        list 'security-intelligence testing'
+        clean 'security-intelligence testing'
     fi
 else
     list 'security-intelligence'

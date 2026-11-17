@@ -300,8 +300,8 @@ if [ "${SKIP:-}" != 'run' ]; then
     if [ "${RUNNER:-}" = 'self-hosted-generic-vm-amd64' ] || [ "${RUNNER:-}" = 'self-hosted-generic-vm-arm64' ]; then
         init_testing
         run
-        list 'Openvasd scan dev'
-        clean 'Openvasd scan dev'
+        list 'Openvasd scan testing'
+        clean 'Openvasd scan testing'
     fi
 else
     list 'Openvasd scan'
