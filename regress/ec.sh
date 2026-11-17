@@ -300,9 +300,7 @@ list 'Openvasd scan'
 clean 'Openvasd scan'
 if [ "${SKIP:-}" != 'selfhosted' ]; then
     init_dev
-    if [ "${SKIP:-}" != 'run' ]; then
-        run
-    fi
+    run
     list 'Openvasd scan dev'
     clean 'Openvasd scan dev'
 fi
