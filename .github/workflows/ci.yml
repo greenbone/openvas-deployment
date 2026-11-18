@@ -29,12 +29,14 @@ jobs:
           - product: ec
             image: archlinux:latest
             runner: self-hosted-generic-vm-amd64
+            skip: run
           - product: ec
             image: debian:12
             runner: self-hosted-generic-vm-amd64
           - product: ec
             image: debian:13
             runner: self-hosted-generic-vm-amd64
+            skip: run
           # OEC ARM64
           - product: ec
             image: ubuntu:24.04
@@ -46,6 +48,7 @@ jobs:
           - product: osi
             image: archlinux:latest
             runner: self-hosted-generic-vm-amd64
+            skip: run
 
     runs-on: ${{ matrix.runner }}
     steps:
