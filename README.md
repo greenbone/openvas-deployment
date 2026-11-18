@@ -11,9 +11,13 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 
 > [!IMPORTANT]
 > - OEC:
+>   - ARM64 is not supported yet.
+>   - Should have 16 GB of free RAM and 8 CPU cores.
 >   - After deployment, check https://localhost/feed-status (adjust hostname if needed) and wait until the Status field shows Current.
 >   - A forced feed sync still waits for gvmd and openvasd to finish processing. To trigger a new feed sync immediately, run the script with --run.
 > - OSI:
+>   - ARM64 is not supported yet.
+>   - Should have 16 GB of free RAM and 8 CPU cores.
 >   - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
 >   - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
 >   - OSI release >= 1.7.0 requires openvas-deployment version >= 0.0.8-alpha.9.
