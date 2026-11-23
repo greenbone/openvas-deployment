@@ -8,6 +8,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 > [!IMPORTANT]
 > - Requires Docker Compose version 2.40.3 or higher.
 > - Requires Bash version 5.1 or higher.
+> - Requires the IPv6 stack to be enabled.
 
 > [!IMPORTANT]
 > - OEC:
@@ -21,6 +22,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 >   - OSI requires an accurate system clock. Verify the current system time with `date` and ensure that NTP synchronization is enabled, for example with `systemd-timesyncd`.
 >   - OSI release >= 1.5.5 requires openvas-deployment version >= 0.0.8-alpha.3.
 >   - OSI release >= 1.7.0 requires openvas-deployment version >= 0.0.8-alpha.9.
+>   - **IPv6 bridge address usage:** Use ULA IPv6 bridge addresses for internal container-to-container communication. Do not use other IPv6 address types. Not all containers have IPv6 listeners enabled, so IPv6 connectivity is not guaranteed for every container or service.
 
 > [!IMPORTANT]
 > - Starting with `openvas-deployment` version 0.0.8:
