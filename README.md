@@ -8,6 +8,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 > [!IMPORTANT]
 > - Requires Docker Compose version 2.40.3 or higher.
 > - Requires Bash version 5.1 or higher.
+> - Requires the IPv6 stack to be enabled.
 
 > [!IMPORTANT]
 > - OEC:
@@ -29,6 +30,7 @@ The utility initializes, updates, starts, stops, and manages an enterprise-conta
 >   - Support for OpenVAS Enterprise Container Agent component.
 >   - Support for OpenVAS GMP-SSHD
 >   - Support for Logging Backend
+> - If you change the default IPv6 bridge addresses, use only ULA IPv6 addresses for internal container-to-container communication. Do not use other IPv6 address types. Not all containers have IPv6 listeners enabled, so IPv6 connectivity is not guaranteed for every container or service.
 
 ## Table of contents
 
